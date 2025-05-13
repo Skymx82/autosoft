@@ -5,9 +5,9 @@ import { BiBuildings } from 'react-icons/bi';
 import { supabase } from '@/lib/supabase';
 
 interface Bureau {
-  id_bureau: string;
+  id_bureau: number;
   nom: string;
-  id_ecole: string;
+  id_ecole: number;
 }
 
 export default function BureauSelector() {
@@ -33,16 +33,26 @@ export default function BureauSelector() {
         
         if (error) throw error;
         
-        if (data && data.length > 0) {
-          setBureaux(data);
+        if (data) {
+          // Ajouter l'option "Tout" au début de la liste
+          const allBureaux = [
+            { id_bureau: 0, nom: 'Tout', id_ecole: user.id_ecole },
+            ...data
+          ];
+          
+          setBureaux(allBureaux);
           
           // Sélectionner le bureau actuel de l'utilisateur par défaut
-          const userBureau = data.find(bureau => bureau.id_bureau === user.id_bureau);
-          if (userBureau) {
-            setSelectedBureau(userBureau);
+          if (user.id_bureau === 0) {
+            setSelectedBureau(allBureaux[0]);
           } else {
-            // Sinon, sélectionner le premier bureau
-            setSelectedBureau(data[0]);
+            const userBureau = data.find(bureau => bureau.id_bureau === user.id_bureau);
+            if (userBureau) {
+              setSelectedBureau(userBureau);
+            } else {
+              // Sinon, sélectionner l'option "Tout"
+              setSelectedBureau(allBureaux[0]);
+            }
           }
         }
       } catch (error) {
