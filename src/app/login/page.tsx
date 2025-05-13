@@ -21,7 +21,13 @@ export default function Login() {
       // 1. Authentification avec Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
-        password,
+        password
+      });
+      
+      // S'assurer que la session est persistante (crée un cookie)
+      await supabase.auth.setSession({
+        access_token: authData.session?.access_token || '',
+        refresh_token: authData.session?.refresh_token || ''
       });
 
       if (authError) {
@@ -63,7 +69,9 @@ export default function Login() {
         id_bureau: userData.id_bureau
       }));
 
-      // 5. Redirection vers le tableau de bord approprié en fonction du rôle
+      // Note: Nous avons déjà créé le cookie d'authentification avec setSession plus haut
+
+      // 6. Redirection vers le tableau de bord approprié en fonction du rôle
       const dashboardRoute = getDashboardRouteByRole(userData.role);
       router.push(dashboardRoute);
       router.refresh();
