@@ -4,7 +4,7 @@ import { useState, ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FiMenu, FiX, FiUser, FiLogOut, FiBell, FiBarChart2, FiCalendar, FiUsers, FiDollarSign, FiSettings } from 'react-icons/fi';
-import { BiBuildingHouse, BiBuildings } from 'react-icons/bi';
+import BureauSelector from '@/components/selectors/BureauSelector';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
@@ -79,9 +79,9 @@ export default function DirectorLayout({ children }: DirectorLayoutProps) {
 
             {/* Boutons de droite */}
             <div className="hidden sm:ml-6 sm:flex sm:items-center">
-              {/* Icône d'immeuble/bâtiment */}
+              {/* Sélecteur de bureau */}
               <div className="mr-4">
-                <BiBuildings className="h-6 w-6 text-gray-400 hover:text-gray-500" />
+                <BureauSelector />
               </div>
               
               {/* Bouton notifications */}
