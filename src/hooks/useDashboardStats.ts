@@ -11,8 +11,12 @@ export interface DashboardStats {
     totalHeures: number | null;
     percentChange: number | null;
   };
-  examens: {
-    totalExamens: number | null;
+  elevesPrets: {
+    total: number | null;
+    percentChange: number | null;
+  };
+  chiffreAffaires: {
+    total: number | null;
     percentChange: number | null;
   };
 }
@@ -22,7 +26,8 @@ export function useDashboardStats() {
     isLoading: true,
     eleves: { totalEleves: null, percentChange: null },
     conduite: { totalHeures: null, percentChange: null },
-    examens: { totalExamens: null, percentChange: null },
+    elevesPrets: { total: null, percentChange: null },
+    chiffreAffaires: { total: null, percentChange: null },
   });
 
   useEffect(() => {

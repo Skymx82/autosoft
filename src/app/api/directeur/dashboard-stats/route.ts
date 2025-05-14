@@ -75,30 +75,63 @@ export async function GET(request: Request) {
       lastMonthConduiteQuery = lastMonthConduiteQuery.eq('id_bureau', id_bureau);
     }
     
-    // --- STATISTIQUES DES EXAMENS RÉUSSIS ---
+    // --- STATISTIQUES DES ÉLÈVES PRÊTS À PASSER LE PERMIS ---
     
-    // Requête pour les examens réussis du mois en cours
-    let currentExamensQuery = supabase
-      .from('examen_resultats')
-      .select('id_resultat', { count: 'exact' })
-      .eq('resultat', 'Réussi')
-      .gte('date_examen', currentMonthStart)
-      .lt('date_examen', currentMonthEnd)
+    // Requête pour les élèves prêts à passer le permis ce mois-ci
+    // Un élève est prêt quand toutes ses compétences sont à 100%
+    let currentElvPretQuery = supabase
+      .from('competences_eleve')
+      .select('id_eleve', { count: 'exact' })
+      .eq('c1_maitriser', 100)
+      .eq('c2_apprehender', 100)
+      .eq('c3_circuler', 100)
+      .eq('c4_pratiquer', 100)
+      .gte('date_evaluation', currentMonthStart)
+      .lt('date_evaluation', currentMonthEnd)
       .eq('id_ecole', id_ecole);
     
-    // Requête pour les examens réussis du mois précédent
-    let lastMonthExamensQuery = supabase
-      .from('examen_resultats')
-      .select('id_resultat', { count: 'exact' })
-      .eq('resultat', 'Réussi')
-      .gte('date_examen', lastMonthStart)
-      .lt('date_examen', lastMonthEnd)
+    // Requête pour les élèves prêts à passer le permis le mois précédent
+    let lastMonthElvPretQuery = supabase
+      .from('competences_eleve')
+      .select('id_eleve', { count: 'exact' })
+      .eq('c1_maitriser', 100)
+      .eq('c2_apprehender', 100)
+      .eq('c3_circuler', 100)
+      .eq('c4_pratiquer', 100)
+      .gte('date_evaluation', lastMonthStart)
+      .lt('date_evaluation', lastMonthEnd)
       .eq('id_ecole', id_ecole);
     
     // Filtrer par bureau si ce n'est pas "Tout" (id_bureau = 0)
     if (id_bureau !== '0') {
-      currentExamensQuery = currentExamensQuery.eq('id_bureau', id_bureau);
-      lastMonthExamensQuery = lastMonthExamensQuery.eq('id_bureau', id_bureau);
+      currentElvPretQuery = currentElvPretQuery.eq('id_bureau', id_bureau);
+      lastMonthElvPretQuery = lastMonthElvPretQuery.eq('id_bureau', id_bureau);
+    }
+    
+    // --- STATISTIQUES DU CHIFFRE D'AFFAIRES ---
+    
+    // Requête pour le chiffre d'affaires du mois en cours
+    let currentCAQuery = supabase
+      .from('comptabilite')
+      .select('montant')
+      .eq('type_transaction', 'Recette')
+      .gte('date_transaction', currentMonthStart)
+      .lt('date_transaction', currentMonthEnd)
+      .eq('id_ecole', id_ecole);
+    
+    // Requête pour le chiffre d'affaires du mois précédent
+    let lastMonthCAQuery = supabase
+      .from('comptabilite')
+      .select('montant')
+      .eq('type_transaction', 'Recette')
+      .gte('date_transaction', lastMonthStart)
+      .lt('date_transaction', lastMonthEnd)
+      .eq('id_ecole', id_ecole);
+    
+    // Filtrer par bureau si ce n'est pas "Tout" (id_bureau = 0)
+    if (id_bureau !== '0') {
+      currentCAQuery = currentCAQuery.eq('id_bureau', id_bureau);
+      lastMonthCAQuery = lastMonthCAQuery.eq('id_bureau', id_bureau);
     }
     
     // Exécuter toutes les requêtes en parallèle
@@ -107,26 +140,33 @@ export async function GET(request: Request) {
       { count: lastMonthElevesCount, error: lastMonthElevesError },
       { data: currentConduiteData, error: currentConduiteError },
       { data: lastMonthConduiteData, error: lastMonthConduiteError },
-      { count: currentExamensCount, error: currentExamensError },
-      { count: lastMonthExamensCount, error: lastMonthExamensError }
+      { count: currentElvPretCount, error: currentElvPretError },
+      { count: lastMonthElvPretCount, error: lastMonthElvPretError },
+      { data: currentCAData, error: currentCAError },
+      { data: lastMonthCAData, error: lastMonthCAError }
     ] = await Promise.all([
       currentElevesQuery,
       lastMonthElevesQuery,
       currentConduiteQuery,
       lastMonthConduiteQuery,
-      currentExamensQuery,
-      lastMonthExamensQuery
+      currentElvPretQuery,
+      lastMonthElvPretQuery,
+      currentCAQuery,
+      lastMonthCAQuery
     ]);
     
     // Vérifier les erreurs
-    if (currentElevesError || lastMonthElevesError || currentConduiteError || lastMonthConduiteError || currentExamensError || lastMonthExamensError) {
+    if (currentElevesError || lastMonthElevesError || currentConduiteError || lastMonthConduiteError || 
+        currentElvPretError || lastMonthElvPretError || currentCAError || lastMonthCAError) {
       console.error('Erreurs lors des requêtes:', {
         currentElevesError,
         lastMonthElevesError,
         currentConduiteError,
         lastMonthConduiteError,
-        currentExamensError,
-        lastMonthExamensError
+        currentElvPretError,
+        lastMonthElvPretError,
+        currentCAError,
+        lastMonthCAError
       });
       return NextResponse.json({ error: 'Erreur lors de la récupération des données' }, { status: 500 });
     }
@@ -175,13 +215,40 @@ export async function GET(request: Request) {
       conduitePercentChange = 100.0; // Si aucune heure le mois dernier, mais des heures ce mois-ci
     }
     
-    // Statistiques des examens réussis
-    let examensPercentChange = null;
-    if (lastMonthExamensCount !== null && lastMonthExamensCount > 0) {
-      const change = (currentExamensCount || 0) - lastMonthExamensCount;
-      examensPercentChange = parseFloat(((change / lastMonthExamensCount) * 100).toFixed(1));
-    } else if (currentExamensCount && currentExamensCount > 0) {
-      examensPercentChange = 100.0; // Si aucun examen réussi le mois dernier, mais des examens réussis ce mois-ci
+    // Statistiques des élèves prêts à passer le permis
+    let elvPretPercentChange = null;
+    if (lastMonthElvPretCount !== null && lastMonthElvPretCount > 0) {
+      const change = (currentElvPretCount || 0) - lastMonthElvPretCount;
+      elvPretPercentChange = parseFloat(((change / lastMonthElvPretCount) * 100).toFixed(1));
+    } else if (currentElvPretCount && currentElvPretCount > 0) {
+      elvPretPercentChange = 100.0; // Si aucun élève prêt le mois dernier, mais des élèves prêts ce mois-ci
+    }
+    
+    // Statistiques du chiffre d'affaires
+    let totalCACurrentMonth = 0;
+    let totalCALastMonth = 0;
+    
+    // Calculer le total du chiffre d'affaires pour le mois en cours
+    if (currentCAData && currentCAData.length > 0) {
+      totalCACurrentMonth = currentCAData.reduce((total, transaction) => {
+        return total + parseFloat(transaction.montant);
+      }, 0);
+    }
+    
+    // Calculer le total du chiffre d'affaires pour le mois précédent
+    if (lastMonthCAData && lastMonthCAData.length > 0) {
+      totalCALastMonth = lastMonthCAData.reduce((total, transaction) => {
+        return total + parseFloat(transaction.montant);
+      }, 0);
+    }
+    
+    // Calculer le pourcentage de changement pour le chiffre d'affaires
+    let caPercentChange = null;
+    if (totalCALastMonth > 0) {
+      const change = totalCACurrentMonth - totalCALastMonth;
+      caPercentChange = parseFloat(((change / totalCALastMonth) * 100).toFixed(1));
+    } else if (totalCACurrentMonth > 0) {
+      caPercentChange = 100.0; // Si aucun chiffre d'affaires le mois dernier, mais du chiffre d'affaires ce mois-ci
     }
     
     // --- RÉPONSE FINALE ---
@@ -204,10 +271,15 @@ export async function GET(request: Request) {
         },
         pourcentageChangement: conduitePercentChange
       },
-      examens: {
-        moisActuel: currentExamensCount,
-        moisPrecedent: lastMonthExamensCount,
-        pourcentageChangement: examensPercentChange
+      elevesPrets: {
+        moisActuel: currentElvPretCount,
+        moisPrecedent: lastMonthElvPretCount,
+        pourcentageChangement: elvPretPercentChange
+      },
+      chiffreAffaires: {
+        moisActuel: totalCACurrentMonth,
+        moisPrecedent: totalCALastMonth,
+        pourcentageChangement: caPercentChange
       }
     });
     
@@ -221,9 +293,13 @@ export async function GET(request: Request) {
         totalHeures: Math.round(totalHeuresCurrentMonth),
         percentChange: conduitePercentChange
       },
-      examens: {
-        totalExamens: currentExamensCount || 0,
-        percentChange: examensPercentChange
+      elevesPrets: {
+        total: currentElvPretCount || 0,
+        percentChange: elvPretPercentChange
+      },
+      chiffreAffaires: {
+        total: Math.round(totalCACurrentMonth),
+        percentChange: caPercentChange
       }
     });
     

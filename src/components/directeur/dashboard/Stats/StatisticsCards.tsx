@@ -47,7 +47,7 @@ const StatCard = ({ title, value, change, trend, icon }: StatCardProps) => {
 
 export default function StatisticsCards() {
   // Utiliser le hook centralisé pour récupérer toutes les statistiques en une seule requête
-  const { isLoading, eleves, conduite, examens } = useDashboardStats();
+  const { isLoading, eleves, conduite, elevesPrets, chiffreAffaires } = useDashboardStats();
 
   const stats = [
     {
@@ -69,18 +69,18 @@ export default function StatisticsCards() {
     },
     {
       id: 3,
-      title: 'Examens réussis',
-      value: isLoading ? '--' : examens?.totalExamens?.toString() || '--',
-      change: examens?.percentChange !== null ? `${examens.percentChange}%` : '--',
-      trend: (examens?.percentChange && examens.percentChange >= 0) ? 'up' as const : 'down' as const,
+      title: 'Élèves prêts',
+      value: isLoading ? '--' : elevesPrets?.total?.toString() || '--',
+      change: elevesPrets?.percentChange !== null ? `${elevesPrets.percentChange}%` : '--',
+      trend: (elevesPrets?.percentChange && elevesPrets.percentChange >= 0) ? 'up' as const : 'down' as const,
       icon: <FiAward className="h-6 w-6 text-blue-600" />,
     },
     {
       id: 4,
       title: 'Chiffre d\'affaires',
-      value: '8 540 €',
-      change: '8.7%',
-      trend: 'up' as const,
+      value: isLoading ? '--' : `${chiffreAffaires?.total?.toLocaleString()} €` || '--',
+      change: chiffreAffaires?.percentChange !== null ? `${chiffreAffaires.percentChange}%` : '--',
+      trend: (chiffreAffaires?.percentChange && chiffreAffaires.percentChange >= 0) ? 'up' as const : 'down' as const,
       icon: <FiDollarSign className="h-6 w-6 text-blue-600" />,
     },
   ];
