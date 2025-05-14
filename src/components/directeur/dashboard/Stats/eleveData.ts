@@ -16,29 +16,59 @@ export async function fetchElevesStats(): Promise<EleveStatsData> {
     
     const user = JSON.parse(userData);
     
-    // Requête pour compter le nombre total d'élèves
-    let query = supabase
+    // Obtenir la date du premier jour du mois en cours
+    const now = new Date();
+    const firstDayCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Obtenir la date du premier jour du mois suivant le mois en cours
+    const firstDayNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    
+    // Obtenir la date du premier jour du mois précédent
+    const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    
+    // Requête pour compter le nombre d'élèves du mois en cours uniquement
+    let currentQuery = supabase
       .from('eleves')
-      .select('id_eleve', { count: 'exact' });
+      .select('id_eleve', { count: 'exact' })
+      .gte('date_inscription', firstDayCurrentMonth.toISOString().split('T')[0])
+      .lt('date_inscription', firstDayNextMonth.toISOString().split('T')[0]);
     
     // Filtrer par bureau si ce n'est pas "Tout" (id_bureau = 0)
     if (user.id_bureau !== 0) {
-      query = query.eq('id_bureau', user.id_bureau);
+      currentQuery = currentQuery.eq('id_bureau', user.id_bureau);
     }
     
     // Toujours filtrer par école
-    query = query.eq('id_ecole', user.id_ecole);
+    currentQuery = currentQuery.eq('id_ecole', user.id_ecole);
     
-    const { count: currentCount, error } = await query;
+    const { count: currentCount, error: currentError } = await currentQuery;
     
-    if (error) throw error;
+    if (currentError) throw currentError;
     
-    // Simulation du pourcentage de changement pour la démonstration
-    // Dans une application réelle, vous feriez une requête pour obtenir le nombre d'élèves du mois dernier
+    // Requête pour compter le nombre d'élèves du mois dernier
+    // (inscrits pendant le mois précédent uniquement)
+    let lastMonthQuery = supabase
+      .from('eleves')
+      .select('id_eleve', { count: 'exact' })
+      .gte('date_inscription', firstDayLastMonth.toISOString().split('T')[0])
+      .lt('date_inscription', firstDayCurrentMonth.toISOString().split('T')[0]);
+    
+    // Filtrer par bureau si ce n'est pas "Tout" (id_bureau = 0)
+    if (user.id_bureau !== 0) {
+      lastMonthQuery = lastMonthQuery.eq('id_bureau', user.id_bureau);
+    }
+    
+    // Toujours filtrer par école
+    lastMonthQuery = lastMonthQuery.eq('id_ecole', user.id_ecole);
+    
+    const { count: lastMonthCount, error: lastMonthError } = await lastMonthQuery;
+    
+    if (lastMonthError) throw lastMonthError;
+    
+    // Calculer le pourcentage de changement
     let percentChange = null;
     
-    if (currentCount !== null) {
-      const lastMonthCount = Math.floor(currentCount * 0.95); // Simuler une augmentation de 5%
+    if (currentCount !== null && lastMonthCount !== null) {
       const change = currentCount - lastMonthCount;
       const percentChangeValue = lastMonthCount > 0 ? (change / lastMonthCount) * 100 : 0;
       percentChange = parseFloat(percentChangeValue.toFixed(1));
