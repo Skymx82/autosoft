@@ -47,7 +47,7 @@ const StatCard = ({ title, value, change, trend, icon }: StatCardProps) => {
 
 export default function StatisticsCards() {
   // Utiliser le hook centralisé pour récupérer toutes les statistiques en une seule requête
-  const { isLoading, eleves, conduite } = useDashboardStats();
+  const { isLoading, eleves, conduite, examens } = useDashboardStats();
 
   const stats = [
     {
@@ -70,9 +70,9 @@ export default function StatisticsCards() {
     {
       id: 3,
       title: 'Examens réussis',
-      value: '18',
-      change: '2.1%',
-      trend: 'down' as const,
+      value: isLoading ? '--' : examens?.totalExamens?.toString() || '--',
+      change: examens?.percentChange !== null ? `${examens.percentChange}%` : '--',
+      trend: (examens?.percentChange && examens.percentChange >= 0) ? 'up' as const : 'down' as const,
       icon: <FiAward className="h-6 w-6 text-blue-600" />,
     },
     {

@@ -75,26 +75,58 @@ export async function GET(request: Request) {
       lastMonthConduiteQuery = lastMonthConduiteQuery.eq('id_bureau', id_bureau);
     }
     
+    // --- STATISTIQUES DES EXAMENS RÉUSSIS ---
+    
+    // Requête pour les examens réussis du mois en cours
+    let currentExamensQuery = supabase
+      .from('examen_resultats')
+      .select('id_resultat', { count: 'exact' })
+      .eq('resultat', 'Réussi')
+      .gte('date_examen', currentMonthStart)
+      .lt('date_examen', currentMonthEnd)
+      .eq('id_ecole', id_ecole);
+    
+    // Requête pour les examens réussis du mois précédent
+    let lastMonthExamensQuery = supabase
+      .from('examen_resultats')
+      .select('id_resultat', { count: 'exact' })
+      .eq('resultat', 'Réussi')
+      .gte('date_examen', lastMonthStart)
+      .lt('date_examen', lastMonthEnd)
+      .eq('id_ecole', id_ecole);
+    
+    // Filtrer par bureau si ce n'est pas "Tout" (id_bureau = 0)
+    if (id_bureau !== '0') {
+      currentExamensQuery = currentExamensQuery.eq('id_bureau', id_bureau);
+      lastMonthExamensQuery = lastMonthExamensQuery.eq('id_bureau', id_bureau);
+    }
+    
     // Exécuter toutes les requêtes en parallèle
     const [
       { count: currentElevesCount, error: currentElevesError },
       { count: lastMonthElevesCount, error: lastMonthElevesError },
       { data: currentConduiteData, error: currentConduiteError },
-      { data: lastMonthConduiteData, error: lastMonthConduiteError }
+      { data: lastMonthConduiteData, error: lastMonthConduiteError },
+      { count: currentExamensCount, error: currentExamensError },
+      { count: lastMonthExamensCount, error: lastMonthExamensError }
     ] = await Promise.all([
       currentElevesQuery,
       lastMonthElevesQuery,
       currentConduiteQuery,
-      lastMonthConduiteQuery
+      lastMonthConduiteQuery,
+      currentExamensQuery,
+      lastMonthExamensQuery
     ]);
     
     // Vérifier les erreurs
-    if (currentElevesError || lastMonthElevesError || currentConduiteError || lastMonthConduiteError) {
+    if (currentElevesError || lastMonthElevesError || currentConduiteError || lastMonthConduiteError || currentExamensError || lastMonthExamensError) {
       console.error('Erreurs lors des requêtes:', {
         currentElevesError,
         lastMonthElevesError,
         currentConduiteError,
-        lastMonthConduiteError
+        lastMonthConduiteError,
+        currentExamensError,
+        lastMonthExamensError
       });
       return NextResponse.json({ error: 'Erreur lors de la récupération des données' }, { status: 500 });
     }
@@ -143,6 +175,15 @@ export async function GET(request: Request) {
       conduitePercentChange = 100.0; // Si aucune heure le mois dernier, mais des heures ce mois-ci
     }
     
+    // Statistiques des examens réussis
+    let examensPercentChange = null;
+    if (lastMonthExamensCount !== null && lastMonthExamensCount > 0) {
+      const change = (currentExamensCount || 0) - lastMonthExamensCount;
+      examensPercentChange = parseFloat(((change / lastMonthExamensCount) * 100).toFixed(1));
+    } else if (currentExamensCount && currentExamensCount > 0) {
+      examensPercentChange = 100.0; // Si aucun examen réussi le mois dernier, mais des examens réussis ce mois-ci
+    }
+    
     // --- RÉPONSE FINALE ---
     
     // Log pour le débogage
@@ -162,6 +203,11 @@ export async function GET(request: Request) {
           nombreLecons: lastMonthConduiteData?.length || 0
         },
         pourcentageChangement: conduitePercentChange
+      },
+      examens: {
+        moisActuel: currentExamensCount,
+        moisPrecedent: lastMonthExamensCount,
+        pourcentageChangement: examensPercentChange
       }
     });
     
@@ -174,8 +220,11 @@ export async function GET(request: Request) {
       conduite: {
         totalHeures: Math.round(totalHeuresCurrentMonth),
         percentChange: conduitePercentChange
+      },
+      examens: {
+        totalExamens: currentExamensCount || 0,
+        percentChange: examensPercentChange
       }
-      // Vous pourrez ajouter d'autres statistiques ici à l'avenir
     });
     
   } catch (error) {

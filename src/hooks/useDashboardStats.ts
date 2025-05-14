@@ -11,7 +11,10 @@ export interface DashboardStats {
     totalHeures: number | null;
     percentChange: number | null;
   };
-  // Vous pourrez ajouter d'autres statistiques ici à l'avenir
+  examens: {
+    totalExamens: number | null;
+    percentChange: number | null;
+  };
 }
 
 export function useDashboardStats() {
@@ -19,6 +22,7 @@ export function useDashboardStats() {
     isLoading: true,
     eleves: { totalEleves: null, percentChange: null },
     conduite: { totalHeures: null, percentChange: null },
+    examens: { totalExamens: null, percentChange: null },
   });
 
   useEffect(() => {
