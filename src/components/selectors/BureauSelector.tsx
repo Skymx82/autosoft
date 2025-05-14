@@ -77,6 +77,9 @@ export default function BureauSelector() {
       const user = JSON.parse(userData);
       user.id_bureau = bureau.id_bureau;
       localStorage.setItem('autosoft_user', JSON.stringify(user));
+      
+      // Effectuer un rechargement complet de la page
+      window.location.reload();
     }
   };
 
