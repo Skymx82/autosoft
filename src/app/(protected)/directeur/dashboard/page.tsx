@@ -2,7 +2,8 @@
 
 import DirectorLayout from '@/components/directeur/layout/DirectorLayout';
 import StatisticsCards from '@/components/directeur/dashboard/Stats/StatisticsCards';
-import RecentActivities from '@/components/directeur/dashboard/RecentActivities';
+import RevenueChart from '@/components/directeur/dashboard/RevenueChart';
+import QuickActions from '@/components/directeur/dashboard/QuickActions';
 
 export default function DirecteurDashboard() {
   return (
@@ -14,13 +15,16 @@ export default function DirecteurDashboard() {
           <p className="text-gray-600 mt-1">Bienvenue sur votre espace directeur</p>
         </div>
         
+        {/* Actions rapides */}
+        <QuickActions />
+        
         {/* Cartes de statistiques */}
         <StatisticsCards />
         
         {/* Activités récentes et Moniteurs */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Activités récentes */}
-          <RecentActivities />
+          {/* Graphique d'évolution du chiffre d'affaires */}
+          <RevenueChart />
           
           {/* Moniteurs */}
           <div className="bg-white shadow rounded-lg">

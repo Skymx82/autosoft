@@ -114,7 +114,6 @@ export async function GET(request: Request) {
     let currentCAQuery = supabase
       .from('comptabilite')
       .select('montant')
-      .eq('type_transaction', 'Recette')
       .gte('date_transaction', currentMonthStart)
       .lt('date_transaction', currentMonthEnd)
       .eq('id_ecole', id_ecole);
@@ -123,15 +122,23 @@ export async function GET(request: Request) {
     let lastMonthCAQuery = supabase
       .from('comptabilite')
       .select('montant')
-      .eq('type_transaction', 'Recette')
       .gte('date_transaction', lastMonthStart)
       .lt('date_transaction', lastMonthEnd)
+      .eq('id_ecole', id_ecole);
+    
+    // Requête pour le chiffre d'affaires de l'année en cours (pour le graphique)
+    let yearlyCAQuery = supabase
+      .from('comptabilite')
+      .select('date_transaction, montant')
+      .gte('date_transaction', `${now.getFullYear()}-01-01`)
+      .lte('date_transaction', `${now.getFullYear()}-12-31`)
       .eq('id_ecole', id_ecole);
     
     // Filtrer par bureau si ce n'est pas "Tout" (id_bureau = 0)
     if (id_bureau !== '0') {
       currentCAQuery = currentCAQuery.eq('id_bureau', id_bureau);
       lastMonthCAQuery = lastMonthCAQuery.eq('id_bureau', id_bureau);
+      yearlyCAQuery = yearlyCAQuery.eq('id_bureau', id_bureau);
     }
     
     // Exécuter toutes les requêtes en parallèle
@@ -143,7 +150,8 @@ export async function GET(request: Request) {
       { count: currentElvPretCount, error: currentElvPretError },
       { count: lastMonthElvPretCount, error: lastMonthElvPretError },
       { data: currentCAData, error: currentCAError },
-      { data: lastMonthCAData, error: lastMonthCAError }
+      { data: lastMonthCAData, error: lastMonthCAError },
+      { data: yearlyCAData, error: yearlyCAError }
     ] = await Promise.all([
       currentElevesQuery,
       lastMonthElevesQuery,
@@ -152,12 +160,13 @@ export async function GET(request: Request) {
       currentElvPretQuery,
       lastMonthElvPretQuery,
       currentCAQuery,
-      lastMonthCAQuery
+      lastMonthCAQuery,
+      yearlyCAQuery
     ]);
     
     // Vérifier les erreurs
     if (currentElevesError || lastMonthElevesError || currentConduiteError || lastMonthConduiteError || 
-        currentElvPretError || lastMonthElvPretError || currentCAError || lastMonthCAError) {
+        currentElvPretError || lastMonthElvPretError || currentCAError || lastMonthCAError || yearlyCAError) {
       console.error('Erreurs lors des requêtes:', {
         currentElevesError,
         lastMonthElevesError,
@@ -166,7 +175,8 @@ export async function GET(request: Request) {
         currentElvPretError,
         lastMonthElvPretError,
         currentCAError,
-        lastMonthCAError
+        lastMonthCAError,
+        yearlyCAError
       });
       return NextResponse.json({ error: 'Erreur lors de la récupération des données' }, { status: 500 });
     }
@@ -283,6 +293,23 @@ export async function GET(request: Request) {
       }
     });
     
+    // Préparer les données pour le graphique d'évolution du chiffre d'affaires
+    const monthlyRevenue = Array(12).fill(0);
+    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+    
+    if (yearlyCAData && yearlyCAData.length > 0) {
+      yearlyCAData.forEach((transaction: { date_transaction: string; montant: string }) => {
+        const date = new Date(transaction.date_transaction);
+        const month = date.getMonth(); // 0-11
+        monthlyRevenue[month] += parseFloat(transaction.montant);
+      });
+    }
+    
+    const graphiqueCA = monthlyRevenue.map((revenue, index) => ({
+      month: monthNames[index],
+      revenue: Math.round(revenue)
+    }));
+    
     // Renvoyer toutes les statistiques en une seule réponse
     return NextResponse.json({
       eleves: {
@@ -300,7 +327,8 @@ export async function GET(request: Request) {
       chiffreAffaires: {
         total: Math.round(totalCACurrentMonth),
         percentChange: caPercentChange
-      }
+      },
+      graphiqueCA: graphiqueCA
     });
     
   } catch (error) {

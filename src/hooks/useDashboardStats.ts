@@ -43,7 +43,7 @@ export function useDashboardStats() {
         const user = JSON.parse(userData);
         
         // Appeler l'endpoint unique
-        const response = await fetch(`/api/directeur/dashboard-stats?id_ecole=${user.id_ecole}&id_bureau=${user.id_bureau}`);
+        const response = await fetch(`/api/directeur/dashboard/Stats?id_ecole=${user.id_ecole}&id_bureau=${user.id_bureau}`);
         
         if (!response.ok) {
           throw new Error('Erreur lors de la récupération des statistiques');

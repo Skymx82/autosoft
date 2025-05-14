@@ -98,4 +98,4 @@ INSERT INTO competences_eleve (id_eleve, c1_maitriser, c2_apprehender, c3_circul
 VALUES (17, 75, 70, 65, 60, '2025-05-07', 'Progresse lentement', 4, 2, 1);
 
 INSERT INTO competences_eleve (id_eleve, c1_maitriser, c2_apprehender, c3_circuler, c4_pratiquer, date_evaluation, commentaire, id_moniteur, id_bureau, id_ecole)
-VALUES (18, 60, 55, 50, 45, '2025-05-10', 'Difficultés importantes, besoin d un suivi personnalisé', 3, 2, 1);
+VALUES (18, 60, 55, 50, 45, '2025-05-10', 'Difficultés importantes, besoin d\'un suivi personnalisé', 3, 2, 1);
