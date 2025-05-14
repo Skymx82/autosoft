@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { FiUsers, FiClock, FiAward, FiDollarSign } from 'react-icons/fi';
-import { fetchElevesStats, EleveStatsData } from './eleveData';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 
 interface StatCardProps {
   title: string;
@@ -47,36 +46,25 @@ const StatCard = ({ title, value, change, trend, icon }: StatCardProps) => {
 };
 
 export default function StatisticsCards() {
-  const [elevesStats, setElevesStats] = useState<EleveStatsData>({
-    totalEleves: null,
-    percentChange: null,
-    isLoading: true
-  });
-
-  useEffect(() => {
-    const loadElevesStats = async () => {
-      const stats = await fetchElevesStats();
-      setElevesStats(stats);
-    };
-
-    loadElevesStats();
-  }, []);
+  // Utiliser le hook centralisé pour récupérer toutes les statistiques en une seule requête
+  const { isLoading, eleves, conduite } = useDashboardStats();
 
   const stats = [
     {
       id: 1,
       title: 'Total Élèves',
-      value: elevesStats.isLoading ? '--' : elevesStats.totalEleves?.toString() || '--',
-      change: elevesStats.percentChange ? `${elevesStats.percentChange}%` : '--',
-      trend: (elevesStats.percentChange && elevesStats.percentChange >= 0) ? 'up' as const : 'down' as const,
+      value: isLoading ? '--' : eleves?.totalEleves?.toString() || '--',
+      change: eleves?.percentChange !== null ? `${eleves.percentChange}%` : '--',
+      trend: (eleves?.percentChange && eleves.percentChange >= 0) ? 'up' as const : 'down' as const,
       icon: <FiUsers className="h-6 w-6 text-blue-600" />,
     },
     {
       id: 2,
       title: 'Heures de conduite',
-      value: '287',
-      change: '12.3%',
-      trend: 'up' as const,
+      value: isLoading ? '--' : conduite?.totalHeures?.toString() || '--',
+      change: conduite?.percentChange !== null ? `${conduite.percentChange}%` : '--',
+      trend: conduite?.percentChange === 0 ? 'up' as const : // Cas spécial: 0% est considéré comme stable
+             (conduite?.percentChange && conduite.percentChange > 0) ? 'up' as const : 'down' as const,
       icon: <FiClock className="h-6 w-6 text-blue-600" />,
     },
     {
