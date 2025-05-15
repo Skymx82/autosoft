@@ -9,13 +9,15 @@ interface PlanningFiltersProps {
   setCurrentView: (view: 'day' | 'week' | 'month') => void;
   currentDate: Date;
   setCurrentDate: (date: Date) => void;
+  render?: (data: { isLoading: boolean; error: string | null; data: any }) => React.ReactNode;
 }
 
 export default function PlanningFilters({
   currentView,
   setCurrentView,
   currentDate,
-  setCurrentDate
+  setCurrentDate,
+  render
 }: PlanningFiltersProps) {
   const [showSettings, setShowSettings] = useState(false);
   
@@ -131,6 +133,11 @@ export default function PlanningFilters({
   const goToToday = () => {
     setCurrentDate(new Date());
   };
+  
+  // Si la prop render est fournie, on l'appelle avec les données
+  if (render) {
+    return render({ isLoading, error, data });
+  }
   
   return (
     <div className="bg-white shadow-sm rounded-lg p-4">
