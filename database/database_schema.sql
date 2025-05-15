@@ -86,6 +86,7 @@ CREATE TABLE enseignants (
   tel VARCHAR(20),
   num_enseignant VARCHAR(50),
   date_delivrance_num DATE,
+  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
   id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
 );
 

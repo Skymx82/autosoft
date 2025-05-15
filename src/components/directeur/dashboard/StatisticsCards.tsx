@@ -1,7 +1,7 @@
 'use client';
 
 import { FiUsers, FiClock, FiAward, FiDollarSign } from 'react-icons/fi';
-import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useDashboardStats } from '@/hooks/Directeur/dashboard/useDashboardStats';
 
 interface StatCardProps {
   title: string;
