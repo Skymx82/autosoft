@@ -11,6 +11,8 @@ interface PlanningFiltersProps {
   setCurrentView: (view: 'day' | 'week' | 'month') => void;
   currentDate: Date;
   setCurrentDate: (date: Date) => void;
+  selectedMoniteur?: string | null;
+  setSelectedMoniteur?: (id: string | null) => void;
   render?: (data: { isLoading: boolean; error: string | null; data: any }) => React.ReactNode;
 }
 
@@ -19,10 +21,16 @@ export default function PlanningFilters({
   setCurrentView,
   currentDate,
   setCurrentDate,
+  selectedMoniteur,
+  setSelectedMoniteur,
   render
 }: PlanningFiltersProps) {
-  const [showSettings, setShowSettings] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  // Utiliser la valeur passée en props ou une valeur par défaut
+  const [localSelectedMoniteur, setLocalSelectedMoniteur] = useState<string>(selectedMoniteur || 'all');
   
   // Calculer les dates de début et de fin en fonction de la vue et de la date actuelle
   const [dateRange, setDateRange] = useState<{startDate: string, endDate: string}>({startDate: '', endDate: ''});
@@ -69,13 +77,31 @@ export default function PlanningFilters({
     });
   }, [currentView, currentDate]);
   
+  // Ajouter un délai avant de déclencher la recherche
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300); // 300ms de délai
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+  
+  // Synchroniser la valeur locale avec la prop
+  useEffect(() => {
+    if (selectedMoniteur !== undefined) {
+      setLocalSelectedMoniteur(selectedMoniteur || 'all');
+    }
+  }, [selectedMoniteur]);
+
   // Utiliser le hook personnalisé pour récupérer les données du planning
   const { isLoading, error, data, refetch } = usePlanningData(
     userInfo.id_ecole,
     userInfo.id_bureau,
     dateRange.startDate,
     dateRange.endDate,
-    currentView
+    currentView,
+    debouncedSearchQuery,
+    localSelectedMoniteur
   );
   
   // Fonction pour formater la période affichée selon la vue
@@ -222,11 +248,13 @@ export default function PlanningFilters({
                 <div className="absolute z-100 mt-1 bg-white shadow-lg rounded-md">
                   <DatePicker
                     selected={currentDate}
-                    onChange={(date: Date) => {
-                      setCurrentDate(date);
-                      setDatePickerOpen(false);
-                      // Forcer un refetch des données après changement de date
-                      refetch();
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        setCurrentDate(date);
+                        setDatePickerOpen(false);
+                        // Forcer un refetch des données après changement de date
+                        refetch();
+                      }
                     }}
                     inline
                     onClickOutside={() => setDatePickerOpen(false)}
@@ -259,6 +287,11 @@ export default function PlanningFilters({
               type="text"
               className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2"
               placeholder="Rechercher un élève..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                // Le refetch sera déclenché automatiquement après le délai
+              }}
             />
           </div>
           
@@ -266,24 +299,34 @@ export default function PlanningFilters({
             <select
               className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
               disabled={isLoading}
+              value={localSelectedMoniteur}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                setLocalSelectedMoniteur(newValue);
+                // Mettre à jour la prop si elle existe
+                if (setSelectedMoniteur) {
+                  // Si la valeur est 'all', on passe null, sinon on passe la valeur
+                  setSelectedMoniteur(newValue === 'all' ? null : newValue);
+                }
+                // Forcer un refetch des données après changement de moniteur
+                refetch();
+              }}
             >
-              <option value="">Tous les moniteurs</option>
+              <option value="all">Tous les moniteurs</option>
               {data?.moniteurs && data.moniteurs.length > 0 ? (
                 data.moniteurs.map((moniteur) => (
                   <option key={moniteur.id_moniteur} value={moniteur.id_moniteur}>
                     {moniteur.prenom} {moniteur.nom}
                   </option>
                 ))
-              ) : isLoading ? (
-                <option value="" disabled>Chargement...</option>
               ) : (
-                <option value="" disabled>Aucun moniteur disponible</option>
+                <option value="" disabled>Chargement des moniteurs...</option>
               )}
             </select>
           </div>
           
           <button
-            onClick={() => setShowSettings(!showSettings)}
+            onClick={() => setIsExpanded(!isExpanded)}
             className="p-2 rounded-full text-gray-500 hover:bg-gray-100 ml-auto lg:ml-0"
           >
             <FiSettings className="w-5 h-5" />
@@ -292,7 +335,7 @@ export default function PlanningFilters({
       </div>
 
       {/* Panneau de paramètres (affiché conditionnellement) */}
-      {showSettings && (
+      {isExpanded && (
         <div className="mt-4 p-4 border rounded-lg bg-gray-50">
           <h3 className="text-sm font-medium text-gray-700 mb-3">Paramètres du planning</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

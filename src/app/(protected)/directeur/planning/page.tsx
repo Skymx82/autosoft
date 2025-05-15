@@ -9,12 +9,8 @@ export default function PlanningPage() {
   // États pour gérer les filtres et la vue du planning
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
-  
-  // États pour les dates de début et de fin
   const [dateRange, setDateRange] = useState<{startDate: Date, endDate: Date}>({startDate: new Date(), endDate: new Date()});
-  
-  // État pour le moniteur sélectionné
-  const [selectedMoniteurId, setSelectedMoniteurId] = useState<number | null>(null);
+  const [selectedMoniteurId, setSelectedMoniteurId] = useState<string | null>(null);
   
   // Calculer les dates de début et de fin en fonction de la vue et de la date actuelle
   useEffect(() => {
@@ -91,6 +87,8 @@ export default function PlanningPage() {
             setCurrentView={setCurrentView}
             currentDate={currentDate}
             setCurrentDate={setCurrentDate}
+            selectedMoniteur={selectedMoniteurId}
+            setSelectedMoniteur={setSelectedMoniteurId}
           />
         </div>
         
@@ -102,6 +100,8 @@ export default function PlanningPage() {
             setCurrentView={setCurrentView}
             currentDate={currentDate}
             setCurrentDate={setCurrentDate}
+            selectedMoniteur={selectedMoniteurId}
+            setSelectedMoniteur={setSelectedMoniteurId}
             render={({ isLoading, error, data }) => {
               if (isLoading) {
                 return (
@@ -135,7 +135,7 @@ export default function PlanningPage() {
                     startDate={dateRange.startDate}
                     endDate={dateRange.endDate}
                     currentView={currentView}
-                    selectedMoniteurId={selectedMoniteurId}
+                    selectedMoniteurId={selectedMoniteurId ? parseInt(selectedMoniteurId) : null}
                   />
                 </div>
               );

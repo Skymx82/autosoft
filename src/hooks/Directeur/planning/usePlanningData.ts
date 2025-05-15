@@ -61,7 +61,9 @@ export function usePlanningData(
   id_bureau: string = '0',
   startDate: string,
   endDate: string,
-  view: 'day' | 'week' | 'month' = 'week'
+  view: 'day' | 'week' | 'month' = 'week',
+  searchQuery: string = '',
+  selectedMoniteur: string = 'all'
 ): UsePlanningDataResult {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +87,15 @@ export function usePlanningData(
         endDate,
         view
       });
+      
+      // Ajouter les paramètres de recherche s'ils sont définis
+      if (searchQuery) {
+        queryParams.append('search', searchQuery);
+      }
+      
+      if (selectedMoniteur && selectedMoniteur !== 'all') {
+        queryParams.append('moniteur', selectedMoniteur);
+      }
 
       const response = await fetch(`/api/directeur/planning?${queryParams.toString()}`);
       
