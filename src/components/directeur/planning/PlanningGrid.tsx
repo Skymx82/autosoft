@@ -244,9 +244,9 @@ export default function PlanningGrid({
       <div className="w-full h-full overflow-auto">
         {currentView === 'day' ? (
           // Vue Jour - Affichage détaillé avec moniteurs en colonnes
-          <div>
+          <div className="h-full">
             {/* En-tête avec les moniteurs */}
-            <div className="grid border-b bg-blue-50" style={{ gridTemplateColumns: `100px repeat(${filteredMoniteurs.length}, 1fr)` }}>
+            <div className="grid border-b bg-blue-50" style={{ gridTemplateColumns: `80px repeat(${filteredMoniteurs.length}, minmax(120px, 1fr))` }}>
               <div className="p-2 font-medium text-gray-600 border-r bg-blue-100"></div>
               {filteredMoniteurs.map((moniteur) => (
                 <div key={moniteur.id_moniteur} className="p-2 text-center border-r font-medium text-blue-800 hover:bg-blue-100 transition-colors">
@@ -256,11 +256,11 @@ export default function PlanningGrid({
             </div>
             
             {/* Corps du planning avec les heures et les leçons */}
-            <div className="grid" style={{ gridTemplateColumns: `100px repeat(${filteredMoniteurs.length}, 1fr)` }}>
+            <div className="grid" style={{ gridTemplateColumns: `80px repeat(${filteredMoniteurs.length}, minmax(120px, 1fr))` }}>
               {/* Colonne des heures */}
-              <div className="border-r bg-gray-50">
+              <div className="border-r border-b bg-gray-50">
                 {hours.map((hour, hourIndex) => (
-                  <div key={hourIndex} className={`h-[60px] border-b p-1 text-xs font-medium ${hourIndex % 2 === 0 ? 'bg-gray-100' : 'bg-gray-50'}`}>
+                  <div key={hourIndex} className={`h-[50px] border-b p-1 text-xs font-medium ${hourIndex % 2 === 0 ? 'bg-gray-100' : 'bg-gray-50'}`}>
                     {hour}
                   </div>
                 ))}
@@ -277,10 +277,10 @@ export default function PlanningGrid({
                 const leconsDuJour = leconsByDay[dateStr]?.[moniteur.id_moniteur] || [];
                 
                 return (
-                  <div key={moniteur.id_moniteur} className={`border-r relative ${moniteurIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
+                  <div key={moniteur.id_moniteur} className={`border-r border-b relative ${moniteurIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
                     {/* Lignes d'heures (une par heure) */}
                     {hours.map((hour, hourIndex) => (
-                      <div key={hourIndex} className={`h-[60px] border-b ${hourIndex % 2 === 0 ? 'bg-white/80' : 'bg-gray-50/50'}`}></div>
+                      <div key={hourIndex} className={`h-[50px] border-b ${hourIndex % 2 === 0 ? 'bg-white/80' : 'bg-gray-50/50'}`}></div>
                     ))}
                     
                     {/* Leçons du jour pour ce moniteur */}

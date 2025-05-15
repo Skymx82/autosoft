@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FiCalendar, FiChevronLeft, FiChevronRight, FiSettings, FiSearch, FiUser } from 'react-icons/fi';
 import { usePlanningData } from '@/hooks/Directeur/planning/usePlanningData';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 interface PlanningFiltersProps {
   currentView: 'day' | 'week' | 'month';
@@ -20,6 +22,7 @@ export default function PlanningFilters({
   render
 }: PlanningFiltersProps) {
   const [showSettings, setShowSettings] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   
   // Calculer les dates de début et de fin en fonction de la vue et de la date actuelle
   const [dateRange, setDateRange] = useState<{startDate: string, endDate: string}>({startDate: '', endDate: ''});
@@ -66,8 +69,8 @@ export default function PlanningFilters({
     });
   }, [currentView, currentDate]);
   
-  // Utiliser le hook pour récupérer les données du planning
-  const { isLoading, error, data } = usePlanningData(
+  // Utiliser le hook personnalisé pour récupérer les données du planning
+  const { isLoading, error, data, refetch } = usePlanningData(
     userInfo.id_ecole,
     userInfo.id_bureau,
     dateRange.startDate,
@@ -114,6 +117,8 @@ export default function PlanningFilters({
     }
     
     setCurrentDate(newDate);
+    // Forcer un refetch des données après changement de date
+    refetch();
   };
   
   const goToNext = () => {
@@ -128,10 +133,14 @@ export default function PlanningFilters({
     }
     
     setCurrentDate(newDate);
+    // Forcer un refetch des données après changement de date
+    refetch();
   };
   
   const goToToday = () => {
     setCurrentDate(new Date());
+    // Forcer un refetch des données après retour à aujourd'hui
+    refetch();
   };
   
   // Si la prop render est fournie, on l'appelle avec les données
@@ -147,7 +156,11 @@ export default function PlanningFilters({
           <div className="inline-flex rounded-md shadow-sm">
             <button
               type="button"
-              onClick={() => setCurrentView('day')}
+              onClick={() => {
+                setCurrentView('day');
+                // Forcer un refetch des données
+                refetch();
+              }}
               className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
                 currentView === 'day'
                   ? 'bg-blue-50 text-blue-700 border border-blue-300'
@@ -158,10 +171,14 @@ export default function PlanningFilters({
             </button>
             <button
               type="button"
-              onClick={() => setCurrentView('week')}
+              onClick={() => {
+                setCurrentView('week');
+                // Forcer un refetch des données
+                refetch();
+              }}
               className={`px-4 py-2 text-sm font-medium ${
                 currentView === 'week'
-                  ? 'bg-blue-50 text-blue-700 border border-blue-300'
+                  ? 'bg-blue-50 text-blue-700 border-t border-b border-blue-300'
                   : 'bg-white text-gray-700 border-t border-b border-gray-300 hover:bg-gray-50'
               }`}
             >
@@ -169,7 +186,11 @@ export default function PlanningFilters({
             </button>
             <button
               type="button"
-              onClick={() => setCurrentView('month')}
+              onClick={() => {
+                setCurrentView('month');
+                // Forcer un refetch des données
+                refetch();
+              }}
               className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
                 currentView === 'month'
                   ? 'bg-blue-50 text-blue-700 border border-blue-300'
@@ -180,28 +201,48 @@ export default function PlanningFilters({
             </button>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-0">
             <button
               onClick={goToPrevious}
-              className="p-2 rounded-full text-gray-500 hover:bg-gray-100"
+              className="p-1 rounded-full text-gray-500 hover:bg-gray-100"
             >
-              <FiChevronLeft className="w-5 h-5" />
+              <FiChevronLeft className="w-4 h-4" />
             </button>
-            
-            <span className="text-sm font-medium text-gray-700 min-w-[150px] text-center">
+            <span className="text-xs font-medium text-gray-700 min-w-[120px] text-center">
               {formatPeriod()}
             </span>
-            
+            <div className="relative">
+              <button
+                onClick={() => setDatePickerOpen(!datePickerOpen)}
+                className="p-1 rounded-full text-gray-500 hover:bg-gray-100"
+              >
+                <FiCalendar className="w-4 h-4" />
+              </button>
+              {datePickerOpen && (
+                <div className="absolute z-100 mt-1 bg-white shadow-lg rounded-md">
+                  <DatePicker
+                    selected={currentDate}
+                    onChange={(date: Date) => {
+                      setCurrentDate(date);
+                      setDatePickerOpen(false);
+                      // Forcer un refetch des données après changement de date
+                      refetch();
+                    }}
+                    inline
+                    onClickOutside={() => setDatePickerOpen(false)}
+                  />
+                </div>
+              )}
+            </div>
             <button
               onClick={goToNext}
-              className="p-2 rounded-full text-gray-500 hover:bg-gray-100"
+              className="p-1 rounded-full text-gray-500 hover:bg-gray-100"
             >
-              <FiChevronRight className="w-5 h-5" />
+              <FiChevronRight className="w-4 h-4" />
             </button>
-            
             <button
               onClick={goToToday}
-              className="ml-2 px-3 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-300 rounded-md hover:bg-blue-100"
+              className="ml-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-300 rounded-md hover:bg-blue-100"
             >
               Aujourd'hui
             </button>
