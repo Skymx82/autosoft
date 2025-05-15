@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import DirectorLayout from '@/components/directeur/layout/DirectorLayout';
 import PlanningFilters from '@/components/directeur/planning/PlanningFilters';
 import PlanningGrid from '@/components/directeur/planning/PlanningGrid';
@@ -51,11 +51,41 @@ export default function PlanningPage() {
     });
   }, [currentView, currentDate]);
   
+  // Utiliser useRef pour mesurer la hauteur des éléments
+  const filterRef = useRef<HTMLDivElement>(null);
+  const [planningHeight, setPlanningHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Fonction pour calculer la hauteur disponible
+    const calculateHeight = () => {
+      if (filterRef.current) {
+        // Hauteur du filtre
+        const filterHeight = filterRef.current.offsetHeight;
+        // Hauteur estimée du layout (header)
+        const layoutHeight = 64; // Valeur estimée du header
+        // Hauteur de la fenêtre
+        const windowHeight = window.innerHeight;
+        // Calcul de la hauteur disponible
+        const availableHeight = windowHeight - filterHeight - layoutHeight - 10; // 10px de marge
+        setPlanningHeight(availableHeight);
+      }
+    };
+    
+    // Calculer la hauteur initiale après le rendu
+    setTimeout(calculateHeight, 0);
+    
+    // Recalculer la hauteur lors du redimensionnement de la fenêtre
+    window.addEventListener('resize', calculateHeight);
+    
+    // Nettoyer l'écouteur d'événement lors du démontage du composant
+    return () => window.removeEventListener('resize', calculateHeight);
+  }, []);
+
   return (
     <DirectorLayout>
-      <div className="flex flex-col h-screen">
+      <div className="flex flex-col h-full">
         {/* Barre de filtres fixe en haut - collée au layout */}
-        <div className="bg-white shadow-sm border-b border-gray-200">
+        <div ref={filterRef} className="bg-white shadow-sm border-b border-gray-200">
           <PlanningFilters 
             currentView={currentView}
             setCurrentView={setCurrentView}
@@ -64,8 +94,8 @@ export default function PlanningPage() {
           />
         </div>
         
-        {/* Contenu principal du planning - prend tout l'espace disponible */}
-        <div className="flex-grow overflow-auto">
+        {/* Contenu principal du planning - sans hauteur maximum */}
+        <div className="overflow-auto">
           {/* Récupérer les données depuis le composant PlanningFilters */}
           <PlanningFilters
             currentView={currentView}
