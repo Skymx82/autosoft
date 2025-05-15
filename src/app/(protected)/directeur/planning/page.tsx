@@ -26,10 +26,18 @@ export default function PlanningPage() {
       // Pas besoin de modifier les dates
     } else if (currentView === 'week') {
       // Pour la vue semaine, on prend du lundi au dimanche
+      // Créer des nouvelles dates pour éviter les effets de bord
       const dayOfWeek = currentDate.getDay(); // 0 = dimanche, 1 = lundi, ...
       const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Ajustement pour commencer le lundi
+      
+      // Utiliser une méthode plus fiable pour calculer les dates
+      // Créer une nouvelle date pour le début de semaine (lundi)
+      newStartDate.setHours(0, 0, 0, 0);
       newStartDate.setDate(currentDate.getDate() - diff);
-      newEndDate.setDate(newStartDate.getDate() + 6);
+      
+      // Créer une nouvelle date pour la fin de semaine (dimanche)
+      newEndDate.setHours(23, 59, 59, 999);
+      newEndDate.setFullYear(newStartDate.getFullYear(), newStartDate.getMonth(), newStartDate.getDate() + 6);
     } else if (currentView === 'month') {
       // Pour la vue mois, on prend tout le mois
       newStartDate.setDate(1);
@@ -45,50 +53,52 @@ export default function PlanningPage() {
   
   return (
     <DirectorLayout>
-      <div className="space-y-6">
-        {/* Barre de filtres */}
-        <PlanningFilters 
-          currentView={currentView}
-          setCurrentView={setCurrentView}
-          currentDate={currentDate}
-          setCurrentDate={setCurrentDate}
-        />
+      <div className="flex flex-col h-screen">
+        {/* Barre de filtres fixe en haut - collée au layout */}
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <PlanningFilters 
+            currentView={currentView}
+            setCurrentView={setCurrentView}
+            currentDate={currentDate}
+            setCurrentDate={setCurrentDate}
+          />
+        </div>
         
-        {/* Contenu principal du planning */}
-        <div className="bg-white shadow-sm rounded-lg p-6">
-          <div className="h-[600px] w-full">
-            {/* Récupérer les données depuis le composant PlanningFilters */}
-            <PlanningFilters
-              currentView={currentView}
-              setCurrentView={setCurrentView}
-              currentDate={currentDate}
-              setCurrentDate={setCurrentDate}
-              render={({ isLoading, error, data }) => {
-                if (isLoading) {
-                  return (
-                    <div className="h-full flex items-center justify-center text-gray-500">
-                      <p>Chargement du planning...</p>
-                    </div>
-                  );
-                }
-                
-                if (error) {
-                  return (
-                    <div className="h-full flex items-center justify-center text-red-500">
-                      <p>Erreur: {error}</p>
-                    </div>
-                  );
-                }
-                
-                if (!data || !data.moniteurs || data.moniteurs.length === 0) {
-                  return (
-                    <div className="h-full flex items-center justify-center text-gray-500">
-                      <p>Aucun moniteur trouvé pour cette période</p>
-                    </div>
-                  );
-                }
-                
+        {/* Contenu principal du planning - prend tout l'espace disponible */}
+        <div className="flex-grow overflow-auto">
+          {/* Récupérer les données depuis le composant PlanningFilters */}
+          <PlanningFilters
+            currentView={currentView}
+            setCurrentView={setCurrentView}
+            currentDate={currentDate}
+            setCurrentDate={setCurrentDate}
+            render={({ isLoading, error, data }) => {
+              if (isLoading) {
                 return (
+                  <div className="h-full flex items-center justify-center text-gray-500">
+                    <p>Chargement du planning...</p>
+                  </div>
+                );
+              }
+              
+              if (error) {
+                return (
+                  <div className="h-full flex items-center justify-center text-red-500">
+                    <p>Erreur: {error}</p>
+                  </div>
+                );
+              }
+              
+              if (!data || !data.moniteurs || data.moniteurs.length === 0) {
+                return (
+                  <div className="h-full flex items-center justify-center text-gray-500">
+                    <p>Aucun moniteur trouvé pour cette période</p>
+                  </div>
+                );
+              }
+              
+              return (
+                <div className="h-full w-full">
                   <PlanningGrid
                     moniteurs={data.moniteurs}
                     leconsByDay={data.leconsByDay}
@@ -97,10 +107,10 @@ export default function PlanningPage() {
                     currentView={currentView}
                     selectedMoniteurId={selectedMoniteurId}
                   />
-                );
-              }}
-            />
-          </div>
+                </div>
+              );
+            }}
+          />
         </div>
       </div>
     </DirectorLayout>

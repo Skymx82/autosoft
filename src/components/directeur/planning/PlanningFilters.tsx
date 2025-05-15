@@ -140,10 +140,10 @@ export default function PlanningFilters({
   }
   
   return (
-    <div className="bg-white shadow-sm rounded-lg p-4">
-      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+    <div className="bg-white shadow-sm p-4 w-full">
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
         {/* Sélecteurs de vue et navigation */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 md:space-x-3 lg:space-x-4 flex-wrap gap-y-2">
           <div className="inline-flex rounded-md shadow-sm">
             <button
               type="button"
@@ -209,8 +209,8 @@ export default function PlanningFilters({
         </div>
         
         {/* Filtres et recherche */}
-        <div className="flex items-center space-x-4">
-          <div className="relative">
+        <div className="flex items-center space-x-2 md:space-x-3 lg:space-x-4 flex-wrap gap-y-2">
+          <div className="relative min-w-[200px] lg:min-w-[250px] xl:min-w-[300px]">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               <FiSearch className="w-4 h-4 text-gray-400" />
             </div>
@@ -221,7 +221,7 @@ export default function PlanningFilters({
             />
           </div>
           
-          <div className="w-48">
+          <div className="w-48 lg:w-56 xl:w-64">
             <select
               className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
               disabled={isLoading}
@@ -243,19 +243,18 @@ export default function PlanningFilters({
           
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="p-2 rounded-full text-gray-500 hover:bg-gray-100"
-            title="Paramètres du planning"
+            className="p-2 rounded-full text-gray-500 hover:bg-gray-100 ml-auto lg:ml-0"
           >
             <FiSettings className="w-5 h-5" />
           </button>
         </div>
       </div>
-      
+
       {/* Panneau de paramètres (affiché conditionnellement) */}
       {showSettings && (
         <div className="mt-4 p-4 border rounded-lg bg-gray-50">
           <h3 className="text-sm font-medium text-gray-700 mb-3">Paramètres du planning</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 Heure de début

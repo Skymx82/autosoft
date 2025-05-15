@@ -98,10 +98,10 @@ const getLeconColor = (type_lecon: string, statut_lecon: string): string => {
   }
 };
 
-// Fonction pour générer les heures de 7h à 22h
+// Fonction pour générer les heures de 8h à 18h par défaut
 const generateHours = () => {
   const hours = [];
-  for (let i = 7; i <= 22; i++) {
+  for (let i = 8; i <= 18; i++) {
     hours.push(`${i}:00`);
   }
   return hours;
@@ -115,9 +115,12 @@ const generateDays = (startDate: Date, endDate: Date, currentView: 'day' | 'week
   }
   
   const days = [];
-  const currentDate = new Date(startDate);
+  // Créer une nouvelle instance pour éviter de modifier la date originale
+  const currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const endDateCopy = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
   
-  while (currentDate <= endDate) {
+  // Ajouter chaque jour jusqu'à la date de fin
+  while (currentDate <= endDateCopy) {
     days.push(new Date(currentDate));
     currentDate.setDate(currentDate.getDate() + 1);
   }
@@ -191,8 +194,10 @@ const formatDayOfWeek = (date: Date) => {
 
 // Fonction pour formater la date en jour/mois
 const formatDayMonth = (date: Date) => {
-  const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'numeric' };
-  return new Intl.DateTimeFormat('fr-FR', options).format(date);
+  // Utiliser une méthode plus fiable pour le formatage des dates
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  return `${day}/${month}`;
 };
 
 export default function PlanningGrid({
@@ -235,16 +240,16 @@ export default function PlanningGrid({
   };
   
   return (
-    <div className="w-full h-full">
-      <div className="w-full h-full overflow-auto">
+    <div className="w-full h-full text-black flex flex-col">
+      <div className="w-full flex-grow overflow-auto">
         {currentView === 'day' ? (
           // Vue Jour - Affichage détaillé avec moniteurs en colonnes
           <div>
             {/* En-tête avec les moniteurs */}
-            <div className="grid border-b bg-gray-50" style={{ gridTemplateColumns: `100px repeat(${filteredMoniteurs.length}, 1fr)` }}>
-              <div className="p-2 font-medium text-gray-500 border-r"></div>
+            <div className="grid border-b bg-blue-50" style={{ gridTemplateColumns: `100px repeat(${filteredMoniteurs.length}, 1fr)` }}>
+              <div className="p-2 font-medium text-gray-600 border-r bg-blue-100"></div>
               {filteredMoniteurs.map((moniteur) => (
-                <div key={moniteur.id_moniteur} className="p-2 text-center border-r font-medium">
+                <div key={moniteur.id_moniteur} className="p-2 text-center border-r font-medium text-blue-800 hover:bg-blue-100 transition-colors">
                   {moniteur.prenom} {moniteur.nom}
                 </div>
               ))}
@@ -253,24 +258,24 @@ export default function PlanningGrid({
             {/* Corps du planning avec les heures et les leçons */}
             <div className="grid" style={{ gridTemplateColumns: `100px repeat(${filteredMoniteurs.length}, 1fr)` }}>
               {/* Colonne des heures */}
-              <div className="border-r">
+              <div className="border-r bg-gray-50">
                 {hours.map((hour, hourIndex) => (
-                  <div key={hourIndex} className="h-[60px] border-b p-1 text-xs text-gray-500">
+                  <div key={hourIndex} className={`h-[60px] border-b p-1 text-xs font-medium ${hourIndex % 2 === 0 ? 'bg-gray-100' : 'bg-gray-50'}`}>
                     {hour}
                   </div>
                 ))}
               </div>
               
               {/* Colonnes des moniteurs avec leurs leçons */}
-              {filteredMoniteurs.map((moniteur) => {
+              {filteredMoniteurs.map((moniteur, moniteurIndex) => {
                 const dateStr = days[0].toISOString().split('T')[0];
                 const leconsDuJour = leconsByDay[dateStr]?.[moniteur.id_moniteur] || [];
                 
                 return (
-                  <div key={moniteur.id_moniteur} className="border-r relative">
+                  <div key={moniteur.id_moniteur} className={`border-r relative ${moniteurIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
                     {/* Lignes d'heures (une par heure) */}
                     {hours.map((hour, hourIndex) => (
-                      <div key={hourIndex} className="h-[60px] border-b"></div>
+                      <div key={hourIndex} className={`h-[60px] border-b ${hourIndex % 2 === 0 ? 'bg-white/80' : 'bg-gray-50/50'}`}></div>
                     ))}
                     
                     {/* Leçons du jour pour ce moniteur */}
@@ -365,9 +370,9 @@ export default function PlanningGrid({
           </div>
         ) : (
           // Vue Mois - Affichage avec jours de la semaine en colonnes et semaines en lignes
-          <div>
+          <div className="h-full flex flex-col">
             {/* Jours de la semaine en en-tête */}
-            <div className="grid border-b bg-gray-50" style={{ gridTemplateColumns: 'minmax(150px, 1fr) repeat(7, 1fr)' }}>
+            <div className="grid border-b bg-gray-50 sticky top-0 z-10" style={{ gridTemplateColumns: 'minmax(150px, 1fr) repeat(7, 1fr)' }}>
               <div className="p-2 font-medium text-gray-500 border-r">Semaines</div>
               {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].map((jour, index) => (
                 <div key={index} className="p-2 text-center border-r font-medium">
@@ -376,7 +381,8 @@ export default function PlanningGrid({
               ))}
             </div>
             
-            {/* Organiser les jours par semaines */}
+            {/* Organiser les jours par semaines - prend tout l'espace disponible */}
+            <div className="flex-grow overflow-y-auto">
             {organizeWeeks(days).map((week, weekIndex) => {
               // Déterminer les dates de début et de fin de la semaine
               const startOfWeek = week[0];
@@ -440,6 +446,7 @@ export default function PlanningGrid({
                 </div>
               );
             })}
+            </div>
           </div>
         )}
       </div>

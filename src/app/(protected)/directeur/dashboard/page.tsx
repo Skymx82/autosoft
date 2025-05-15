@@ -9,7 +9,7 @@ import ResourceOccupation from '@/components/directeur/dashboard/ResourceOccupat
 export default function DirecteurDashboard() {
   return (
     <DirectorLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 pt-6 max-w-7xl mx-auto sm:px-6 lg:px-8">
         {/* En-tête de la page */}
         <div className="bg-white shadow-sm rounded-lg p-6">
           <h1 className="text-2xl font-bold text-gray-800">Tableau de bord</h1>
