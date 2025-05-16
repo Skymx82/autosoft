@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { FiCalendar, FiChevronLeft, FiChevronRight, FiSettings, FiSearch, FiUser } from 'react-icons/fi';
+import { FiCalendar, FiChevronLeft, FiChevronRight, FiSettings, FiSearch, FiUser, FiX } from 'react-icons/fi';
 import { usePlanningData } from '@/hooks/Directeur/planning/usePlanningData';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { useRouter } from 'next/navigation';
+import EleveLeconsSummary from './EleveLeconsSummary';
 
 interface PlanningFiltersProps {
   currentView: 'day' | 'week' | 'month';
@@ -25,12 +27,21 @@ export default function PlanningFilters({
   setSelectedMoniteur,
   render
 }: PlanningFiltersProps) {
+  const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   // Utiliser la valeur passée en props ou une valeur par défaut
   const [localSelectedMoniteur, setLocalSelectedMoniteur] = useState<string>(selectedMoniteur || 'all');
+  
+  // État pour les suggestions d'élèves
+  const [suggestions, setSuggestions] = useState<Array<{id_eleve: number, nom: string, prenom: string}>>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  // États pour le modal et l'élève sélectionné
+  const [showModal, setShowModal] = useState(false);
+  const [selectedEleve, setSelectedEleve] = useState<{id_eleve: number, nom: string, prenom: string} | null>(null);
   
   // Calculer les dates de début et de fin en fonction de la vue et de la date actuelle
   const [dateRange, setDateRange] = useState<{startDate: string, endDate: string}>({startDate: '', endDate: ''});
@@ -278,7 +289,7 @@ export default function PlanningFilters({
         </div>
         
         {/* Filtres et recherche */}
-        <div className="flex items-center space-x-2 md:space-x-3 lg:space-x-4 flex-wrap gap-y-2">
+        <div className="flex items-center space-x-2 md:space-x-3 lg:space-x-4 flex-wrap gap-y-2 z-40 text-black">
           <div className="relative min-w-[200px] lg:min-w-[250px] xl:min-w-[300px]">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               <FiSearch className="w-4 h-4 text-gray-400" />
@@ -289,11 +300,77 @@ export default function PlanningFilters({
               placeholder="Rechercher un élève..."
               value={searchQuery}
               onChange={(e) => {
-                setSearchQuery(e.target.value);
-                // Le refetch sera déclenché automatiquement après le délai
+                const value = e.target.value;
+                setSearchQuery(value);
+                
+                // Générer des suggestions si l'utilisateur tape quelque chose
+                if (value.trim() !== '') {
+                  const valueLower = value.toLowerCase();
+                  const filteredSuggestions = data?.eleves?.filter(eleve => 
+                    (eleve.nom && eleve.nom.toLowerCase().includes(valueLower)) ||
+                    (eleve.prenom && eleve.prenom.toLowerCase().includes(valueLower))
+                  ) || [];
+                  
+                  // Trier les suggestions par pertinence (commence par > contient)
+                  const sortedSuggestions = filteredSuggestions.sort((a, b) => {
+                    const aFullName = `${a.prenom} ${a.nom}`.toLowerCase();
+                    const bFullName = `${b.prenom} ${b.nom}`.toLowerCase();
+                    
+                    // Priorité aux noms qui commencent par la recherche
+                    const aStartsWith = aFullName.startsWith(valueLower) ? 0 : 1;
+                    const bStartsWith = bFullName.startsWith(valueLower) ? 0 : 1;
+                    
+                    if (aStartsWith !== bStartsWith) {
+                      return aStartsWith - bStartsWith;
+                    }
+                    
+                    // Ensuite, trier par ordre alphabétique
+                    return aFullName.localeCompare(bFullName);
+                  });
+                  
+                  // Ne prendre que le premier résultat (le plus pertinent)
+                  setSuggestions(sortedSuggestions.length > 0 ? [sortedSuggestions[0]] : []);
+                  setShowSuggestions(sortedSuggestions.length > 0);
+                } else {
+                  setSuggestions([]);
+                  setShowSuggestions(false);
+                }
+              }}
+              onFocus={() => {
+                if (searchQuery.trim() !== '' && suggestions.length > 0) {
+                  setShowSuggestions(true);
+                }
+              }}
+              onBlur={() => {
+                // Délai pour permettre la sélection d'une suggestion avant de fermer
+                setTimeout(() => setShowSuggestions(false), 200);
               }}
             />
+            
+            {/* Liste des suggestions */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                {suggestions.map((eleve) => (
+                  <div 
+                    key={eleve.id_eleve}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => {
+                      setSearchQuery(`${eleve.prenom} ${eleve.nom}`);
+                      setShowSuggestions(false);
+                      
+                      // Sélectionner l'élève et afficher le modal
+                      setSelectedEleve(eleve);
+                      setShowModal(true);
+                    }}
+                  >
+                    {eleve.prenom} {eleve.nom}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+          
+          {/* Le modal a été remplacé par une page séparée */}
           
           <div className="w-48 lg:w-56 xl:w-64">
             <select
@@ -381,6 +458,28 @@ export default function PlanningFilters({
                 />
                 <span className="ml-2 text-sm text-gray-700">Afficher le dimanche</span>
               </label>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal pour afficher les détails de l'élève */}
+      {showModal && selectedEleve && (
+        <div className="fixed inset-0 z-50 overflow-auto backdrop-blur-sm bg-transparent flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-auto">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Détails des leçons de {selectedEleve.prenom} {selectedEleve.nom}
+              </h2>
+              <button 
+                onClick={() => setShowModal(false)}
+                className="text-gray-500 hover:text-gray-700 focus:outline-none"
+              >
+                <FiX className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-4">
+              <EleveLeconsSummary id_eleve={selectedEleve.id_eleve} />
             </div>
           </div>
         </div>
