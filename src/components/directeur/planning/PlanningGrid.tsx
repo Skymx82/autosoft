@@ -1,6 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import JourVu from './vues/JourVu';
+import SemaineVu from './vues/SemaineVu';
+import MoisVu from './vues/MoisVu';
 // Fonction utilitaire pour formater une heure au format HH:MM:SS en HH:MM
 const formatTimeToHHMM = (time: string): string => {
   // Si le format est déjà HH:MM, on le retourne tel quel
@@ -40,6 +43,9 @@ interface Lecon {
   id_eleve: number;
   eleves: Eleve | null;
 }
+
+// Exporter les types pour qu'ils soient utilisables par les autres composants
+export type { Lecon, Moniteur, Eleve };
 
 interface LeconsByDay {
   [date: string]: {
@@ -243,314 +249,32 @@ export default function PlanningGrid({
     <div className="w-full h-full text-black">
       <div className="w-full h-full overflow-auto">
         {currentView === 'day' ? (
-          // Vue Jour - Affichage détaillé avec moniteurs en colonnes
-          <div className="h-full">
-            {/* En-tête avec les moniteurs */}
-            <div className="grid border-b bg-blue-50" style={{ gridTemplateColumns: `80px repeat(${filteredMoniteurs.length}, minmax(120px, 1fr))` }}>
-              <div className="p-2 font-medium text-gray-600 border-r bg-blue-100"></div>
-              {filteredMoniteurs.map((moniteur) => (
-                <div key={moniteur.id_moniteur} className="p-2 text-center border-r font-medium text-blue-800 hover:bg-blue-100 transition-colors">
-                  {moniteur.prenom} {moniteur.nom}
-                </div>
-              ))}
-            </div>
-            
-            {/* Corps du planning avec les heures et les leçons */}
-            <div className="grid" style={{ gridTemplateColumns: `80px repeat(${filteredMoniteurs.length}, minmax(120px, 1fr))` }}>
-              {/* Colonne des heures */}
-              <div className="border-r border-b bg-gray-50">
-                {hours.map((hour, hourIndex) => (
-                  <div key={hourIndex} className={`h-[50px] border-b p-1 text-xs font-medium ${hourIndex % 2 === 0 ? 'bg-gray-100' : 'bg-gray-50'}`}>
-                    {hour}
-                  </div>
-                ))}
-              </div>
-              
-              {/* Colonnes des moniteurs avec leurs leçons */}
-              {filteredMoniteurs.map((moniteur, moniteurIndex) => {
-                // Formatage manuel de la date au format YYYY-MM-DD
-                const day = days[0];
-                const year = day.getFullYear();
-                const month = String(day.getMonth() + 1).padStart(2, '0');
-                const date = String(day.getDate()).padStart(2, '0');
-                const dateStr = `${year}-${month}-${date}`;
-                const leconsDuJour = leconsByDay[dateStr]?.[moniteur.id_moniteur] || [];
-                
-                return (
-                  <div key={moniteur.id_moniteur} className={`border-r border-b relative ${moniteurIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
-                    {/* Lignes d'heures (une par heure) */}
-                    {hours.map((hour, hourIndex) => (
-                      <div key={hourIndex} className={`h-[50px] border-b ${hourIndex % 2 === 0 ? 'bg-white/80' : 'bg-gray-50/50'}`}></div>
-                    ))}
-                    
-                    {/* Leçons du jour pour ce moniteur */}
-                    {leconsDuJour.map((lecon, leconIndex) => {
-                      const position = calculateLeconPosition(lecon.heure_debut, lecon.heure_fin);
-                      const colorClass = getLeconColor(lecon.type_lecon, lecon.statut_lecon);
-                      
-                      return (
-                        <div
-                          key={leconIndex}
-                          className={`absolute left-0 right-0 mx-1 p-1 rounded border ${colorClass} text-xs overflow-hidden shadow-sm cursor-pointer hover:shadow transition-shadow`}
-                          style={position}
-                          onClick={() => setSelectedLecon(lecon)}
-                        >
-                          <div className="font-medium truncate">
-                            {formatTimeToHHMM(lecon.heure_debut)} - {formatTimeToHHMM(lecon.heure_fin)}
-                          </div>
-                          {lecon.eleves && (
-                            <div className="truncate">{lecon.eleves.prenom} {lecon.eleves.nom}</div>
-                          )}
-                          <div className="truncate text-[10px] text-gray-600">{lecon.type_lecon}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          // Vue Jour - Utilisation du composant JourVu
+          <JourVu 
+            moniteurs={filteredMoniteurs}
+            leconsByDay={leconsByDay}
+            selectedDate={days[0]}
+            hours={hours}
+          />
         ) : currentView === 'week' ? (
-          // Vue Semaine - Affichage avec jours en colonnes
-          <div className="h-full">
-            {/* En-tête avec les jours */}
-            <div className="grid border-b bg-gray-50" style={{ gridTemplateColumns: `80px repeat(${days.length}, minmax(120px, 1fr))` }}>
-              <div className="p-2 font-medium text-gray-500 border-r"></div>
-              {days.map((day, index) => (
-                <div key={index} className="p-2 text-center border-r">
-                  <div className="font-medium capitalize">{formatDayOfWeek(day)}</div>
-                  <div className="text-sm text-gray-500">{formatDayMonth(day)}</div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Corps du planning avec les heures */}
-            <div className="grid" style={{ gridTemplateColumns: `80px repeat(${days.length}, minmax(120px, 1fr))` }}>
-              {/* Colonne des heures */}
-              <div className="border-r border-b">
-                {hours.map((hour, hourIndex) => (
-                  <div key={hourIndex} className="h-[50px] border-b p-1 text-xs text-gray-500">
-                    {hour}
-                  </div>
-                ))}
-              </div>
-              
-              {/* Colonnes des jours */}
-              {days.map((day, dayIndex) => {
-                // Formatage manuel de la date au format YYYY-MM-DD pour correspondre au format de la base de données
-                const year = day.getFullYear();
-                const month = String(day.getMonth() + 1).padStart(2, '0');
-                const date = String(day.getDate()).padStart(2, '0');
-                const dateStr = `${year}-${month}-${date}`;
-                
-                return (
-                  <div key={dayIndex} className="border-r border-b relative">
-                    {/* Lignes d'heures (une par heure) */}
-                    {hours.map((hour, hourIndex) => (
-                      <div key={hourIndex} className="h-[50px] border-b"></div>
-                    ))}
-                    
-                    {/* Leçons pour tous les moniteurs ce jour-là avec gestion des chevauchements */}
-                    {(() => {
-                      // Récupérer toutes les leçons de tous les moniteurs pour ce jour
-                      const toutesLesLeconsDuJour: Array<{lecon: Lecon, moniteur: Moniteur, color: string}> = [];
-                      
-                      filteredMoniteurs.forEach(moniteur => {
-                        const leconsDuMoniteur = leconsByDay[dateStr]?.[moniteur.id_moniteur] || [];
-                        leconsDuMoniteur.forEach(lecon => {
-                          toutesLesLeconsDuJour.push({
-                            lecon,
-                            moniteur,
-                            color: getMoniteurColor(moniteur.id_moniteur)
-                          });
-                        });
-                      });
-                      
-                      // Organiser les leçons par créneau horaire pour détecter les chevauchements
-                      const leconsByCreneau: Record<string, Array<{lecon: Lecon, moniteur: Moniteur, color: string}>> = {};
-                      
-                      toutesLesLeconsDuJour.forEach(item => {
-                        const key = `${item.lecon.heure_debut}-${item.lecon.heure_fin}`;
-                        if (!leconsByCreneau[key]) {
-                          leconsByCreneau[key] = [];
-                        }
-                        leconsByCreneau[key].push(item);
-                      });
-                      
-                      // Rendu des leçons avec gestion des chevauchements
-                      return Object.entries(leconsByCreneau).flatMap(([creneau, items]) => {
-                        return items.map((item, index) => {
-                          const { lecon, moniteur, color } = item;
-                          const position = calculateLeconPosition(lecon.heure_debut, lecon.heure_fin);
-                          const totalItems = items.length;
-                          
-                          // Calculer la largeur et la position horizontale en fonction du nombre d'items
-                          const width = `calc((100% / ${totalItems}) - 4px)`;
-                          const left = `calc(${index} * (100% / ${totalItems}))`;
-                          
-                          return (
-                            <div
-                              key={`${moniteur.id_moniteur}-${lecon.id_planning}`}
-                              className={`absolute p-1 rounded border ${color} text-xs overflow-hidden shadow-sm cursor-pointer hover:shadow transition-shadow`}
-                              style={{
-                                ...position,
-                                width,
-                                left,
-                                right: 'auto'
-                              }}
-                              onClick={() => setSelectedLecon(lecon)}
-                            >
-                              <div className="font-medium truncate">
-                                {moniteur.prenom} {moniteur.nom.charAt(0)}.
-                              </div>
-                              {lecon.eleves && (
-                                <div className="truncate">{lecon.eleves.prenom} {lecon.eleves.nom}</div>
-                              )}
-                              <div className="truncate text-[10px] text-gray-600">{lecon.type_lecon}</div>
-                            </div>
-                          );
-                        });
-                      });
-                    })()}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          // Vue Semaine - Utilisation du composant SemaineVu
+          <SemaineVu 
+            moniteurs={filteredMoniteurs}
+            leconsByDay={leconsByDay}
+            days={days}
+            hours={hours}
+          />
         ) : (
-          // Vue Mois - Affichage avec jours de la semaine en colonnes et semaines en lignes
-          <div className="h-full flex flex-col">
-            {/* Jours de la semaine en en-tête */}
-            <div className="grid border-b bg-gray-50 sticky top-0 z-10" style={{ gridTemplateColumns: 'minmax(150px, 1fr) repeat(7, 1fr)' }}>
-              <div className="p-2 font-medium text-gray-500 border-r">Semaines</div>
-              {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].map((jour, index) => (
-                <div key={index} className="p-2 text-center border-r font-medium">
-                  {jour}
-                </div>
-              ))}
-            </div>
-            
-            {/* Organiser les jours par semaines - prend tout l'espace disponible */}
-            <div className="flex-grow overflow-y-auto">
-            {organizeWeeks(days).map((week, weekIndex) => {
-              // Déterminer les dates de début et de fin de la semaine
-              const startOfWeek = week[0];
-              const endOfWeek = week[week.length - 1];
-              const weekLabel = `Semaine du ${startOfWeek.getDate()}/${startOfWeek.getMonth() + 1} au ${endOfWeek.getDate()}/${endOfWeek.getMonth() + 1}`;
-              
-              return (
-                <div key={weekIndex} className="grid border-b" style={{ gridTemplateColumns: 'minmax(150px, 1fr) repeat(7, 1fr)' }}>
-                  {/* Label de la semaine */}
-                  <div className="p-2 font-medium border-r">
-                    {weekLabel}
-                  </div>
-                  
-                  {/* Jours de la semaine */}
-                  {week.map((day, dayIndex) => {
-                    // Formatage manuel de la date au format YYYY-MM-DD
-                    const year = day.getFullYear();
-                    const month = String(day.getMonth() + 1).padStart(2, '0');
-                    const date = String(day.getDate()).padStart(2, '0');
-                    const dateStr = `${year}-${month}-${date}`;
-                    
-                    // Vérifier si le jour fait partie du mois sélectionné
-                    const isInSelectedMonth = days.some(d => {
-                      const dYear = d.getFullYear();
-                      const dMonth = String(d.getMonth() + 1).padStart(2, '0');
-                      const dDate = String(d.getDate()).padStart(2, '0');
-                      return `${dYear}-${dMonth}-${dDate}` === dateStr;
-                    });
-                    
-                    return (
-                      <div 
-                        key={dayIndex} 
-                        className={`border-r p-2 ${isInSelectedMonth ? '' : 'bg-gray-100 opacity-50'}`}
-                      >
-                        {/* Date du jour */}
-                        <div className="text-center mb-2">
-                          <div className="text-sm font-medium">{day.getDate()}</div>
-                        </div>
-                        
-                        {/* Leçons du jour pour tous les moniteurs */}
-                        <div className="flex flex-wrap gap-1">
-                          {filteredMoniteurs.map((moniteur) => {
-                            const leconsDuJour = leconsByDay[dateStr]?.[moniteur.id_moniteur] || [];
-                            
-                            // Ne rien afficher si pas de leçons pour ce moniteur ce jour-là
-                            if (leconsDuJour.length === 0) return null;
-                            
-                            const moniteurColor = getMoniteurColor(moniteur.id_moniteur);
-                            const colorStyle = moniteurColor.split(' ')[0];
-                            const nbLecons = leconsDuJour.length;
-                            
-                            // Créer un résumé des leçons pour le tooltip
-                            const leconsSummary = leconsDuJour.map(lecon => 
-                              `${formatTimeToHHMM(lecon.heure_debut)} - ${formatTimeToHHMM(lecon.heure_fin)}${lecon.eleves ? ` avec ${lecon.eleves.prenom} ${lecon.eleves.nom}` : ''}`
-                            ).join('\n');
-                            
-                            return (
-                              <div 
-                                key={moniteur.id_moniteur} 
-                                className={`w-6 h-6 rounded-full ${colorStyle} cursor-pointer flex items-center justify-center text-xs font-medium`}
-                                onClick={() => setSelectedLecon(leconsDuJour[0])}
-                                title={`${moniteur.prenom} ${moniteur.nom} - ${nbLecons} leçon(s):\n${leconsSummary}`}
-                              >
-                                {nbLecons > 1 ? nbLecons : ''}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
-            </div>
-          </div>
+          // Vue Mois - Utilisation du composant MoisVu
+          <MoisVu 
+            moniteurs={filteredMoniteurs}
+            leconsByDay={leconsByDay}
+            days={days}
+          />
         )}
       </div>
       
-      {/* Modal pour afficher les détails d'une leçon */}
-      {selectedLecon && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50" onClick={() => setSelectedLecon(null)}>
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-medium mb-4">Détails de la leçon</h3>
-            
-            <div className="space-y-3">
-              <div>
-                <span className="text-gray-500">Date:</span> {new Date(selectedLecon.date).toLocaleDateString('fr-FR')}
-              </div>
-              <div>
-                <span className="text-gray-500">Horaire:</span> {formatTimeToHHMM(selectedLecon.heure_debut)} - {formatTimeToHHMM(selectedLecon.heure_fin)}
-              </div>
-              <div>
-                <span className="text-gray-500">Type:</span> {selectedLecon.type_lecon}
-              </div>
-              <div>
-                <span className="text-gray-500">Statut:</span> {selectedLecon.statut_lecon}
-              </div>
-              {selectedLecon.eleves && (
-                <div>
-                  <span className="text-gray-500">Élève:</span> {selectedLecon.eleves.prenom} {selectedLecon.eleves.nom}
-                  {selectedLecon.eleves.tel && (
-                    <div className="text-sm text-gray-500">Tél: {selectedLecon.eleves.tel}</div>
-                  )}
-                </div>
-              )}
-            </div>
-            
-            <div className="mt-6 flex justify-end">
-              <button
-                className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
-                onClick={() => setSelectedLecon(null)}
-              >
-                Fermer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Le modal est maintenant géré dans chaque composant de vue */}
     </div>
   );
 }
