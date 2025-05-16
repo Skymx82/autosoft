@@ -167,10 +167,17 @@ export default function DirectorLayout({ children }: DirectorLayoutProps) {
                   <div className="text-base font-medium text-gray-800">{userData?.email || 'Utilisateur'}</div>
                   <div className="text-sm font-medium text-gray-500 capitalize">{userData?.role || 'Directeur'}</div>
                 </div>
-                <button className="ml-auto flex-shrink-0 p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                  <span className="sr-only">Voir les notifications</span>
-                  <FiBell className="h-6 w-6" />
-                </button>
+                <div className="ml-auto flex items-center space-x-3">
+                  {/* Sélecteur de bureau sur mobile */}
+                  <div className="flex-shrink-0">
+                    <BureauSelector />
+                  </div>
+                  {/* Notifications */}
+                  <button className="flex-shrink-0 p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <span className="sr-only">Voir les notifications</span>
+                    <FiBell className="h-6 w-6" />
+                  </button>
+                </div>
               </div>
               <div className="mt-3 space-y-1">
                 <Link
