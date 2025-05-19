@@ -85,93 +85,111 @@ export default function MoisVu({ moniteurs, leconsByDay, days }: MoisVuProps) {
   const [selectedLecon, setSelectedLecon] = useState<Lecon | null>(null);
   
   return (
-    <div className="h-full flex flex-col">
-      {/* Jours de la semaine en en-tête */}
-      <div className="grid border-b bg-gray-50 sticky top-0 z-10" style={{ gridTemplateColumns: 'minmax(150px, 1fr) repeat(7, 1fr)' }}>
-        <div className="p-2 font-medium text-gray-500 border-r">Semaines</div>
-        {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].map((jour, index) => (
-          <div key={index} className="p-2 text-center border-r font-medium">
-            {jour}
-          </div>
-        ))}
-      </div>
-      
-      {/* Organiser les jours par semaines - prend tout l'espace disponible */}
-      <div className="flex-grow overflow-y-auto">
-        {organizeWeeks(days).map((week, weekIndex) => {
-          // Déterminer les dates de début et de fin de la semaine
-          const startOfWeek = week[0];
-          const endOfWeek = week[week.length - 1];
-          const weekLabel = `Semaine du ${startOfWeek.getDate()}/${startOfWeek.getMonth() + 1} au ${endOfWeek.getDate()}/${endOfWeek.getMonth() + 1}`;
-          
-          return (
-            <div key={weekIndex} className="grid border-b" style={{ gridTemplateColumns: 'minmax(150px, 1fr) repeat(7, 1fr)' }}>
-              {/* Label de la semaine */}
-              <div className="p-2 font-medium border-r">
-                {weekLabel}
-              </div>
-              
-              {/* Jours de la semaine */}
-              {week.map((day, dayIndex) => {
-                // Formatage manuel de la date au format YYYY-MM-DD
-                const year = day.getFullYear();
-                const month = String(day.getMonth() + 1).padStart(2, '0');
-                const date = String(day.getDate()).padStart(2, '0');
-                const dateStr = `${year}-${month}-${date}`;
-                
-                // Vérifier si le jour fait partie du mois sélectionné
-                const isInSelectedMonth = days.some(d => {
-                  const dYear = d.getFullYear();
-                  const dMonth = String(d.getMonth() + 1).padStart(2, '0');
-                  const dDate = String(d.getDate()).padStart(2, '0');
-                  return `${dYear}-${dMonth}-${dDate}` === dateStr;
-                });
-                
-                return (
-                  <div 
-                    key={dayIndex} 
-                    className={`border-r p-2 ${isInSelectedMonth ? '' : 'bg-gray-100 opacity-50'}`}
-                  >
-                    {/* Date du jour */}
-                    <div className="text-center mb-2">
-                      <div className="text-sm font-medium">{day.getDate()}</div>
-                    </div>
-                    
-                    {/* Leçons du jour pour tous les moniteurs */}
-                    <div className="flex flex-wrap gap-1">
-                      {moniteurs.map((moniteur) => {
-                        const leconsDuJour = leconsByDay[dateStr]?.[moniteur.id_moniteur] || [];
-                        
-                        // Ne rien afficher si pas de leçons pour ce moniteur ce jour-là
-                        if (leconsDuJour.length === 0) return null;
-                        
-                        const moniteurColor = getMoniteurColor(moniteur.id_moniteur);
-                        const colorStyle = moniteurColor.split(' ')[0];
-                        const nbLecons = leconsDuJour.length;
-                        
-                        // Créer un résumé des leçons pour le tooltip
-                        const leconsSummary = leconsDuJour.map(lecon => 
-                          `${formatTimeToHHMM(lecon.heure_debut)} - ${formatTimeToHHMM(lecon.heure_fin)}${lecon.eleves ? ` avec ${lecon.eleves.prenom} ${lecon.eleves.nom}` : ''}`
-                        ).join('\n');
-                        
-                        return (
-                          <div 
-                            key={moniteur.id_moniteur} 
-                            className={`w-6 h-6 rounded-full ${colorStyle} cursor-pointer flex items-center justify-center text-xs font-medium`}
-                            onClick={() => setSelectedLecon(leconsDuJour[0])}
-                            title={`${moniteur.prenom} ${moniteur.nom} - ${nbLecons} leçon(s):\n${leconsSummary}`}
-                          >
-                            {nbLecons > 1 ? nbLecons : ''}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Conteneur principal avec défilement synchronisé */}
+      <div className="flex flex-col h-full">
+        {/* Conteneur avec défilement horizontal synchronisé */}
+        <div className="overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          {/* Table layout pour assurer l'alignement entre l'en-tête et le contenu - min-width pour garantir le défilement */}
+          <div className="min-w-[800px] md:min-w-full">
+            {/* Jours de la semaine en en-tête - maintenant dans le même conteneur de défilement */}
+            <div className="grid border-b bg-gray-50 sticky top-0 z-10" 
+              style={{ 
+                gridTemplateColumns: 'minmax(80px, 0.8fr) repeat(7, minmax(60px, 1fr))',
+              }}>
+              <div className="p-2 font-medium text-gray-500 border-r text-xs sm:text-sm">Semaines</div>
+              {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].map((jour, index) => (
+                <div key={index} className="p-2 text-center border-r font-medium">
+                  {/* Sur mobile, n'afficher que la première lettre, sur tablette le format court, sur PC le format complet */}
+                  <span className="hidden md:inline">{jour}</span>
+                  <span className="hidden sm:inline md:hidden">{jour.substring(0, 3)}</span>
+                  <span className="sm:hidden">{jour.charAt(0)}</span>
+                </div>
+              ))}
             </div>
-          );
-        })}
+            
+            {/* Organiser les jours par semaines - dans le même conteneur de défilement */}
+            <div className="flex-grow overflow-y-auto">
+            {organizeWeeks(days).map((week, weekIndex) => {
+              // Déterminer les dates de début et de fin de la semaine
+              const startOfWeek = week[0];
+              const endOfWeek = week[week.length - 1];
+              const weekLabel = `Semaine du ${startOfWeek.getDate()}/${startOfWeek.getMonth() + 1} au ${endOfWeek.getDate()}/${endOfWeek.getMonth() + 1}`;
+              
+              return (
+                <div key={weekIndex} className="grid border-b" 
+                  style={{ 
+                    gridTemplateColumns: 'minmax(80px, 0.8fr) repeat(7, minmax(60px, 1fr))',
+                  }}>
+                  {/* Label de la semaine */}
+                  <div className="p-2 font-medium border-r text-xs sm:text-sm">
+                    {weekLabel}
+                  </div>
+                  
+                  {/* Jours de la semaine */}
+                  {week.map((day, dayIndex) => {
+                    // Formatage manuel de la date au format YYYY-MM-DD
+                    const year = day.getFullYear();
+                    const month = String(day.getMonth() + 1).padStart(2, '0');
+                    const date = String(day.getDate()).padStart(2, '0');
+                    const dateStr = `${year}-${month}-${date}`;
+                    
+                    // Vérifier si le jour fait partie du mois sélectionné
+                    const isInSelectedMonth = days.some(d => {
+                      const dYear = d.getFullYear();
+                      const dMonth = String(d.getMonth() + 1).padStart(2, '0');
+                      const dDate = String(d.getDate()).padStart(2, '0');
+                      return `${dYear}-${dMonth}-${dDate}` === dateStr;
+                    });
+                    
+                    return (
+                      <div 
+                        key={dayIndex} 
+                        className={`border-r p-2 min-h-[80px] ${isInSelectedMonth ? '' : 'bg-gray-200 opacity-40'}`}
+                      >
+                        {/* Date du jour */}
+                        <div className="text-center mb-2">
+                          <div className="text-xs sm:text-sm font-medium">{day.getDate()}</div>
+                        </div>
+                        
+                        {/* Leçons du jour pour tous les moniteurs */}
+                        <div className="flex flex-wrap gap-1 justify-center">
+                          {moniteurs.map((moniteur) => {
+                            const leconsDuJour = leconsByDay[dateStr]?.[moniteur.id_moniteur] || [];
+                            
+                            // Ne rien afficher si pas de leçons pour ce moniteur ce jour-là
+                            if (leconsDuJour.length === 0) return null;
+                            
+                            const moniteurColor = getMoniteurColor(moniteur.id_moniteur);
+                            const colorStyle = moniteurColor.split(' ')[0];
+                            const nbLecons = leconsDuJour.length;
+                            
+                            // Créer un résumé des leçons pour le tooltip
+                            const leconsSummary = leconsDuJour.map(lecon => 
+                              `${formatTimeToHHMM(lecon.heure_debut)} - ${formatTimeToHHMM(lecon.heure_fin)}${lecon.eleves ? ` avec ${lecon.eleves.prenom} ${lecon.eleves.nom}` : ''}`
+                            ).join('\n');
+                            
+                            return (
+                              <div 
+                                key={moniteur.id_moniteur} 
+                                className={`w-6 h-6 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full ${colorStyle} cursor-pointer flex items-center justify-center text-xs font-medium shadow-sm`}
+                                onClick={() => setSelectedLecon(leconsDuJour[0])}
+                                title={`${moniteur.prenom} ${moniteur.nom} - ${nbLecons} leçon(s):\n${leconsSummary}`}
+                              >
+                                {nbLecons > 1 ? nbLecons : ''}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+            </div>
+          </div>
+        </div>
       </div>
       
       {/* Modal pour afficher les détails d'une leçon */}
