@@ -3,10 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { FiCalendar, FiChevronLeft, FiChevronRight, FiSettings, FiSearch, FiUser, FiX } from 'react-icons/fi';
 import { usePlanningData } from '@/hooks/Directeur/planning/usePlanningData';
-import DatePicker from 'react-datepicker';
+import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useRouter } from 'next/navigation';
 import EleveLeconsSummary from './EleveLeconsSummary';
+import { fr } from 'date-fns/locale';
 
 interface PlanningFiltersProps {
   currentView: 'day' | 'week' | 'month';
@@ -31,6 +32,8 @@ export default function PlanningFilters({
   setShowSunday: externalSetShowSunday,
   render
 }: PlanningFiltersProps) {
+  // Enregistrer la locale française pour le DatePicker
+  registerLocale('fr', fr);
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
@@ -287,6 +290,9 @@ export default function PlanningFilters({
                       }
                     }}
                     inline
+                    locale="fr"
+                    calendarStartDay={1} // 1 = lundi (0 = dimanche par défaut)
+                    dateFormat="dd/MM/yyyy"
                     onClickOutside={() => setDatePickerOpen(false)}
                   />
                 </div>

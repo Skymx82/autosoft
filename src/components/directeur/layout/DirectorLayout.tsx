@@ -104,7 +104,7 @@ export default function DirectorLayout({ children }: DirectorLayoutProps) {
                   </button>
                 </div>
                 {userMenuOpen && (
-                  <div className="origin-top-right absolute right-0 mt-2 w-64 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                  <div className="origin-top-right absolute right-0 mt-2 w-64 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
                     <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-200">
                       <p className="font-medium truncate">{userData?.email || 'Utilisateur'}</p>
                       <p className="text-xs text-gray-500 capitalize">{userData?.role || 'Directeur'}</p>
