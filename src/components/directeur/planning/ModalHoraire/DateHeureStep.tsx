@@ -18,6 +18,15 @@ interface DateHeureStepProps {
   setDuree: (duree: string) => void;
 }
 
+// Durées disponibles en minutes
+const ALL_DURATIONS = [
+  { value: '30', label: '30 minutes' },
+  { value: '45', label: '45 minutes' },
+  { value: '60', label: '1 heure' },
+  { value: '90', label: '1 heure 30' },
+  { value: '120', label: '2 heures' }
+];
+
 export default function DateHeureStep({
   date,
   setDate,
@@ -31,6 +40,9 @@ export default function DateHeureStep({
   
   // État pour stocker le créneau sélectionné
   const [selectedSlot, setSelectedSlot] = useState<string>('');
+  
+  // État pour stocker les durées disponibles
+  const [availableDurations, setAvailableDurations] = useState(ALL_DURATIONS);
   
   // Récupérer les informations utilisateur depuis le localStorage
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -68,8 +80,70 @@ export default function DateHeureStep({
     if (selectedSlot) {
       const [hours, minutes] = selectedSlot.split(':').map(Number);
       setHeureDebut(dayjs().hour(hours).minute(minutes));
+      
+      // Calculer les durées disponibles en fonction du créneau sélectionné
+      if (availableSlotsData) {
+        calculateAvailableDurations(selectedSlot, availableSlotsData.availableSlots);
+      }
     }
-  }, [selectedSlot, setHeureDebut]);
+  }, [selectedSlot, setHeureDebut, availableSlotsData]);
+  
+  // Calculer les durées disponibles en fonction du créneau sélectionné et des créneaux disponibles
+  const calculateAvailableDurations = (startTime: string, availableSlots: any[]) => {
+    if (!startTime || !availableSlots || availableSlots.length === 0) {
+      setAvailableDurations(ALL_DURATIONS);
+      return;
+    }
+    
+    // Convertir l'heure de début en minutes depuis minuit
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const startTimeInMinutes = startHours * 60 + startMinutes;
+    
+    // Trouver les créneaux disponibles après l'heure de début
+    const laterSlots = availableSlots
+      .map(slot => {
+        const [slotHours, slotMinutes] = slot.time.split(':').map(Number);
+        return {
+          time: slot.time,
+          timeInMinutes: slotHours * 60 + slotMinutes,
+          availableTeachers: slot.availableTeachers
+        };
+      })
+      .filter(slot => slot.timeInMinutes > startTimeInMinutes)
+      .sort((a, b) => a.timeInMinutes - b.timeInMinutes);
+    
+    // Si aucun créneau ultérieur, limiter à 30 minutes
+    if (laterSlots.length === 0) {
+      setAvailableDurations([ALL_DURATIONS[0]]);
+      setDuree('30'); // Forcer la durée à 30 minutes
+      return;
+    }
+    
+    // Trouver le prochain créneau occupé
+    const nextBusySlot = laterSlots.find(slot => slot.availableTeachers < availableSlots.find(s => s.time === startTime)?.availableTeachers);
+    
+    // Calculer la durée maximale possible
+    let maxDurationInMinutes = 120; // Par défaut, max 2 heures
+    
+    if (nextBusySlot) {
+      // Calculer la durée jusqu'au prochain créneau occupé
+      const durationUntilNextBusy = nextBusySlot.timeInMinutes - startTimeInMinutes;
+      maxDurationInMinutes = Math.min(maxDurationInMinutes, durationUntilNextBusy);
+    }
+    
+    // Filtrer les durées disponibles
+    const filteredDurations = ALL_DURATIONS.filter(duration => {
+      return parseInt(duration.value) <= maxDurationInMinutes;
+    });
+    
+    setAvailableDurations(filteredDurations);
+    
+    // Si la durée actuelle n'est plus disponible, sélectionner la plus grande durée disponible
+    if (!filteredDurations.some(d => d.value === duree)) {
+      const maxAvailableDuration = filteredDurations[filteredDurations.length - 1]?.value || '30';
+      setDuree(maxAvailableDuration);
+    }
+  };
   
   // Formater l'heure pour l'affichage
   const formatTime = (time: string) => {
@@ -169,11 +243,11 @@ export default function DateHeureStep({
                 value={duree}
                 onChange={(e) => setDuree(e.target.value)}
               >
-                <option value="30">30 minutes</option>
-                <option value="45">45 minutes</option>
-                <option value="60">1 heure</option>
-                <option value="90">1 heure 30</option>
-                <option value="120">2 heures</option>
+                {availableDurations.map((duration) => (
+                  <option key={duration.value} value={duration.value}>
+                    {duration.label}
+                  </option>
+                ))}
               </select>
             </div>
           )}
@@ -231,11 +305,11 @@ export default function DateHeureStep({
               value={duree}
               onChange={(e) => setDuree(e.target.value)}
             >
-              <option value="30">30 minutes</option>
-              <option value="45">45 minutes</option>
-              <option value="60">1 heure</option>
-              <option value="90">1 heure 30</option>
-              <option value="120">2 heures</option>
+              {ALL_DURATIONS.map((duration) => (
+                <option key={duration.value} value={duration.value}>
+                  {duration.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>

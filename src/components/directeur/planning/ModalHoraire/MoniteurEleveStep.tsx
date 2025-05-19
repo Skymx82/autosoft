@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiUsers, FiSearch } from 'react-icons/fi';
 
 interface MoniteurEleveStepProps {
@@ -14,6 +14,10 @@ interface MoniteurEleveStepProps {
   setSelectedEleve: (eleve: {id_eleve: number, nom: string, prenom: string} | null) => void;
   isLoading: boolean;
   data: any;
+  // Nouvelles props pour la gestion des créneaux disponibles
+  selectedSlot: string;
+  availableSlotsData: any;
+  isLoadingSlots: boolean;
 }
 
 export default function MoniteurEleveStep({
@@ -26,10 +30,79 @@ export default function MoniteurEleveStep({
   selectedEleve,
   setSelectedEleve,
   isLoading,
-  data
+  data,
+  selectedSlot,
+  availableSlotsData,
+  isLoadingSlots
 }: MoniteurEleveStepProps) {
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [suggestions, setSuggestions] = useState<Array<{id_eleve: number, nom: string, prenom: string}>>([]);
+  
+  // État pour stocker les moniteurs disponibles pour le créneau sélectionné
+  const [availableMoniteurs, setAvailableMoniteurs] = useState<any[]>([]);
+
+  // Filtrer les moniteurs disponibles en fonction du créneau sélectionné
+  useEffect(() => {
+    // Version simplifiée sans les logs de débogage excessifs
+    console.log('Débogage MoniteurEleveStep:');
+    console.log('- selectedSlot:', selectedSlot);
+    
+    // Si aucune donnée n'est encore chargée, afficher tous les moniteurs
+    if (!availableSlotsData || isLoadingSlots) {
+      if (data?.moniteurs) {
+        console.log('- Données non chargées, affichage de tous les moniteurs');
+        setAvailableMoniteurs(data.moniteurs);
+      }
+      return;
+    }
+    
+    // Si aucun créneau n'est sélectionné, afficher tous les moniteurs
+    if (!selectedSlot) {
+      if (data?.moniteurs) {
+        console.log('- Aucun créneau sélectionné, affichage de tous les moniteurs');
+        setAvailableMoniteurs(data.moniteurs);
+      }
+      return;
+    }
+    
+    // Trouver le créneau sélectionné dans les données disponibles
+    const slot = availableSlotsData.availableSlots?.find(
+      (s: any) => s.time === selectedSlot
+    );
+    
+    console.log('- Créneau trouvé:', slot ? 'Oui' : 'Non');
+    
+    // Si le créneau n'existe pas, afficher tous les moniteurs
+    if (!slot || !slot.teacherIds || slot.teacherIds.length === 0) {
+      if (data?.moniteurs) {
+        console.log('- Créneau sans moniteurs disponibles, affichage de tous les moniteurs');
+        setAvailableMoniteurs(data.moniteurs);
+      }
+      return;
+    }
+    
+    console.log('- IDs des moniteurs disponibles:', slot.teacherIds);
+    
+    // Convertir les IDs des moniteurs disponibles en chaînes pour la comparaison
+    const availableTeacherIds = slot.teacherIds.map(String);
+    
+    // Filtrer les moniteurs disponibles pour ce créneau
+    if (data?.moniteurs) {
+      const moniteursDispo = data.moniteurs.filter((moniteur: any) => {
+        const moniteurIdStr = String(moniteur.id_moniteur);
+        return availableTeacherIds.includes(moniteurIdStr);
+      });
+      
+      console.log('- Nombre de moniteurs disponibles:', moniteursDispo.length);
+      setAvailableMoniteurs(moniteursDispo);
+      
+      // Si le moniteur actuellement sélectionné n'est pas disponible, réinitialiser la sélection
+      if (moniteurId && !availableTeacherIds.includes(moniteurId)) {
+        console.log('- Moniteur sélectionné non disponible, réinitialisation');
+        setMoniteurId('');
+      }
+    }
+  }, [selectedSlot, availableSlotsData, isLoadingSlots, data, moniteurId, setMoniteurId]);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -84,17 +157,19 @@ export default function MoniteurEleveStep({
             className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900 text-sm"
             value={moniteurId}
             onChange={(e) => setMoniteurId(e.target.value)}
-            disabled={isLoading}
+            disabled={isLoading || isLoadingSlots}
           >
             <option value="">Sélectionner un moniteur</option>
-            {data?.moniteurs && data.moniteurs.length > 0 ? (
-              data.moniteurs.map((moniteur: any) => (
+            {isLoadingSlots ? (
+              <option value="" disabled>Chargement des moniteurs disponibles...</option>
+            ) : availableMoniteurs && availableMoniteurs.length > 0 ? (
+              availableMoniteurs.map((moniteur: any) => (
                 <option key={moniteur.id_moniteur} value={String(moniteur.id_moniteur)}>
                   {moniteur.prenom} {moniteur.nom}
                 </option>
               ))
             ) : (
-              <option value="" disabled>Chargement des moniteurs...</option>
+              <option value="" disabled>Aucun moniteur disponible pour ce créneau</option>
             )}
           </select>
         </div>

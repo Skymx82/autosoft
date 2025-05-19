@@ -26,16 +26,21 @@ const formatDayMonth = (date: Date) => {
 
 // Fonction pour générer une couleur unique pour chaque moniteur
 const getMoniteurColor = (moniteurId: number) => {
-  // Liste de classes de couleurs Tailwind pour les moniteurs
+  // Liste de classes de couleurs Tailwind pour les moniteurs - couleurs pastel
   const colors = [
-    'bg-blue-100 text-blue-800',
-    'bg-green-100 text-green-800',
-    'bg-yellow-100 text-yellow-800',
-    'bg-red-100 text-red-800',
-    'bg-purple-100 text-purple-800',
-    'bg-indigo-100 text-indigo-800',
-    'bg-pink-100 text-pink-800',
-    'bg-gray-100 text-gray-800',
+    'bg-blue-100 text-blue-800 border-blue-300',
+    'bg-green-100 text-green-800 border-green-300',
+    'bg-yellow-100 text-yellow-800 border-yellow-300',
+    'bg-red-100 text-red-800 border-red-300',
+    'bg-purple-100 text-purple-800 border-purple-300',
+    'bg-indigo-100 text-indigo-800 border-indigo-300',
+    'bg-pink-100 text-pink-800 border-pink-300',
+    'bg-gray-100 text-gray-800 border-gray-300',
+    'bg-teal-100 text-teal-800 border-teal-300',
+    'bg-orange-100 text-orange-800 border-orange-300',
+    'bg-lime-100 text-lime-800 border-lime-300',
+    'bg-cyan-100 text-cyan-800 border-cyan-300',
+    'bg-amber-100 text-amber-800 border-amber-300',
   ];
   
   // Utiliser l'ID du moniteur pour sélectionner une couleur de manière déterministe
@@ -126,68 +131,88 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
                 <div key={hourIndex} className="h-[50px] border-b"></div>
               ))}
               
-              {/* Leçons pour tous les moniteurs ce jour-là avec gestion des chevauchements */}
-              {(() => {
-                // Récupérer toutes les leçons de tous les moniteurs pour ce jour
-                const toutesLesLeconsDuJour: Array<{lecon: Lecon, moniteur: Moniteur, color: string}> = [];
-                
-                moniteurs.forEach(moniteur => {
-                  const leconsDuMoniteur = leconsByDay[dateStr]?.[moniteur.id_moniteur] || [];
-                  leconsDuMoniteur.forEach(lecon => {
-                    toutesLesLeconsDuJour.push({
-                      lecon,
-                      moniteur,
-                      color: getMoniteurColor(moniteur.id_moniteur)
-                    });
-                  });
-                });
-                
-                // Organiser les leçons par créneau horaire pour détecter les chevauchements
-                const leconsByCreneau: Record<string, Array<{lecon: Lecon, moniteur: Moniteur, color: string}>> = {};
-                
-                toutesLesLeconsDuJour.forEach(item => {
-                  const key = `${item.lecon.heure_debut}-${item.lecon.heure_fin}`;
-                  if (!leconsByCreneau[key]) {
-                    leconsByCreneau[key] = [];
-                  }
-                  leconsByCreneau[key].push(item);
-                });
-                
-                // Rendu des leçons avec gestion des chevauchements
-                return Object.entries(leconsByCreneau).flatMap(([creneau, items]) => {
-                  return items.map((item, index) => {
-                    const { lecon, moniteur, color } = item;
-                    const position = calculateLeconPosition(lecon.heure_debut, lecon.heure_fin);
-                    const totalItems = items.length;
-                    
-                    // Calculer la largeur et la position horizontale en fonction du nombre d'items
-                    const width = `calc((100% / ${totalItems}) - 4px)`;
-                    const left = `calc(${index} * (100% / ${totalItems}))`;
+              {/* Leçons pour tous les moniteurs ce jour-là avec sous-colonnes par moniteur */}
+              <div className="absolute inset-0">
+                {/* Créer des sous-colonnes invisibles pour chaque moniteur */}
+                <div className="flex h-full w-full">
+                  {/* Ajouter des séparateurs visuels entre les colonnes de moniteurs */}
+                  {moniteurs.length > 1 && moniteurs.map((_, index) => {
+                    if (index === 0) return null; // Pas de séparateur avant la première colonne
+                    return (
+                      <div 
+                        key={`separator-${index}`}
+                        className="absolute h-full border-l border-gray-200" 
+                        style={{ left: `${(index * 100) / moniteurs.length}%` }}
+                      />
+                    );
+                  })}
+                  
+                  {moniteurs.map((moniteur, moniteurIndex) => {
+                    const leconsDuMoniteur = leconsByDay[dateStr]?.[moniteur.id_moniteur] || [];
+                    const color = getMoniteurColor(moniteur.id_moniteur);
+                    const colWidth = 100 / moniteurs.length;
                     
                     return (
-                      <div
-                        key={`${moniteur.id_moniteur}-${lecon.id_planning}`}
-                        className={`absolute p-1 rounded border ${color} text-xs overflow-hidden shadow-sm cursor-pointer hover:shadow transition-shadow`}
-                        style={{
-                          ...position,
-                          width,
-                          left,
-                          right: 'auto'
-                        }}
-                        onClick={() => setSelectedLecon(lecon)}
+                      <div 
+                        key={moniteurIndex}
+                        className="h-full relative" 
+                        style={{ width: `${colWidth}%` }}
                       >
-                        <div className="font-medium truncate">
-                          {moniteur.prenom} {moniteur.nom.charAt(0)}.
-                        </div>
-                        {lecon.eleves && (
-                          <div className="truncate">{lecon.eleves.prenom} {lecon.eleves.nom}</div>
-                        )}
-                        <div className="truncate text-[10px] text-gray-600">{lecon.type_lecon}</div>
+                        {/* Leçons pour ce moniteur */}
+                        {leconsDuMoniteur.map((lecon) => {
+                          const position = calculateLeconPosition(lecon.heure_debut, lecon.heure_fin);
+                          
+                          return (
+                            <div
+                              key={lecon.id_planning}
+                              className={`absolute p-1 rounded ${color} text-xs overflow-hidden shadow-sm cursor-pointer hover:shadow transition-shadow`}
+                              style={{
+                                ...position,
+                                width: moniteurs.length > 10 ? 'calc(100% - 2px)' : 'calc(100% - 4px)',
+                                left: moniteurs.length > 10 ? '1px' : '2px',
+                                right: moniteurs.length > 10 ? '1px' : '2px',
+                                // Réduire la taille de police pour les auto-écoles avec beaucoup de moniteurs
+                                fontSize: moniteurs.length > 8 ? '0.65rem' : undefined,
+                                // Bordure fine mais visible
+                                borderWidth: '1px'
+                              }}
+                              onClick={() => setSelectedLecon(lecon)}
+                            >
+                              {/* Affichage adapté au nombre de moniteurs */}
+                              <>
+                                <div className="font-medium truncate">
+                                  {/* Toujours afficher le nom complet pour 6 moniteurs ou moins */}
+                                  {moniteurs.length <= 6 
+                                    ? `${moniteur.prenom} ${moniteur.nom.charAt(0)}.`
+                                    : (moniteurs.length > 10 
+                                        ? `${moniteur.prenom.charAt(0)}${moniteur.nom.charAt(0)}` 
+                                        : `${moniteur.prenom.charAt(0)}. ${moniteur.nom.charAt(0)}.`)
+                                  }
+                                </div>
+                                {lecon.eleves && (
+                                  <div className="truncate">
+                                    {/* Toujours afficher le nom complet de l'élève pour 6 moniteurs ou moins */}
+                                    {moniteurs.length <= 6 
+                                      ? `${lecon.eleves.prenom} ${lecon.eleves.nom}`
+                                      : (moniteurs.length > 10 
+                                          ? `${lecon.eleves.prenom.charAt(0)}${lecon.eleves.nom.charAt(0)}` 
+                                          : `${lecon.eleves.prenom.charAt(0)}. ${lecon.eleves.nom.charAt(0)}.`)
+                                    }
+                                  </div>
+                                )}
+                                {/* Afficher le type de leçon pour 6 moniteurs ou moins */}
+                                {moniteurs.length <= 6 && (
+                                  <div className="truncate text-[10px] text-gray-600">{lecon.type_lecon}</div>
+                                )}
+                              </>
+                            </div>
+                          );
+                        })}
                       </div>
                     );
-                  });
-                });
-              })()}
+                  })}
+                </div>
+              </div>
             </div>
           );
         })}

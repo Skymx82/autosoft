@@ -163,8 +163,9 @@ export default function PlanningPage() {
           />
         </div>
       </div>
-      
-      {/* Bouton flottant pour ajouter un horaire */}
+     
+      {/* 
+      Bouton flottant pour ajouter un horaire - Temporairement désactivé
       <button
         onClick={() => setShowCreateModal(true)}
         className="fixed bottom-6 right-6 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-600 transition-colors z-50"
@@ -172,7 +173,7 @@ export default function PlanningPage() {
         <FiPlus className="w-6 h-6" />
       </button>
 
-      {/* Modal pour ajouter un horaire */}
+      Modal pour ajouter un horaire
       <AjouteHoraire
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
@@ -182,6 +183,7 @@ export default function PlanningPage() {
           // Exemple: saveHoraire(horaire).then(() => refetchPlanningData());
         }}
       />
+      */}
     </DirectorLayout>
   );
 }

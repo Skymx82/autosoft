@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
 import dayjs from 'dayjs';
 import { usePlanningData } from '@/hooks/Directeur/planning/usePlanningData';
+import { useAvailableSlots } from '@/hooks/Directeur/planning/disponibilite/useAvailableSlots';
 import { supabase } from '@/lib/supabase';
 
 // Import des composants d'étapes
@@ -37,6 +38,9 @@ export default function AjouteHoraire({
   const [heureDebut, setHeureDebut] = useState<dayjs.Dayjs | null>(dayjs().hour(8).minute(0));
   const [duree, setDuree] = useState<string>("60");
   
+  // État pour stocker le créneau sélectionné
+  const [selectedSlot, setSelectedSlot] = useState<string>("");
+  
   // Fonction pour formater l'heure pour l'API
   const formatHeureForAPI = (time: dayjs.Dayjs | null): string => {
     if (!time) return "08:00";
@@ -66,6 +70,13 @@ export default function AjouteHoraire({
     'month'
   );
   
+  // Récupérer les créneaux disponibles
+  const { 
+    isLoading: isLoadingSlots, 
+    error: errorSlots, 
+    data: availableSlotsData 
+  } = useAvailableSlots(date, id_ecole, id_bureau);
+  
   // Récupérer les informations de l'utilisateur depuis le localStorage
   useEffect(() => {
     const userData = localStorage.getItem('autosoft_user');
@@ -80,12 +91,20 @@ export default function AjouteHoraire({
     console.log('ID Bureau actuel:', id_bureau);
   }, []);
   
+  // Mettre à jour selectedSlot quand heureDebut change
+  useEffect(() => {
+    if (heureDebut) {
+      setSelectedSlot(heureDebut.format('HH:mm'));
+    }
+  }, [heureDebut]);
+  
   // Réinitialiser le formulaire
   const resetForm = () => {
     setStep(1);
     setDate(new Date().toISOString().split('T')[0]);
     setHeureDebut(dayjs().hour(8).minute(0));
     setDuree("60");
+    setSelectedSlot("");
     setMoniteurId("");
     setEleveId("");
     setTypeLecon("");
@@ -221,6 +240,8 @@ export default function AjouteHoraire({
           />
         )}
         
+        {/* useEffect pour mettre à jour selectedSlot quand heureDebut change */}
+        
         {/* Contenu du modal - Étape 2: Moniteur et élève */}
         {isBureauValid && step === 2 && (
           <MoniteurEleveStep
@@ -234,6 +255,9 @@ export default function AjouteHoraire({
             setSelectedEleve={setSelectedEleve}
             isLoading={isLoading}
             data={data}
+            selectedSlot={selectedSlot}
+            availableSlotsData={availableSlotsData}
+            isLoadingSlots={isLoadingSlots}
           />
         )}
         
