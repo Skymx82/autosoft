@@ -61,6 +61,7 @@ interface PlanningGridProps {
   endDate: Date;
   currentView: 'day' | 'week' | 'month';
   selectedMoniteurId?: number | null;
+  showSunday?: boolean; // Option pour afficher ou non le dimanche
 }
 
 // Fonction utilitaire pour obtenir le style de couleur en fonction du type de leçon
@@ -212,7 +213,8 @@ export default function PlanningGrid({
   startDate,
   endDate,
   currentView,
-  selectedMoniteurId
+  selectedMoniteurId,
+  showSunday = false
 }: PlanningGridProps) {
   const [selectedLecon, setSelectedLecon] = useState<Lecon | null>(null);
   
@@ -263,6 +265,7 @@ export default function PlanningGrid({
             leconsByDay={leconsByDay}
             days={days}
             hours={hours}
+            showSunday={showSunday}
           />
         ) : (
           // Vue Mois - Utilisation du composant MoisVu

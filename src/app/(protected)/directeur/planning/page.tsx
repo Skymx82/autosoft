@@ -11,6 +11,8 @@ export default function PlanningPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [dateRange, setDateRange] = useState<{startDate: Date, endDate: Date}>({startDate: new Date(), endDate: new Date()});
   const [selectedMoniteurId, setSelectedMoniteurId] = useState<string | null>(null);
+  // État pour gérer l'option "Afficher le dimanche"
+  const [showSunday, setShowSunday] = useState(false);
   
   // Calculer les dates de début et de fin en fonction de la vue et de la date actuelle
   useEffect(() => {
@@ -89,6 +91,8 @@ export default function PlanningPage() {
             setCurrentDate={setCurrentDate}
             selectedMoniteur={selectedMoniteurId}
             setSelectedMoniteur={setSelectedMoniteurId}
+            showSundayProp={showSunday}
+            setShowSunday={setShowSunday}
           />
         </div>
         
@@ -102,7 +106,9 @@ export default function PlanningPage() {
             setCurrentDate={setCurrentDate}
             selectedMoniteur={selectedMoniteurId}
             setSelectedMoniteur={setSelectedMoniteurId}
-            render={({ isLoading, error, data }) => {
+            showSundayProp={showSunday}
+            setShowSunday={setShowSunday}
+            render={({ isLoading, error, data, showSunday: filterShowSunday }) => {
               if (isLoading) {
                 return (
                   <div className="h-full flex items-center justify-center text-gray-500">
@@ -136,6 +142,7 @@ export default function PlanningPage() {
                     endDate={dateRange.endDate}
                     currentView={currentView}
                     selectedMoniteurId={selectedMoniteurId ? parseInt(selectedMoniteurId) : null}
+                    showSunday={showSunday}
                   />
                 </div>
               );

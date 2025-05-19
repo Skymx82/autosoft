@@ -52,10 +52,21 @@ interface SemaineVuProps {
   };
   days: Date[];
   hours: string[];
+  showSunday?: boolean; // Nouvelle prop pour contrôler l'affichage du dimanche
 }
 
-export default function SemaineVu({ moniteurs, leconsByDay, days, hours }: SemaineVuProps) {
+export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSunday = false }: SemaineVuProps) {
   const [selectedLecon, setSelectedLecon] = useState<Lecon | null>(null);
+  
+  // Log pour vérifier la valeur de showSunday
+  console.log('SemaineVu - showSunday:', showSunday);
+  console.log('SemaineVu - days:', days.map(d => d.toISOString().split('T')[0]));
+  
+  // Filtrer les jours pour exclure le dimanche si showSunday est false
+  const filteredDays = showSunday ? days : days.filter(day => day.getDay() !== 0); // 0 = dimanche
+  
+  // Log pour vérifier les jours filtrés
+  console.log('SemaineVu - filteredDays:', filteredDays.map(d => d.toISOString().split('T')[0]));
   
   // Calculer la position et la hauteur d'une leçon en fonction de son heure de début et de fin
   const calculateLeconPosition = (heure_debut: string, heure_fin: string) => {
@@ -79,9 +90,9 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours }: Semai
   return (
     <div className="h-full">
       {/* En-tête avec les jours */}
-      <div className="grid border-b bg-gray-50" style={{ gridTemplateColumns: `80px repeat(${days.length}, minmax(120px, 1fr))` }}>
+      <div className="grid border-b bg-gray-50" style={{ gridTemplateColumns: `80px repeat(${filteredDays.length}, minmax(120px, 1fr))` }}>
         <div className="p-2 font-medium text-gray-500 border-r"></div>
-        {days.map((day, index) => (
+        {filteredDays.map((day, index) => (
           <div key={index} className="p-2 text-center border-r">
             <div className="font-medium capitalize">{formatDayOfWeek(day)}</div>
             <div className="text-sm text-gray-500">{formatDayMonth(day)}</div>
@@ -90,7 +101,7 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours }: Semai
       </div>
       
       {/* Corps du planning avec les heures */}
-      <div className="grid" style={{ gridTemplateColumns: `80px repeat(${days.length}, minmax(120px, 1fr))` }}>
+      <div className="grid" style={{ gridTemplateColumns: `80px repeat(${filteredDays.length}, minmax(120px, 1fr))` }}>
         {/* Colonne des heures */}
         <div className="border-r border-b">
           {hours.map((hour, hourIndex) => (
@@ -101,7 +112,7 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours }: Semai
         </div>
         
         {/* Colonnes des jours */}
-        {days.map((day, dayIndex) => {
+        {filteredDays.map((day, dayIndex) => {
           // Formatage manuel de la date au format YYYY-MM-DD pour correspondre au format de la base de données
           const year = day.getFullYear();
           const month = String(day.getMonth() + 1).padStart(2, '0');

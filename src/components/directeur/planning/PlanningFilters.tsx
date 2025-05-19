@@ -15,7 +15,9 @@ interface PlanningFiltersProps {
   setCurrentDate: (date: Date) => void;
   selectedMoniteur?: string | null;
   setSelectedMoniteur?: (id: string | null) => void;
-  render?: (data: { isLoading: boolean; error: string | null; data: any }) => React.ReactNode;
+  showSundayProp?: boolean; // Nouvelle prop pour contrôler l'affichage du dimanche
+  setShowSunday?: (show: boolean) => void; // Fonction pour mettre à jour l'état
+  render?: (data: { isLoading: boolean; error: string | null; data: any; showSunday: boolean }) => React.ReactNode;
 }
 
 export default function PlanningFilters({
@@ -25,6 +27,8 @@ export default function PlanningFilters({
   setCurrentDate,
   selectedMoniteur,
   setSelectedMoniteur,
+  showSundayProp,
+  setShowSunday: externalSetShowSunday,
   render
 }: PlanningFiltersProps) {
   const router = useRouter();
@@ -42,6 +46,21 @@ export default function PlanningFilters({
   // États pour le modal et l'élève sélectionné
   const [showModal, setShowModal] = useState(false);
   const [selectedEleve, setSelectedEleve] = useState<{id_eleve: number, nom: string, prenom: string} | null>(null);
+  
+  // État pour l'option "Afficher le dimanche" (décochée par défaut)
+  // Utiliser la prop si fournie, sinon utiliser l'état local
+  const [localShowSunday, setLocalShowSunday] = useState(false);
+  const showSunday = showSundayProp !== undefined ? showSundayProp : localShowSunday;
+  
+  // Fonction pour mettre à jour l'état showSunday
+  const handleShowSundayChange = (show: boolean) => {
+    console.log('PlanningFilters - handleShowSundayChange:', show);
+    if (externalSetShowSunday) {
+      externalSetShowSunday(show);
+    } else {
+      setLocalShowSunday(show);
+    }
+  };
   
   // Calculer les dates de début et de fin en fonction de la vue et de la date actuelle
   const [dateRange, setDateRange] = useState<{startDate: string, endDate: string}>({startDate: '', endDate: ''});
@@ -182,7 +201,7 @@ export default function PlanningFilters({
   
   // Si la prop render est fournie, on l'appelle avec les données
   if (render) {
-    return render({ isLoading, error, data });
+    return render({ isLoading, error, data, showSunday });
   }
   
   return (
@@ -454,6 +473,8 @@ export default function PlanningFilters({
               <label className="inline-flex items-center">
                 <input
                   type="checkbox"
+                  checked={showSunday}
+                  onChange={(e) => handleShowSundayChange(e.target.checked)}
                   className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                 />
                 <span className="ml-2 text-sm text-gray-700">Afficher le dimanche</span>
