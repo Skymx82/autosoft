@@ -273,6 +273,7 @@ export default function PlanningGrid({
             moniteurs={filteredMoniteurs}
             leconsByDay={leconsByDay}
             days={days}
+            showSunday={showSunday}
           />
         )}
       </div>

@@ -15,7 +15,7 @@ const formatTimeToHHMM = (time: string): string => {
 };
 
 // Fonction pour organiser les jours par semaines pour la vue mois
-const organizeWeeks = (days: Date[]) => {
+const organizeWeeks = (days: Date[], showSunday: boolean) => {
   const weeks: Date[][] = [];
   let currentWeek: Date[] = [];
   
@@ -31,22 +31,35 @@ const organizeWeeks = (days: Date[]) => {
   const lastDay = new Date(days[days.length - 1]);
   const endDate = new Date(lastDay);
   
-  // Ajouter des jours pour compléter la dernière semaine jusqu'à dimanche
+  // Ajouter des jours pour compléter la dernière semaine jusqu'à dimanche ou samedi selon l'option
   const lastDayOfWeek = endDate.getDay(); // 0 = dimanche
-  const daysToAdd = lastDayOfWeek === 0 ? 0 : 7 - lastDayOfWeek;
+  // Si showSunday est false et que le dernier jour est un samedi, pas besoin d'ajouter de jours
+  // Sinon, ajouter les jours nécessaires pour compléter la semaine
+  const daysToAdd = !showSunday && lastDayOfWeek === 6 ? 0 : 
+                   lastDayOfWeek === 0 ? 0 : 7 - lastDayOfWeek;
   endDate.setDate(endDate.getDate() + daysToAdd);
   
   const currentDate = new Date(startDate);
   
   while (currentDate <= endDate) {
-    currentWeek.push(new Date(currentDate));
+    // Si showSunday est false et que le jour est un dimanche, ne pas l'ajouter
+    if (showSunday || currentDate.getDay() !== 0) {
+      currentWeek.push(new Date(currentDate));
+    }
     
-    if (currentWeek.length === 7) {
+    // Si nous avons 7 jours (avec dimanche) ou 6 jours (sans dimanche), c'est une semaine complète
+    const weekLength = showSunday ? 7 : 6;
+    if (currentWeek.length === weekLength) {
       weeks.push([...currentWeek]);
       currentWeek = [];
     }
     
     currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  // Si la dernière semaine est incomplète mais non vide, l'ajouter quand même
+  if (currentWeek.length > 0) {
+    weeks.push([...currentWeek]);
   }
   
   return weeks;
@@ -79,9 +92,10 @@ interface MoisVuProps {
     };
   };
   days: Date[];
+  showSunday?: boolean; // Option pour afficher ou non le dimanche
 }
 
-export default function MoisVu({ moniteurs, leconsByDay, days }: MoisVuProps) {
+export default function MoisVu({ moniteurs, leconsByDay, days, showSunday = false }: MoisVuProps) {
   const [selectedLecon, setSelectedLecon] = useState<Lecon | null>(null);
   
   return (
@@ -95,10 +109,10 @@ export default function MoisVu({ moniteurs, leconsByDay, days }: MoisVuProps) {
             {/* Jours de la semaine en en-tête - maintenant dans le même conteneur de défilement */}
             <div className="grid border-b bg-gray-50 sticky top-0 z-10" 
               style={{ 
-                gridTemplateColumns: 'minmax(80px, 0.8fr) repeat(7, minmax(60px, 1fr))',
+                gridTemplateColumns: `minmax(80px, 0.8fr) repeat(${showSunday ? 7 : 6}, minmax(60px, 1fr))`,
               }}>
               <div className="p-2 font-medium text-gray-500 border-r text-xs sm:text-sm">Semaines</div>
-              {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].map((jour, index) => (
+              {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', ...(showSunday ? ['Dimanche'] : [])].map((jour, index) => (
                 <div key={index} className="p-2 text-center border-r font-medium">
                   {/* Sur mobile, n'afficher que la première lettre, sur tablette le format court, sur PC le format complet */}
                   <span className="hidden md:inline">{jour}</span>
@@ -110,7 +124,7 @@ export default function MoisVu({ moniteurs, leconsByDay, days }: MoisVuProps) {
             
             {/* Organiser les jours par semaines - dans le même conteneur de défilement */}
             <div className="flex-grow overflow-y-auto">
-            {organizeWeeks(days).map((week, weekIndex) => {
+            {organizeWeeks(days, showSunday).map((week, weekIndex) => {
               // Déterminer les dates de début et de fin de la semaine
               const startOfWeek = week[0];
               const endOfWeek = week[week.length - 1];
@@ -119,7 +133,7 @@ export default function MoisVu({ moniteurs, leconsByDay, days }: MoisVuProps) {
               return (
                 <div key={weekIndex} className="grid border-b" 
                   style={{ 
-                    gridTemplateColumns: 'minmax(80px, 0.8fr) repeat(7, minmax(60px, 1fr))',
+                    gridTemplateColumns: `minmax(80px, 0.8fr) repeat(${showSunday ? 7 : 6}, minmax(60px, 1fr))`,
                   }}>
                   {/* Label de la semaine */}
                   <div className="p-2 font-medium border-r text-xs sm:text-sm">
