@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import DirectorLayout from '@/components/directeur/layout/DirectorLayout';
 import PlanningFilters from '@/components/directeur/planning/PlanningFilters';
 import PlanningGrid from '@/components/directeur/planning/PlanningGrid';
+import AjouteHoraire from '@/components/directeur/planning/AjouteHoraire';
+import { FiPlus } from 'react-icons/fi';
 
 export default function PlanningPage() {
   // États pour gérer les filtres et la vue du planning
@@ -13,6 +15,9 @@ export default function PlanningPage() {
   const [selectedMoniteurId, setSelectedMoniteurId] = useState<string | null>(null);
   // État pour gérer l'option "Afficher le dimanche"
   const [showSunday, setShowSunday] = useState(false);
+  
+  // État pour gérer le modal de création d'horaire
+  const [showCreateModal, setShowCreateModal] = useState(false);
   
   // Calculer les dates de début et de fin en fonction de la vue et de la date actuelle
   useEffect(() => {
@@ -79,9 +84,17 @@ export default function PlanningPage() {
     return () => window.removeEventListener('resize', calculateHeight);
   }, []);
 
+  // Fonction pour gérer la sauvegarde d'un nouvel horaire
+  const handleSaveHoraire = (horaire: any) => {
+    console.log('Nouvel horaire:', horaire);
+    // Ici, vous pourriez appeler une API pour sauvegarder l'horaire
+    // puis rafraîchir les données du planning
+    alert('Horaire créé avec succès!');
+  };
+  
   return (
     <DirectorLayout>
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full relative">
         {/* Barre de filtres fixe en haut - collée au layout */}
         <div ref={filterRef} className="bg-white shadow-sm border-b border-gray-200">
           <PlanningFilters 
@@ -150,6 +163,22 @@ export default function PlanningPage() {
           />
         </div>
       </div>
+      
+      {/* Bouton flottant pour créer un nouvel horaire */}
+      <button
+        onClick={() => setShowCreateModal(true)}
+        className="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 flex items-center justify-center z-50 transition-all duration-300 hover:scale-110"
+        aria-label="Créer un nouvel horaire"
+      >
+        <FiPlus className="w-8 h-8" />
+      </button>
+      
+      {/* Utilisation du composant AjouteHoraire */}
+      <AjouteHoraire 
+        isOpen={showCreateModal} 
+        onClose={() => setShowCreateModal(false)} 
+        onSave={handleSaveHoraire} 
+      />
     </DirectorLayout>
   );
 }
