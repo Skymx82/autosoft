@@ -176,8 +176,6 @@ export default function PlanningPage() {
       <AjouteHoraire
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        id_ecole="1" // À remplacer par l'ID réel de l'école
-        id_bureau="1" // À remplacer par l'ID réel du bureau
         onSave={(horaire) => {
           console.log('Horaire créé:', horaire);
           // Ici, vous appelleriez votre API pour sauvegarder l'horaire

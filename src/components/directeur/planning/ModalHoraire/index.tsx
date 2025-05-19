@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
 import dayjs from 'dayjs';
 import { usePlanningData } from '@/hooks/Directeur/planning/usePlanningData';
+import { supabase } from '@/lib/supabase';
 
 // Import des composants d'étapes
 import DateHeureStep from './DateHeureStep';
@@ -13,19 +14,23 @@ import TypeLeconStep from './TypeLeconStep';
 interface AjouteHoraireProps {
   isOpen: boolean;
   onClose: () => void;
-  id_ecole?: string;
-  id_bureau?: string;
   onSave: (horaire: any) => void;
 }
 
 export default function AjouteHoraire({ 
   isOpen, 
-  onClose, 
-  id_ecole = '1', 
-  id_bureau = '1', 
+  onClose,
   onSave 
 }: AjouteHoraireProps) {
   const [step, setStep] = useState<number>(1);
+  
+  // États pour les informations utilisateur et bureau
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [id_ecole, setIdEcole] = useState<string>('0');
+  const [id_bureau, setIdBureau] = useState<string>('0');
+  
+  // Vérifier si un bureau valide est sélectionné
+  const isBureauValid = id_bureau !== '0';
   
   // États pour stocker les données du formulaire
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -60,6 +65,20 @@ export default function AjouteHoraire({
     endDate,
     'month'
   );
+  
+  // Récupérer les informations de l'utilisateur depuis le localStorage
+  useEffect(() => {
+    const userData = localStorage.getItem('autosoft_user');
+    if (userData) {
+      const user = JSON.parse(userData);
+      setCurrentUser(user);
+      setIdEcole(String(user.id_ecole));
+      setIdBureau(String(user.id_bureau));
+    }
+    
+    // Débogage
+    console.log('ID Bureau actuel:', id_bureau);
+  }, []);
   
   // Réinitialiser le formulaire
   const resetForm = () => {
@@ -118,6 +137,11 @@ export default function AjouteHoraire({
   // Si le modal n'est pas ouvert, ne rien afficher
   if (!isOpen) return null;
   
+  // Débogage
+  console.log('Bureau valide (rendu):', isBureauValid);
+  
+
+  
   return (
     <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 text-black">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -155,8 +179,38 @@ export default function AjouteHoraire({
           </div>
         </div>
         
+        {/* Message d'erreur si aucun bureau n'est sélectionné */}
+        {!isBureauValid && (
+          <div className="p-6 space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-md p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">Aucun bureau sélectionné</h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>Veuillez sélectionner un bureau spécifique sur lequel vous souhaitez enregistrer ce créneau horaire.</p>
+                  </div>
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2"
+                      onClick={handleClose}
+                    >
+                      Fermer et sélectionner un bureau
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Contenu du modal - Étape 1: Date et heure */}
-        {step === 1 && (
+        {isBureauValid && step === 1 && (
           <DateHeureStep
             date={date}
             setDate={setDate}
@@ -168,7 +222,7 @@ export default function AjouteHoraire({
         )}
         
         {/* Contenu du modal - Étape 2: Moniteur et élève */}
-        {step === 2 && (
+        {isBureauValid && step === 2 && (
           <MoniteurEleveStep
             moniteurId={moniteurId}
             setMoniteurId={setMoniteurId}
@@ -184,7 +238,7 @@ export default function AjouteHoraire({
         )}
         
         {/* Contenu du modal - Étape 3: Type de leçon et commentaires */}
-        {step === 3 && (
+        {isBureauValid && step === 3 && (
           <TypeLeconStep
             typeLecon={typeLecon}
             setTypeLecon={setTypeLecon}
@@ -196,36 +250,38 @@ export default function AjouteHoraire({
         )}
         
         {/* Boutons de navigation */}
-        <div className="flex justify-between p-4 border-t">
-          <div>
-            {step > 1 && (
-              <button
-                onClick={prevStep}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Précédent
-              </button>
-            )}
+        {isBureauValid && (
+          <div className="flex justify-between p-4 border-t">
+            <div>
+              {step > 1 && (
+                <button
+                  onClick={prevStep}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Précédent
+                </button>
+              )}
+            </div>
+            
+            <div>
+              {step < 3 ? (
+                <button
+                  onClick={nextStep}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                  Suivant
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+                >
+                  Enregistrer
+                </button>
+              )}
+            </div>
           </div>
-          
-          <div>
-            {step < 3 ? (
-              <button
-                onClick={nextStep}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-              >
-                Suivant
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
-              >
-                Enregistrer
-              </button>
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
