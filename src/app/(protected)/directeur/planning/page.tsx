@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import DirectorLayout from '@/components/directeur/layout/DirectorLayout';
 import PlanningFilters from '@/components/directeur/planning/PlanningFilters';
 import PlanningGrid from '@/components/directeur/planning/PlanningGrid';
-import AjouteHoraire from '@/components/directeur/planning/AjouteHoraire';
+import AjouteHoraire from '@/components/directeur/planning/ModalHoraire';
 import { FiPlus } from 'react-icons/fi';
 
 export default function PlanningPage() {
@@ -164,20 +164,25 @@ export default function PlanningPage() {
         </div>
       </div>
       
-      {/* Bouton flottant pour créer un nouvel horaire */}
+      {/* Bouton flottant pour ajouter un horaire */}
       <button
         onClick={() => setShowCreateModal(true)}
-        className="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 flex items-center justify-center z-50 transition-all duration-300 hover:scale-110"
-        aria-label="Créer un nouvel horaire"
+        className="fixed bottom-6 right-6 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-600 transition-colors z-50"
       >
-        <FiPlus className="w-8 h-8" />
+        <FiPlus className="w-6 h-6" />
       </button>
-      
-      {/* Utilisation du composant AjouteHoraire */}
-      <AjouteHoraire 
-        isOpen={showCreateModal} 
-        onClose={() => setShowCreateModal(false)} 
-        onSave={handleSaveHoraire} 
+
+      {/* Modal pour ajouter un horaire */}
+      <AjouteHoraire
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        id_ecole="1" // À remplacer par l'ID réel de l'école
+        id_bureau="1" // À remplacer par l'ID réel du bureau
+        onSave={(horaire) => {
+          console.log('Horaire créé:', horaire);
+          // Ici, vous appelleriez votre API pour sauvegarder l'horaire
+          // Exemple: saveHoraire(horaire).then(() => refetchPlanningData());
+        }}
       />
     </DirectorLayout>
   );
