@@ -8,6 +8,8 @@ export interface SelectionCell {
   time: string;
   hour?: string; // Ajout de la propriété hour pour compatibilité
   moniteur: number;
+  endTime?: string; // Heure de fin de la sélection
+  formattedDate?: string; // Date formatée pour l'affichage (JJ/MM/YYYY)
 }
 
 export interface SelectionRect {
@@ -24,13 +26,17 @@ interface SelectionManagerProps {
   isActive: boolean;
   onCellOccupiedCheck: (day: string, time: string, moniteur: number) => boolean;
   onSelectionComplete?: (start: SelectionCell, end: SelectionCell) => void;
+  moniteurs?: any[]; // Liste des moniteurs pour récupérer les noms
+  date?: string; // Date sélectionnée
 }
 
 export default function SelectionManager({ 
   children, 
   isActive, 
   onCellOccupiedCheck,
-  onSelectionComplete 
+  onSelectionComplete,
+  moniteurs = [],
+  date
 }: SelectionManagerProps) {
   // États pour la sélection
   const [selectionStart, setSelectionStart] = useState<SelectionCell | null>(null);
@@ -98,15 +104,15 @@ export default function SelectionManager({
   };
   
   // Fonction pour gérer le début de la sélection (mousedown)
-  const handleSelectionStart = (day: string, time: string, moniteur: number) => {
+  const handleSelectionStart = (day: string, time: string, moniteur: number, formattedDate?: string) => {
     if (!isActive) return;
     
     // Vérifier si la cellule est occupée
     if (onCellOccupiedCheck(day, time, moniteur)) return;
     
     // Démarrer la sélection
-    setSelectionStart({ day, time, moniteur });
-    setSelectionEnd({ day, time, moniteur }); // Initialiser la fin au même point que le début
+    setSelectionStart({ day, time, moniteur, formattedDate });
+    setSelectionEnd({ day, time, moniteur, formattedDate });
     setIsSelecting(true);
     
     // Initialiser le rectangle de sélection
@@ -119,14 +125,14 @@ export default function SelectionManager({
   };
   
   // Fonction pour gérer le glissement de la sélection (mousemove)
-  const handleSelectionMove = (day: string, time: string, moniteur: number) => {
+  const handleSelectionMove = (day: string, time: string, moniteur: number, formattedDate?: string) => {
     if (!isSelecting || !selectionStart) return;
     
     // Vérifier que la sélection reste sur le même moniteur et le même jour
     if (selectionStart.day !== day || selectionStart.moniteur !== moniteur) return;
     
     // Mettre à jour la fin de la sélection
-    setSelectionEnd({ day, time, moniteur });
+    setSelectionEnd({ day, time, moniteur, formattedDate: selectionStart.formattedDate });
     
     // Mettre à jour le rectangle de sélection
     const rect = calculateSelectionRect(selectionStart.time, time, day, moniteur);
@@ -141,12 +147,40 @@ export default function SelectionManager({
     
     // Vérifier que la sélection est valide (même jour et même moniteur)
     if (selectionStart.day === selectionEnd.day && selectionStart.moniteur === selectionEnd.moniteur) {
-      // Sélectionner la cellule
+      // Déterminer l'heure de début et de fin en fonction de l'ordre de sélection
+      const startTime = selectionStart.time;
+      const endTime = selectionEnd.time;
+      
+      // Convertir les heures en minutes pour faciliter la comparaison
+      const [startHourStr, startMinuteStr] = startTime.split(':');
+      const [endHourStr, endMinuteStr] = endTime.split(':');
+      
+      const startHour = parseInt(startHourStr);
+      const startMinute = parseInt(startMinuteStr || '0');
+      const endHour = parseInt(endHourStr);
+      const endMinute = parseInt(endMinuteStr || '0');
+      
+      const startTimeInMinutes = startHour * 60 + startMinute;
+      const endTimeInMinutes = endHour * 60 + endMinute;
+      
+      // Déterminer quelle heure est la plus petite pour le début
+      let finalStartTime, finalEndTime;
+      if (startTimeInMinutes <= endTimeInMinutes) {
+        finalStartTime = startTime;
+        finalEndTime = endTime;
+      } else {
+        finalStartTime = endTime;
+        finalEndTime = startTime;
+      }
+      
+      // Sélectionner la cellule avec les bonnes heures
       setSelectedCell({
         day: selectionStart.day,
-        time: selectionStart.time,
-        hour: selectionStart.time, // Pour compatibilité
-        moniteur: selectionStart.moniteur
+        time: finalStartTime,
+        hour: finalStartTime, // Pour compatibilité
+        moniteur: selectionStart.moniteur,
+        endTime: finalEndTime, // Ajouter l'heure de fin
+        formattedDate: selectionStart.formattedDate // Conserver la date formatée
       });
       
       // Afficher les contrôles de sélection
@@ -256,6 +290,14 @@ export default function SelectionManager({
     };
   }, [isSelecting, selectionStart, selectionEnd]);
   
+  // Réinitialiser la sélection lorsque le mode addHoraire est désactivé
+  useEffect(() => {
+    if (!isActive) {
+      // Annuler la sélection lorsque le mode addHoraire est désactivé
+      cancelSelection();
+    }
+  }, [isActive]);
+  
   return (
     <div className="h-full select-none relative" ref={gridRef}>
       {/* Passer les fonctions et états aux enfants via le contexte */}
@@ -267,9 +309,10 @@ export default function SelectionManager({
           const day = target.dataset.day;
           const time = target.dataset.time;
           const moniteur = target.dataset.moniteur;
+          const formattedDate = target.dataset.formattedDate;
           
           if (day && time && moniteur) {
-            handleSelectionStart(day, time, parseInt(moniteur));
+            handleSelectionStart(day, time, parseInt(moniteur), formattedDate);
           }
         }}
         onMouseMove={(e) => {
@@ -278,9 +321,10 @@ export default function SelectionManager({
           const day = target.dataset.day;
           const time = target.dataset.time;
           const moniteur = target.dataset.moniteur;
+          const formattedDate = target.dataset.formattedDate;
           
           if (day && time && moniteur) {
-            handleSelectionMove(day, time, parseInt(moniteur));
+            handleSelectionMove(day, time, parseInt(moniteur), formattedDate);
           }
         }}
       >
@@ -307,6 +351,12 @@ export default function SelectionManager({
           onConfirm={confirmSelection}
           onCancel={cancelSelection}
           position={controlsPosition}
+          selectionStart={selectedCell}
+          selectionEnd={selectedCell}
+          moniteurId={selectedCell?.moniteur}
+          moniteurNom={selectedCell ? moniteurs.find(m => m.id_moniteur === selectedCell.moniteur)?.nom : undefined}
+          moniteurPrenom={selectedCell ? moniteurs.find(m => m.id_moniteur === selectedCell.moniteur)?.prenom : undefined}
+          date={date || selectedCell?.day}
         />
       )}
     </div>

@@ -8,6 +8,7 @@ interface TimeCellProps {
   isSelected: boolean;
   isInCurrentSelection: boolean;
   colWidth: number;
+  formattedDate?: string; // Date formatée pour l'affichage (JJ/MM/YYYY)
   onMouseDown?: (e: React.MouseEvent) => void;
   onMouseMove?: (e: React.MouseEvent) => void;
   onMouseUp?: (e: React.MouseEvent) => void;
@@ -21,6 +22,7 @@ export default function TimeCell({
   isSelected,
   isInCurrentSelection,
   colWidth,
+  formattedDate,
   onMouseDown,
   onMouseMove,
   onMouseUp
@@ -45,6 +47,7 @@ export default function TimeCell({
       data-day={day}
       data-time={time}
       data-moniteur={moniteur}
+      data-formatted-date={formattedDate} // Ajouter la date formatée comme attribut data
       className={`h-full flex items-center justify-center ${!isOccupied ? getCellClass() : ''}`}
       style={{ width: `${colWidth}%`, zIndex: 10 }}
       onMouseDown={onMouseDown}

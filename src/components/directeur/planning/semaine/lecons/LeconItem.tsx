@@ -1,6 +1,6 @@
 'use client';
 
-import { Lecon, Moniteur } from '../PlanningGrid';
+import { Lecon, Moniteur } from '../../PlanningGrid';
 
 interface LeconItemProps {
   lecon: Lecon;
