@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, ReactNode } from 'react';
+import SelectionControls from './SelectionControls';
 
 export interface SelectionCell {
   day: string;
@@ -39,6 +40,10 @@ export default function SelectionManager({
   
   // État pour le rectangle de sélection
   const [selectionRect, setSelectionRect] = useState<SelectionRect | null>(null);
+  
+  // État pour afficher les contrôles de sélection
+  const [showControls, setShowControls] = useState(false);
+  const [controlsPosition, setControlsPosition] = useState({ top: 0, left: 0 });
   
   // Référence pour le conteneur des cellules
   const gridRef = useRef<HTMLDivElement>(null);
@@ -144,9 +149,13 @@ export default function SelectionManager({
         moniteur: selectionStart.moniteur
       });
       
-      // Appeler le callback de fin de sélection si fourni
-      if (onSelectionComplete) {
-        onSelectionComplete(selectionStart, selectionEnd);
+      // Afficher les contrôles de sélection
+      if (selectionRect) {
+        setControlsPosition({
+          top: selectionRect.top,
+          left: selectionRect.left + selectionRect.width / 2
+        });
+        setShowControls(true);
       }
     }
     
@@ -162,6 +171,16 @@ export default function SelectionManager({
     setSelectionEnd(null);
     setIsSelecting(false);
     setSelectionRect(null);
+    setSelectedCell(null);
+    setShowControls(false);
+  };
+  
+  // Fonction pour confirmer la sélection
+  const confirmSelection = () => {
+    if (selectionStart && selectionEnd && onSelectionComplete) {
+      onSelectionComplete(selectionStart, selectionEnd);
+    }
+    setShowControls(false);
   };
   
   // Fonction pour déterminer si une cellule fait partie de la sélection en cours
@@ -238,7 +257,7 @@ export default function SelectionManager({
   }, [isSelecting, selectionStart, selectionEnd]);
   
   return (
-    <div className="h-full select-none" ref={gridRef}>
+    <div className="h-full select-none relative" ref={gridRef}>
       {/* Passer les fonctions et états aux enfants via le contexte */}
       <div 
         className="relative h-full"
@@ -281,6 +300,15 @@ export default function SelectionManager({
           />
         )}
       </div>
+      
+      {/* Contrôles de sélection */}
+      {showControls && selectionRect && (
+        <SelectionControls 
+          onConfirm={confirmSelection}
+          onCancel={cancelSelection}
+          position={controlsPosition}
+        />
+      )}
     </div>
   );
 }
