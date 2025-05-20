@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { Lecon, Moniteur } from '../PlanningGrid';
 import LeconDetailsModal from '../LeconDetailsModal';
+import SelectionManager, { SelectionCell } from '../selection/SelectionManager';
+import LeconItem from '../lecons/LeconItem';
+import TimeCell from '../cellules/TimeCell';
 
 // Fonction utilitaire pour formater une heure au format HH:MM:SS en HH:MM
 const formatTimeToHHMM = (time: string): string => {
@@ -63,12 +66,26 @@ interface SemaineVuProps {
 
 export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSunday = false, addHoraireMode = false }: SemaineVuProps) {
   const [selectedLecon, setSelectedLecon] = useState<Lecon | null>(null);
-  
-  // États pour le mode d'ajout d'horaire avec sélection par glissement
-  const [selectionStart, setSelectionStart] = useState<{day: string, time: string, moniteur: number} | null>(null);
-  const [selectionEnd, setSelectionEnd] = useState<{day: string, time: string, moniteur: number} | null>(null);
-  const [isSelecting, setIsSelecting] = useState(false);
   const [selectedCell, setSelectedCell] = useState<{day: string, hour: string, moniteur: number} | null>(null);
+  
+  // Fonction pour vérifier si une cellule est dans la sélection actuelle
+  const isCellInSelection = (day: string, time: string, moniteur: number, selectionRect: any) => {
+    // Si pas de rectangle de sélection ou pas de cellule sélectionnée, retourner false
+    if (!selectionRect || !selectedCell) return false;
+    
+    // Vérifier que le jour et le moniteur correspondent à la sélection
+    if (selectionRect.day !== day || selectionRect.moniteur !== moniteur) {
+      return false;
+    }
+    
+    // Si la cellule est exactement la cellule sélectionnée, retourner false pour éviter le double contour
+    if (selectedCell.day === day && selectedCell.hour === time && selectedCell.moniteur === moniteur) {
+      return false;
+    }
+    
+    // Sinon, cette cellule n'est pas sélectionnée mais fait partie de la sélection temporaire
+    return false; // Désactiver temporairement le contour bleu pour toutes les cellules
+  };
   
   // Fonction pour vérifier si une cellule est occupée
   const isCellOccupied = (day: string, time: string, moniteur: number) => {
@@ -94,69 +111,17 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
     });
   };
   
-  // Fonction pour gérer le début de la sélection (mousedown)
-  const handleSelectionStart = (day: string, time: string, moniteur: number) => {
-    if (!addHoraireMode) return;
+  // Fonction appelée lorsqu'une sélection est complétée
+  const handleSelectionComplete = (start: { day: string, time: string, moniteur: number }, end: { day: string, time: string, moniteur: number }) => {
+    // Ici, vous pouvez implémenter la logique pour traiter la sélection complétée
+    console.log(`Sélection complétée: de ${start.time} à ${end.time} le ${start.day} avec le moniteur ${start.moniteur}`);
     
-    // Vérifier si la cellule est occupée
-    if (isCellOccupied(day, time, moniteur)) return;
-    
-    // Démarrer la sélection
-    setSelectionStart({ day, time, moniteur });
-    setSelectionEnd({ day, time, moniteur }); // Initialiser la fin au même point que le début
-    setIsSelecting(true);
-    console.log(`Début de sélection: ${day} à ${time} avec le moniteur ${moniteur}`);
-  };
-  
-  // Fonction pour gérer le glissement de la sélection (mousemove)
-  const handleSelectionMove = (day: string, time: string, moniteur: number) => {
-    if (!isSelecting || !selectionStart) return;
-    
-    // Vérifier que le jour et le moniteur sont les mêmes que ceux du début de la sélection
-    if (day !== selectionStart.day || moniteur !== selectionStart.moniteur) return;
-    
-    // Mettre à jour la fin de la sélection
-    setSelectionEnd({ day, time, moniteur });
-    console.log(`Glissement de sélection: ${day} à ${time} avec le moniteur ${moniteur}`);
-  };
-  
-  // Fonction pour gérer la fin de la sélection (mouseup)
-  const handleSelectionEnd = () => {
-    if (!isSelecting || !selectionStart || !selectionEnd) return;
-    
-    // Finaliser la sélection
-    console.log(`Fin de sélection: de ${selectionStart.time} à ${selectionEnd.time} le ${selectionStart.day} avec le moniteur ${selectionStart.moniteur}`);
-    setIsSelecting(false);
-    
-    // Ici, on pourrait ouvrir un modal pour créer un nouvel horaire avec les informations de la sélection
-  };
-  
-  // Fonction pour annuler la sélection (par exemple, si l'utilisateur clique en dehors du planning)
-  const cancelSelection = () => {
-    setSelectionStart(null);
-    setSelectionEnd(null);
-    setIsSelecting(false);
-  };
-  
-  // Fonction pour déterminer si une cellule fait partie de la sélection en cours
-  const isCellInSelection = (day: string, time: string, moniteur: number) => {
-    if (!isSelecting || !selectionStart || !selectionEnd) return false;
-    if (day !== selectionStart.day || moniteur !== selectionStart.moniteur) return false;
-    
-    // Convertir les heures en minutes pour faciliter la comparaison
-    const [startHourStr, startMinuteStr] = selectionStart.time.split(':');
-    const [endHourStr, endMinuteStr] = selectionEnd.time.split(':');
-    const [cellHourStr, cellMinuteStr] = time.split(':');
-    
-    const startTimeInMinutes = parseInt(startHourStr) * 60 + parseInt(startMinuteStr || '0');
-    const endTimeInMinutes = parseInt(endHourStr) * 60 + parseInt(endMinuteStr || '0');
-    const cellTimeInMinutes = parseInt(cellHourStr) * 60 + parseInt(cellMinuteStr || '0');
-    
-    // Gérer le cas où l'utilisateur glisse vers le haut (endTime < startTime)
-    const minTime = Math.min(startTimeInMinutes, endTimeInMinutes);
-    const maxTime = Math.max(startTimeInMinutes, endTimeInMinutes);
-    
-    return cellTimeInMinutes >= minTime && cellTimeInMinutes <= maxTime;
+    // Mettre à jour la cellule sélectionnée si nécessaire
+    setSelectedCell({
+      day: start.day,
+      hour: start.time,
+      moniteur: start.moniteur
+    });
   };
   
   // Log pour vérifier la valeur de showSunday
@@ -189,14 +154,18 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
   };
   
   return (
-    <div className="h-full select-none">
+    <SelectionManager
+      isActive={addHoraireMode}
+      onCellOccupiedCheck={isCellOccupied}
+      onSelectionComplete={handleSelectionComplete}
+    >
       {/* En-tête avec les jours */}
       <div className="grid border-b bg-gray-50" style={{ gridTemplateColumns: `80px repeat(${filteredDays.length}, minmax(120px, 1fr))` }}>
-        <div className="p-2 font-medium text-gray-500 border-r"></div>
+        <div className="py-1 px-2 text-xs text-gray-500 border-r"></div>
         {filteredDays.map((day, index) => (
-          <div key={index} className="p-2 text-center border-r">
-            <div className="font-medium capitalize">{formatDayOfWeek(day)}</div>
-            <div className="text-sm text-gray-500">{formatDayMonth(day)}</div>
+          <div key={index} className="py-1 px-2 text-center border-r">
+            <div className="uppercase text-xs text-gray-500 font-normal">{formatDayOfWeek(day)}</div>
+            <div className="text-sm">{formatDayMonth(day)}</div>
           </div>
         ))}
       </div>
@@ -310,43 +279,19 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
                             selectedCell.moniteur === moniteur.id_moniteur;
                           
                           // Vérifier si cette case fait partie de la sélection en cours
-                          const isInCurrentSelection = isCellInSelection(dateStr, firstQuarterHour, moniteur.id_moniteur);
+                          const isInCurrentSelection = false; // Géré par SelectionManager
                           
                           return (
-                            <div 
+                            <TimeCell
                               key={moniteurIndex}
-                              className={`h-full flex items-center justify-center ${!isOccupied ? 
-                                isSelected ? 
-                                  'border-2 border-blue-500 hover:border-blue-600 cursor-crosshair' : 
-                                  isInCurrentSelection ?
-                                    'border border-blue-400 hover:border-blue-500 cursor-crosshair' :
-                                    'hover:border hover:border-gray-400 cursor-crosshair' 
-                                : ''}`}
-                              style={{ width: `${colWidth}%`, zIndex: 10 }}
-                              onMouseDown={(e) => {
-                                e.stopPropagation();
-                                if (!isOccupied) {
-                                  handleSelectionStart(dateStr, firstQuarterHour, moniteur.id_moniteur);
-                                }
-                              }}
-                              onMouseMove={(e) => {
-                                e.stopPropagation();
-                                if (!isOccupied) {
-                                  handleSelectionMove(dateStr, firstQuarterHour, moniteur.id_moniteur);
-                                }
-                              }}
-                              onMouseUp={(e) => {
-                                e.stopPropagation();
-                                handleSelectionEnd();
-                              }}
-                              title={!isOccupied ? 
-                                isSelected ? 
-                                  `Annuler la sélection` : 
-                                  `Ajouter un horaire pour ${moniteur.prenom} ${moniteur.nom} le ${dateStr} à ${firstQuarterHour}` 
-                                : ''}
-                            >
-                              {!isOccupied && <span className="w-full h-full">&nbsp;</span>}
-                            </div>
+                              day={dateStr}
+                              time={firstQuarterHour}
+                              moniteur={moniteur.id_moniteur}
+                              isOccupied={isOccupied}
+                              isSelected={isSelected || false}
+                              isInCurrentSelection={isInCurrentSelection}
+                              colWidth={colWidth}
+                            />
                           );
                         })}
                       </div>
@@ -380,43 +325,19 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
                             selectedCell.moniteur === moniteur.id_moniteur;
                           
                           // Vérifier si cette case fait partie de la sélection en cours
-                          const isInCurrentSelection = isCellInSelection(dateStr, secondQuarterHour, moniteur.id_moniteur);
+                          const isInCurrentSelection = isCellInSelection(dateStr, secondQuarterHour, moniteur.id_moniteur, selectedCell);
                           
                           return (
-                            <div 
+                            <TimeCell
                               key={moniteurIndex}
-                              className={`h-full flex items-center justify-center ${!isOccupied ? 
-                                isSelected ? 
-                                  'border-2 border-blue-500 hover:border-blue-600 cursor-crosshair' : 
-                                  isInCurrentSelection ?
-                                    'border border-blue-400 hover:border-blue-500 cursor-crosshair' :
-                                    'hover:border hover:border-gray-400 cursor-crosshair' 
-                                : ''}`}
-                              style={{ width: `${colWidth}%`, zIndex: 10 }}
-                              onMouseDown={(e) => {
-                                e.stopPropagation();
-                                if (!isOccupied) {
-                                  handleSelectionStart(dateStr, secondQuarterHour, moniteur.id_moniteur);
-                                }
-                              }}
-                              onMouseMove={(e) => {
-                                e.stopPropagation();
-                                if (!isOccupied) {
-                                  handleSelectionMove(dateStr, secondQuarterHour, moniteur.id_moniteur);
-                                }
-                              }}
-                              onMouseUp={(e) => {
-                                e.stopPropagation();
-                                handleSelectionEnd();
-                              }}
-                              title={!isOccupied ? 
-                                isSelected ? 
-                                  `Annuler la sélection` : 
-                                  `Ajouter un horaire pour ${moniteur.prenom} ${moniteur.nom} le ${dateStr} à ${secondQuarterHour}` 
-                                : ''}
-                            >
-                              {!isOccupied && <span className="w-full h-full">&nbsp;</span>}
-                            </div>
+                              day={dateStr}
+                              time={secondQuarterHour}
+                              moniteur={moniteur.id_moniteur}
+                              isOccupied={isOccupied}
+                              isSelected={isSelected || false}
+                              isInCurrentSelection={isInCurrentSelection}
+                              colWidth={colWidth}
+                            />
                           );
                         })}
                       </div>
@@ -450,43 +371,19 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
                             selectedCell.moniteur === moniteur.id_moniteur;
                             
                           // Vérifier si cette case fait partie de la sélection en cours
-                          const isInCurrentSelection = isCellInSelection(dateStr, thirdQuarterHour, moniteur.id_moniteur);
+                          const isInCurrentSelection = isCellInSelection(dateStr, thirdQuarterHour, moniteur.id_moniteur, selectedCell);
                           
                           return (
-                            <div 
+                            <TimeCell
                               key={moniteurIndex}
-                              className={`h-full flex items-center justify-center ${!isOccupied ? 
-                                isSelected ? 
-                                  'border-2 border-blue-500 hover:border-blue-600 cursor-crosshair' : 
-                                  isInCurrentSelection ?
-                                    'border border-blue-400 hover:border-blue-500 cursor-crosshair' :
-                                    'hover:border hover:border-gray-400 cursor-crosshair' 
-                                : ''}`}
-                              style={{ width: `${colWidth}%`, zIndex: 10 }}
-                              onMouseDown={(e) => {
-                                e.stopPropagation();
-                                if (!isOccupied) {
-                                  handleSelectionStart(dateStr, thirdQuarterHour, moniteur.id_moniteur);
-                                }
-                              }}
-                              onMouseMove={(e) => {
-                                e.stopPropagation();
-                                if (!isOccupied) {
-                                  handleSelectionMove(dateStr, thirdQuarterHour, moniteur.id_moniteur);
-                                }
-                              }}
-                              onMouseUp={(e) => {
-                                e.stopPropagation();
-                                handleSelectionEnd();
-                              }}
-                              title={!isOccupied ? 
-                                isSelected ? 
-                                  `Annuler la sélection` : 
-                                  `Ajouter un horaire pour ${moniteur.prenom} ${moniteur.nom} le ${dateStr} à ${thirdQuarterHour}` 
-                                : ''}
-                            >
-                              {!isOccupied && <span className="w-full h-full">&nbsp;</span>}
-                            </div>
+                              day={dateStr}
+                              time={thirdQuarterHour}
+                              moniteur={moniteur.id_moniteur}
+                              isOccupied={isOccupied}
+                              isSelected={isSelected || false}
+                              isInCurrentSelection={isInCurrentSelection}
+                              colWidth={colWidth}
+                            />
                           );
                         })}
                       </div>
@@ -520,43 +417,19 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
                             selectedCell.moniteur === moniteur.id_moniteur;
                             
                           // Vérifier si cette case fait partie de la sélection en cours
-                          const isInCurrentSelection = isCellInSelection(dateStr, fourthQuarterHour, moniteur.id_moniteur);
+                          const isInCurrentSelection = isCellInSelection(dateStr, fourthQuarterHour, moniteur.id_moniteur, selectedCell);
                           
                           return (
-                            <div 
+                            <TimeCell
                               key={moniteurIndex}
-                              className={`h-full flex items-center justify-center ${!isOccupied ? 
-                                isSelected ? 
-                                  'border-2 border-blue-500 hover:border-blue-600 cursor-crosshair' : 
-                                  isInCurrentSelection ?
-                                    'border border-blue-400 hover:border-blue-500 cursor-crosshair' :
-                                    'hover:border hover:border-gray-400 cursor-crosshair' 
-                                : ''}`}
-                              style={{ width: `${colWidth}%`, zIndex: 10 }}
-                              onMouseDown={(e) => {
-                                e.stopPropagation();
-                                if (!isOccupied) {
-                                  handleSelectionStart(dateStr, fourthQuarterHour, moniteur.id_moniteur);
-                                }
-                              }}
-                              onMouseMove={(e) => {
-                                e.stopPropagation();
-                                if (!isOccupied) {
-                                  handleSelectionMove(dateStr, fourthQuarterHour, moniteur.id_moniteur);
-                                }
-                              }}
-                              onMouseUp={(e) => {
-                                e.stopPropagation();
-                                handleSelectionEnd();
-                              }}
-                              title={!isOccupied ? 
-                                isSelected ? 
-                                  `Annuler la sélection` : 
-                                  `Ajouter un horaire pour ${moniteur.prenom} ${moniteur.nom} le ${dateStr} à ${fourthQuarterHour}` 
-                                : ''}
-                            >
-                              {!isOccupied && <span className="w-full h-full">&nbsp;</span>}
-                            </div>
+                              day={dateStr}
+                              time={fourthQuarterHour}
+                              moniteur={moniteur.id_moniteur}
+                              isOccupied={isOccupied}
+                              isSelected={isSelected || false}
+                              isInCurrentSelection={isInCurrentSelection}
+                              colWidth={colWidth}
+                            />
                           );
                         })}
                       </div>
@@ -659,6 +532,6 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
           onClose={() => setSelectedLecon(null)} 
         />
       )}
-    </div>
+    </SelectionManager>
   );
 }
