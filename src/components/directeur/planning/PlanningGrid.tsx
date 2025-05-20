@@ -62,6 +62,7 @@ interface PlanningGridProps {
   currentView: 'day' | 'week' | 'month';
   selectedMoniteurId?: number | null;
   showSunday?: boolean; // Option pour afficher ou non le dimanche
+  addHoraireMode?: boolean; // Mode d'ajout d'horaire
 }
 
 // Fonction utilitaire pour obtenir le style de couleur en fonction du type de leçon
@@ -105,10 +106,10 @@ const getLeconColor = (type_lecon: string, statut_lecon: string): string => {
   }
 };
 
-// Fonction pour générer les heures de 8h à 18h par défaut
+// Fonction pour générer les heures de 8h à 20h par défaut
 const generateHours = () => {
   const hours = [];
-  for (let i = 8; i <= 18; i++) {
+  for (let i = 8; i <= 20; i++) {
     hours.push(`${i}:00`);
   }
   return hours;
@@ -214,8 +215,11 @@ export default function PlanningGrid({
   endDate,
   currentView,
   selectedMoniteurId,
-  showSunday = false
+  showSunday = false,
+  addHoraireMode = false
 }: PlanningGridProps) {
+  // Log pour vérifier si addHoraireMode est correctement transmis
+  console.log('PlanningGrid - addHoraireMode:', addHoraireMode);
   const [selectedLecon, setSelectedLecon] = useState<Lecon | null>(null);
   
   // Générer les heures et les jours pour l'affichage
@@ -266,6 +270,7 @@ export default function PlanningGrid({
             days={days}
             hours={hours}
             showSunday={showSunday}
+            addHoraireMode={addHoraireMode}
           />
         ) : (
           // Vue Mois - Utilisation du composant MoisVu

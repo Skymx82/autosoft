@@ -58,10 +58,106 @@ interface SemaineVuProps {
   days: Date[];
   hours: string[];
   showSunday?: boolean; // Nouvelle prop pour contrôler l'affichage du dimanche
+  addHoraireMode?: boolean; // Mode d'ajout d'horaire
 }
 
-export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSunday = false }: SemaineVuProps) {
+export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSunday = false, addHoraireMode = false }: SemaineVuProps) {
   const [selectedLecon, setSelectedLecon] = useState<Lecon | null>(null);
+  
+  // États pour le mode d'ajout d'horaire avec sélection par glissement
+  const [selectionStart, setSelectionStart] = useState<{day: string, time: string, moniteur: number} | null>(null);
+  const [selectionEnd, setSelectionEnd] = useState<{day: string, time: string, moniteur: number} | null>(null);
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectedCell, setSelectedCell] = useState<{day: string, hour: string, moniteur: number} | null>(null);
+  
+  // Fonction pour vérifier si une cellule est occupée
+  const isCellOccupied = (day: string, time: string, moniteur: number) => {
+    const leconsDuMoniteur = leconsByDay[day]?.[moniteur] || [];
+    
+    // Extraire les heures et minutes du créneau
+    const [hourStr, minuteStr] = time.split(':');
+    const hour = parseInt(hourStr);
+    const minute = parseInt(minuteStr || '0');
+    
+    // Convertir en minutes pour faciliter la comparaison
+    const timeInMinutes = hour * 60 + minute;
+    
+    // Vérifier si le créneau est déjà occupé par une leçon
+    return leconsDuMoniteur.some(lecon => {
+      const leconStart = lecon.heure_debut.split(':').map(Number);
+      const leconEnd = lecon.heure_fin.split(':').map(Number);
+      
+      const leconStartInMinutes = leconStart[0] * 60 + leconStart[1];
+      const leconEndInMinutes = leconEnd[0] * 60 + leconEnd[1];
+      
+      return timeInMinutes >= leconStartInMinutes && timeInMinutes < leconEndInMinutes;
+    });
+  };
+  
+  // Fonction pour gérer le début de la sélection (mousedown)
+  const handleSelectionStart = (day: string, time: string, moniteur: number) => {
+    if (!addHoraireMode) return;
+    
+    // Vérifier si la cellule est occupée
+    if (isCellOccupied(day, time, moniteur)) return;
+    
+    // Démarrer la sélection
+    setSelectionStart({ day, time, moniteur });
+    setSelectionEnd({ day, time, moniteur }); // Initialiser la fin au même point que le début
+    setIsSelecting(true);
+    console.log(`Début de sélection: ${day} à ${time} avec le moniteur ${moniteur}`);
+  };
+  
+  // Fonction pour gérer le glissement de la sélection (mousemove)
+  const handleSelectionMove = (day: string, time: string, moniteur: number) => {
+    if (!isSelecting || !selectionStart) return;
+    
+    // Vérifier que le jour et le moniteur sont les mêmes que ceux du début de la sélection
+    if (day !== selectionStart.day || moniteur !== selectionStart.moniteur) return;
+    
+    // Mettre à jour la fin de la sélection
+    setSelectionEnd({ day, time, moniteur });
+    console.log(`Glissement de sélection: ${day} à ${time} avec le moniteur ${moniteur}`);
+  };
+  
+  // Fonction pour gérer la fin de la sélection (mouseup)
+  const handleSelectionEnd = () => {
+    if (!isSelecting || !selectionStart || !selectionEnd) return;
+    
+    // Finaliser la sélection
+    console.log(`Fin de sélection: de ${selectionStart.time} à ${selectionEnd.time} le ${selectionStart.day} avec le moniteur ${selectionStart.moniteur}`);
+    setIsSelecting(false);
+    
+    // Ici, on pourrait ouvrir un modal pour créer un nouvel horaire avec les informations de la sélection
+  };
+  
+  // Fonction pour annuler la sélection (par exemple, si l'utilisateur clique en dehors du planning)
+  const cancelSelection = () => {
+    setSelectionStart(null);
+    setSelectionEnd(null);
+    setIsSelecting(false);
+  };
+  
+  // Fonction pour déterminer si une cellule fait partie de la sélection en cours
+  const isCellInSelection = (day: string, time: string, moniteur: number) => {
+    if (!isSelecting || !selectionStart || !selectionEnd) return false;
+    if (day !== selectionStart.day || moniteur !== selectionStart.moniteur) return false;
+    
+    // Convertir les heures en minutes pour faciliter la comparaison
+    const [startHourStr, startMinuteStr] = selectionStart.time.split(':');
+    const [endHourStr, endMinuteStr] = selectionEnd.time.split(':');
+    const [cellHourStr, cellMinuteStr] = time.split(':');
+    
+    const startTimeInMinutes = parseInt(startHourStr) * 60 + parseInt(startMinuteStr || '0');
+    const endTimeInMinutes = parseInt(endHourStr) * 60 + parseInt(endMinuteStr || '0');
+    const cellTimeInMinutes = parseInt(cellHourStr) * 60 + parseInt(cellMinuteStr || '0');
+    
+    // Gérer le cas où l'utilisateur glisse vers le haut (endTime < startTime)
+    const minTime = Math.min(startTimeInMinutes, endTimeInMinutes);
+    const maxTime = Math.max(startTimeInMinutes, endTimeInMinutes);
+    
+    return cellTimeInMinutes >= minTime && cellTimeInMinutes <= maxTime;
+  };
   
   // Log pour vérifier la valeur de showSunday
   console.log('SemaineVu - showSunday:', showSunday);
@@ -93,7 +189,7 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
   };
   
   return (
-    <div className="h-full">
+    <div className="h-full select-none">
       {/* En-tête avec les jours */}
       <div className="grid border-b bg-gray-50" style={{ gridTemplateColumns: `80px repeat(${filteredDays.length}, minmax(120px, 1fr))` }}>
         <div className="p-2 font-medium text-gray-500 border-r"></div>
@@ -103,6 +199,59 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
             <div className="text-sm text-gray-500">{formatDayMonth(day)}</div>
           </div>
         ))}
+      </div>
+      
+      {/* Ligne avec les initiales des moniteurs */}
+      <div className="grid border-b bg-gray-100" style={{ gridTemplateColumns: `80px repeat(${filteredDays.length}, minmax(120px, 1fr))` }}>
+        <div className="p-1 font-medium text-gray-500 border-r text-xs">Moniteurs</div>
+        {filteredDays.map((day, dayIndex) => {
+          // Formatage manuel de la date au format YYYY-MM-DD
+          const year = day.getFullYear();
+          const month = String(day.getMonth() + 1).padStart(2, '0');
+          const date = String(day.getDate()).padStart(2, '0');
+          const dateStr = `${year}-${month}-${date}`;
+          
+          return (
+            <div key={dayIndex} className="border-r p-1">
+              <div className="flex h-full w-full">
+                {moniteurs.map((moniteur, moniteurIndex) => {
+                  const colWidth = 100 / moniteurs.length;
+                  const color = getMoniteurColor(moniteur.id_moniteur);
+                  
+                  // Adapter l'affichage en fonction du nombre de moniteurs
+                  let displayName;
+                  if (moniteurs.length <= 2) {
+                    // Afficher le prénom complet et l'initiale du nom
+                    displayName = `${moniteur.prenom} ${moniteur.nom.charAt(0)}.`;
+                  } else if (moniteurs.length <= 4) {
+                    // Afficher jusqu'à 5 caractères du prénom et l'initiale du nom
+                    displayName = `${moniteur.prenom.substring(0, 5)}${moniteur.prenom.length > 5 ? '.' : ''} ${moniteur.nom.charAt(0)}.`;
+                  } else {
+                    // Afficher initiale prénom . initiale nom
+                    displayName = `${moniteur.prenom.charAt(0)}. ${moniteur.nom.charAt(0)}.`;
+                  }
+                  
+                  return (
+                    <div 
+                      key={moniteurIndex}
+                      className={`text-center text-xs font-medium ${color.split(' ')[0]} h-full flex items-center justify-center`} 
+                      style={{ 
+                        width: `${colWidth}%`, 
+                        whiteSpace: 'nowrap', 
+                        overflow: 'visible',
+                        color: 'black', // Texte en noir uniforme
+                        margin: '0 1px' // Petit espace entre les cases pour les distinguer
+                      }}
+                      title={`${moniteur.prenom} ${moniteur.nom}`} // Ajouter un tooltip pour voir le nom complet au survol
+                    >
+                      {displayName}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
       
       {/* Corps du planning avec les heures */}
@@ -128,7 +277,292 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
             <div key={dayIndex} className="border-r border-b relative">
               {/* Lignes d'heures (une par heure) */}
               {hours.map((hour, hourIndex) => (
-                <div key={hourIndex} className="h-[50px] border-b"></div>
+                <div key={hourIndex} className="h-[50px] border-b">
+                  {/* En mode ajout d'horaire, colorer les cases vides */}
+                  {addHoraireMode && (
+                    <div className="flex flex-col h-full w-full">
+                      {/* Première partie de l'heure (0-15 minutes) */}
+                      <div className="flex h-1/4 w-full border-b border-gray-200">
+                        {moniteurs.map((moniteur, moniteurIndex) => {
+                          const colWidth = 100 / moniteurs.length;
+                          const leconsDuMoniteur = leconsByDay[dateStr]?.[moniteur.id_moniteur] || [];
+                          const hourValue = parseInt(hour.split(':')[0]);
+                          const firstQuarterHour = `${hourValue}:00`;
+                          
+                          // Vérifier si cette case est déjà occupée par une leçon
+                          const isOccupied = leconsDuMoniteur.some(lecon => {
+                            const leconStart = lecon.heure_debut.split(':').map(Number);
+                            const leconEnd = lecon.heure_fin.split(':').map(Number);
+                            
+                            // Convertir en minutes pour faciliter la comparaison
+                            const cellTimeInMinutes = hourValue * 60; // 0 minutes
+                            const leconStartInMinutes = leconStart[0] * 60 + leconStart[1];
+                            const leconEndInMinutes = leconEnd[0] * 60 + leconEnd[1];
+                            
+                            // Vérifier si le créneau actuel est dans la plage de la leçon
+                            return cellTimeInMinutes >= leconStartInMinutes && cellTimeInMinutes < leconEndInMinutes;
+                          });
+                          
+                          // Vérifier si cette case est sélectionnée ou fait partie de la sélection en cours
+                          const isSelected = selectedCell && 
+                            selectedCell.day === dateStr && 
+                            selectedCell.hour === firstQuarterHour && 
+                            selectedCell.moniteur === moniteur.id_moniteur;
+                          
+                          // Vérifier si cette case fait partie de la sélection en cours
+                          const isInCurrentSelection = isCellInSelection(dateStr, firstQuarterHour, moniteur.id_moniteur);
+                          
+                          return (
+                            <div 
+                              key={moniteurIndex}
+                              className={`h-full flex items-center justify-center ${!isOccupied ? 
+                                isSelected ? 
+                                  'border-2 border-blue-500 hover:border-blue-600 cursor-crosshair' : 
+                                  isInCurrentSelection ?
+                                    'border border-blue-400 hover:border-blue-500 cursor-crosshair' :
+                                    'hover:border hover:border-gray-400 cursor-crosshair' 
+                                : ''}`}
+                              style={{ width: `${colWidth}%`, zIndex: 10 }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                if (!isOccupied) {
+                                  handleSelectionStart(dateStr, firstQuarterHour, moniteur.id_moniteur);
+                                }
+                              }}
+                              onMouseMove={(e) => {
+                                e.stopPropagation();
+                                if (!isOccupied) {
+                                  handleSelectionMove(dateStr, firstQuarterHour, moniteur.id_moniteur);
+                                }
+                              }}
+                              onMouseUp={(e) => {
+                                e.stopPropagation();
+                                handleSelectionEnd();
+                              }}
+                              title={!isOccupied ? 
+                                isSelected ? 
+                                  `Annuler la sélection` : 
+                                  `Ajouter un horaire pour ${moniteur.prenom} ${moniteur.nom} le ${dateStr} à ${firstQuarterHour}` 
+                                : ''}
+                            >
+                              {!isOccupied && <span className="w-full h-full">&nbsp;</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Deuxième partie de l'heure (15-30 minutes) */}
+                      <div className="flex h-1/4 w-full border-b border-gray-200">
+                        {moniteurs.map((moniteur, moniteurIndex) => {
+                          const colWidth = 100 / moniteurs.length;
+                          const leconsDuMoniteur = leconsByDay[dateStr]?.[moniteur.id_moniteur] || [];
+                          const hourValue = parseInt(hour.split(':')[0]);
+                          const secondQuarterHour = `${hourValue}:15`;
+                          
+                          // Vérifier si cette case est déjà occupée par une leçon
+                          const isOccupied = leconsDuMoniteur.some(lecon => {
+                            const leconStart = lecon.heure_debut.split(':').map(Number);
+                            const leconEnd = lecon.heure_fin.split(':').map(Number);
+                            
+                            // Convertir en minutes pour faciliter la comparaison
+                            const cellTimeInMinutes = hourValue * 60 + 15; // 15 minutes
+                            const leconStartInMinutes = leconStart[0] * 60 + leconStart[1];
+                            const leconEndInMinutes = leconEnd[0] * 60 + leconEnd[1];
+                            
+                            // Vérifier si le créneau actuel est dans la plage de la leçon
+                            return cellTimeInMinutes >= leconStartInMinutes && cellTimeInMinutes < leconEndInMinutes;
+                          });
+                          
+                          // Vérifier si cette case est sélectionnée ou fait partie de la sélection en cours
+                          const isSelected = selectedCell && 
+                            selectedCell.day === dateStr && 
+                            selectedCell.hour === secondQuarterHour && 
+                            selectedCell.moniteur === moniteur.id_moniteur;
+                          
+                          // Vérifier si cette case fait partie de la sélection en cours
+                          const isInCurrentSelection = isCellInSelection(dateStr, secondQuarterHour, moniteur.id_moniteur);
+                          
+                          return (
+                            <div 
+                              key={moniteurIndex}
+                              className={`h-full flex items-center justify-center ${!isOccupied ? 
+                                isSelected ? 
+                                  'border-2 border-blue-500 hover:border-blue-600 cursor-crosshair' : 
+                                  isInCurrentSelection ?
+                                    'border border-blue-400 hover:border-blue-500 cursor-crosshair' :
+                                    'hover:border hover:border-gray-400 cursor-crosshair' 
+                                : ''}`}
+                              style={{ width: `${colWidth}%`, zIndex: 10 }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                if (!isOccupied) {
+                                  handleSelectionStart(dateStr, secondQuarterHour, moniteur.id_moniteur);
+                                }
+                              }}
+                              onMouseMove={(e) => {
+                                e.stopPropagation();
+                                if (!isOccupied) {
+                                  handleSelectionMove(dateStr, secondQuarterHour, moniteur.id_moniteur);
+                                }
+                              }}
+                              onMouseUp={(e) => {
+                                e.stopPropagation();
+                                handleSelectionEnd();
+                              }}
+                              title={!isOccupied ? 
+                                isSelected ? 
+                                  `Annuler la sélection` : 
+                                  `Ajouter un horaire pour ${moniteur.prenom} ${moniteur.nom} le ${dateStr} à ${secondQuarterHour}` 
+                                : ''}
+                            >
+                              {!isOccupied && <span className="w-full h-full">&nbsp;</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Troisième partie de l'heure (30-45 minutes) */}
+                      <div className="flex h-1/4 w-full border-b border-gray-200">
+                        {moniteurs.map((moniteur, moniteurIndex) => {
+                          const colWidth = 100 / moniteurs.length;
+                          const leconsDuMoniteur = leconsByDay[dateStr]?.[moniteur.id_moniteur] || [];
+                          const hourValue = parseInt(hour.split(':')[0]);
+                          const thirdQuarterHour = `${hourValue}:30`;
+                          
+                          // Vérifier si cette case est déjà occupée par une leçon
+                          const isOccupied = leconsDuMoniteur.some(lecon => {
+                            const leconStart = lecon.heure_debut.split(':').map(Number);
+                            const leconEnd = lecon.heure_fin.split(':').map(Number);
+                            
+                            // Convertir en minutes pour faciliter la comparaison
+                            const cellTimeInMinutes = hourValue * 60 + 30; // 30 minutes
+                            const leconStartInMinutes = leconStart[0] * 60 + leconStart[1];
+                            const leconEndInMinutes = leconEnd[0] * 60 + leconEnd[1];
+                            
+                            // Vérifier si le créneau actuel est dans la plage de la leçon
+                            return cellTimeInMinutes >= leconStartInMinutes && cellTimeInMinutes < leconEndInMinutes;
+                          });
+                          
+                          // Vérifier si cette case est sélectionnée ou fait partie de la sélection en cours
+                          const isSelected = selectedCell && 
+                            selectedCell.day === dateStr && 
+                            selectedCell.hour === thirdQuarterHour && 
+                            selectedCell.moniteur === moniteur.id_moniteur;
+                            
+                          // Vérifier si cette case fait partie de la sélection en cours
+                          const isInCurrentSelection = isCellInSelection(dateStr, thirdQuarterHour, moniteur.id_moniteur);
+                          
+                          return (
+                            <div 
+                              key={moniteurIndex}
+                              className={`h-full flex items-center justify-center ${!isOccupied ? 
+                                isSelected ? 
+                                  'border-2 border-blue-500 hover:border-blue-600 cursor-crosshair' : 
+                                  isInCurrentSelection ?
+                                    'border border-blue-400 hover:border-blue-500 cursor-crosshair' :
+                                    'hover:border hover:border-gray-400 cursor-crosshair' 
+                                : ''}`}
+                              style={{ width: `${colWidth}%`, zIndex: 10 }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                if (!isOccupied) {
+                                  handleSelectionStart(dateStr, thirdQuarterHour, moniteur.id_moniteur);
+                                }
+                              }}
+                              onMouseMove={(e) => {
+                                e.stopPropagation();
+                                if (!isOccupied) {
+                                  handleSelectionMove(dateStr, thirdQuarterHour, moniteur.id_moniteur);
+                                }
+                              }}
+                              onMouseUp={(e) => {
+                                e.stopPropagation();
+                                handleSelectionEnd();
+                              }}
+                              title={!isOccupied ? 
+                                isSelected ? 
+                                  `Annuler la sélection` : 
+                                  `Ajouter un horaire pour ${moniteur.prenom} ${moniteur.nom} le ${dateStr} à ${thirdQuarterHour}` 
+                                : ''}
+                            >
+                              {!isOccupied && <span className="w-full h-full">&nbsp;</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Quatrième partie de l'heure (45-60 minutes) */}
+                      <div className="flex h-1/4 w-full">
+                        {moniteurs.map((moniteur, moniteurIndex) => {
+                          const colWidth = 100 / moniteurs.length;
+                          const leconsDuMoniteur = leconsByDay[dateStr]?.[moniteur.id_moniteur] || [];
+                          const hourValue = parseInt(hour.split(':')[0]);
+                          const fourthQuarterHour = `${hourValue}:45`;
+                          
+                          // Vérifier si cette case est déjà occupée par une leçon
+                          const isOccupied = leconsDuMoniteur.some(lecon => {
+                            const leconStart = lecon.heure_debut.split(':').map(Number);
+                            const leconEnd = lecon.heure_fin.split(':').map(Number);
+                            
+                            // Convertir en minutes pour faciliter la comparaison
+                            const cellTimeInMinutes = hourValue * 60 + 45; // 45 minutes
+                            const leconStartInMinutes = leconStart[0] * 60 + leconStart[1];
+                            const leconEndInMinutes = leconEnd[0] * 60 + leconEnd[1];
+                            
+                            // Vérifier si le créneau actuel est dans la plage de la leçon
+                            return cellTimeInMinutes >= leconStartInMinutes && cellTimeInMinutes < leconEndInMinutes;
+                          });
+                          
+                          // Vérifier si cette case est sélectionnée ou fait partie de la sélection en cours
+                          const isSelected = selectedCell && 
+                            selectedCell.day === dateStr && 
+                            selectedCell.hour === fourthQuarterHour && 
+                            selectedCell.moniteur === moniteur.id_moniteur;
+                            
+                          // Vérifier si cette case fait partie de la sélection en cours
+                          const isInCurrentSelection = isCellInSelection(dateStr, fourthQuarterHour, moniteur.id_moniteur);
+                          
+                          return (
+                            <div 
+                              key={moniteurIndex}
+                              className={`h-full flex items-center justify-center ${!isOccupied ? 
+                                isSelected ? 
+                                  'border-2 border-blue-500 hover:border-blue-600 cursor-crosshair' : 
+                                  isInCurrentSelection ?
+                                    'border border-blue-400 hover:border-blue-500 cursor-crosshair' :
+                                    'hover:border hover:border-gray-400 cursor-crosshair' 
+                                : ''}`}
+                              style={{ width: `${colWidth}%`, zIndex: 10 }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                if (!isOccupied) {
+                                  handleSelectionStart(dateStr, fourthQuarterHour, moniteur.id_moniteur);
+                                }
+                              }}
+                              onMouseMove={(e) => {
+                                e.stopPropagation();
+                                if (!isOccupied) {
+                                  handleSelectionMove(dateStr, fourthQuarterHour, moniteur.id_moniteur);
+                                }
+                              }}
+                              onMouseUp={(e) => {
+                                e.stopPropagation();
+                                handleSelectionEnd();
+                              }}
+                              title={!isOccupied ? 
+                                isSelected ? 
+                                  `Annuler la sélection` : 
+                                  `Ajouter un horaire pour ${moniteur.prenom} ${moniteur.nom} le ${dateStr} à ${fourthQuarterHour}` 
+                                : ''}
+                            >
+                              {!isOccupied && <span className="w-full h-full">&nbsp;</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))}
               
               {/* Leçons pour tous les moniteurs ce jour-là avec sous-colonnes par moniteur */}

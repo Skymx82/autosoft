@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { FiCalendar, FiChevronLeft, FiChevronRight, FiSettings, FiSearch, FiUser, FiX } from 'react-icons/fi';
+import { FiCalendar, FiChevronLeft, FiChevronRight, FiSettings, FiSearch, FiUser, FiX, FiPlus } from 'react-icons/fi';
 import { usePlanningData } from '@/hooks/Directeur/planning/usePlanningData';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -18,7 +18,9 @@ interface PlanningFiltersProps {
   setSelectedMoniteur?: (id: string | null) => void;
   showSundayProp?: boolean; // Nouvelle prop pour contrôler l'affichage du dimanche
   setShowSunday?: (show: boolean) => void; // Fonction pour mettre à jour l'état
-  render?: (data: { isLoading: boolean; error: string | null; data: any; showSunday: boolean }) => React.ReactNode;
+  addHoraireModeProp?: boolean; // Prop pour contrôler le mode d'ajout d'horaire
+  setAddHoraireMode?: (mode: boolean) => void; // Fonction pour mettre à jour l'état
+  render?: (data: { isLoading: boolean; error: string | null; data: any; showSunday: boolean; addHoraireMode?: boolean }) => React.ReactNode;
 }
 
 export default function PlanningFilters({
@@ -30,8 +32,23 @@ export default function PlanningFilters({
   setSelectedMoniteur,
   showSundayProp,
   setShowSunday: externalSetShowSunday,
+  addHoraireModeProp,
+  setAddHoraireMode: externalSetAddHoraireMode,
   render
 }: PlanningFiltersProps) {
+  // Utiliser la prop si fournie, sinon utiliser l'état local
+  const [localAddHoraireMode, setLocalAddHoraireMode] = useState(false);
+  const addHoraireMode = addHoraireModeProp !== undefined ? addHoraireModeProp : localAddHoraireMode;
+  
+  // Fonction pour mettre à jour l'état addHoraireMode
+  const handleAddHoraireModeChange = (mode: boolean) => {
+    console.log('PlanningFilters - handleAddHoraireModeChange:', mode);
+    if (externalSetAddHoraireMode) {
+      externalSetAddHoraireMode(mode);
+    } else {
+      setLocalAddHoraireMode(mode);
+    }
+  };
   // Enregistrer la locale française pour le DatePicker
   registerLocale('fr', fr);
   const router = useRouter();
@@ -429,9 +446,23 @@ export default function PlanningFilters({
           
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-2 rounded-full text-gray-500 hover:bg-gray-100 ml-auto lg:ml-0"
+            className="p-2 rounded-full text-gray-500 hover:bg-gray-100 lg:ml-0"
           >
             <FiSettings className="w-5 h-5" />
+          </button>
+          
+          {/* Bouton pour ajouter un horaire */}
+          <button
+            onClick={() => {
+              console.log('PlanningFilters - Bouton + cliqué, ancien état:', addHoraireMode);
+              handleAddHoraireModeChange(!addHoraireMode);
+              console.log('PlanningFilters - Nouvel état:', !addHoraireMode);
+            }}
+            className={`p-2 rounded-full text-white ${addHoraireMode ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'} transition-colors ml-auto flex items-center`}
+            title={addHoraireMode ? 'Désactiver le mode ajout d\'horaire' : 'Activer le mode ajout d\'horaire'}
+          >
+            <FiPlus className="w-5 h-5" />
+            {addHoraireMode && <span className="ml-1 text-xs font-medium hidden sm:inline">Mode ajout actif</span>}
           </button>
         </div>
       </div>
@@ -446,8 +477,8 @@ export default function PlanningFilters({
                 Heure de début
               </label>
               <select className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2">
-                {Array.from({ length: 12 }, (_, i) => i + 6).map((hour) => (
-                  <option key={hour} value={hour}>{`${hour}:00`}</option>
+                {Array.from({ length: 15 }, (_, i) => i + 6).map((hour) => (
+                  <option key={hour} value={hour} selected={hour === 8}>{`${hour}:00`}</option>
                 ))}
               </select>
             </div>
@@ -457,8 +488,8 @@ export default function PlanningFilters({
                 Heure de fin
               </label>
               <select className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2">
-                {Array.from({ length: 10 }, (_, i) => i + 14).map((hour) => (
-                  <option key={hour} value={hour}>{`${hour}:00`}</option>
+                {Array.from({ length: 15 }, (_, i) => i + 14).map((hour) => (
+                  <option key={hour} value={hour} selected={hour === 20}>{`${hour}:00`}</option>
                 ))}
               </select>
             </div>
@@ -469,7 +500,7 @@ export default function PlanningFilters({
               </label>
               <select className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2">
                 <option value="30">30 minutes</option>
-                <option value="60">1 heure</option>
+                <option value="60" selected>1 heure</option>
                 <option value="90">1h30</option>
                 <option value="120">2 heures</option>
               </select>
@@ -511,6 +542,8 @@ export default function PlanningFilters({
           </div>
         </div>
       )}
+      
+
     </div>
   );
 }

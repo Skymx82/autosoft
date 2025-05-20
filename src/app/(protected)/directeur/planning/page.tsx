@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import DirectorLayout from '@/components/directeur/layout/DirectorLayout';
 import PlanningFilters from '@/components/directeur/planning/PlanningFilters';
 import PlanningGrid from '@/components/directeur/planning/PlanningGrid';
-import AjouteHoraire from '@/components/directeur/planning/ModalHoraire';
 import { FiPlus } from 'react-icons/fi';
 
 export default function PlanningPage() {
@@ -15,6 +14,9 @@ export default function PlanningPage() {
   const [selectedMoniteurId, setSelectedMoniteurId] = useState<string | null>(null);
   // État pour gérer l'option "Afficher le dimanche"
   const [showSunday, setShowSunday] = useState(false);
+  
+  // État pour gérer le mode d'ajout d'horaire
+  const [addHoraireMode, setAddHoraireMode] = useState(false);
   
   // État pour gérer le modal de création d'horaire
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -106,6 +108,8 @@ export default function PlanningPage() {
             setSelectedMoniteur={setSelectedMoniteurId}
             showSundayProp={showSunday}
             setShowSunday={setShowSunday}
+            addHoraireModeProp={addHoraireMode}
+            setAddHoraireMode={setAddHoraireMode}
           />
         </div>
         
@@ -121,6 +125,8 @@ export default function PlanningPage() {
             setSelectedMoniteur={setSelectedMoniteurId}
             showSundayProp={showSunday}
             setShowSunday={setShowSunday}
+            addHoraireModeProp={addHoraireMode}
+            setAddHoraireMode={setAddHoraireMode}
             render={({ isLoading, error, data, showSunday: filterShowSunday }) => {
               if (isLoading) {
                 return (
@@ -156,6 +162,7 @@ export default function PlanningPage() {
                     currentView={currentView}
                     selectedMoniteurId={selectedMoniteurId ? parseInt(selectedMoniteurId) : null}
                     showSunday={showSunday}
+                    addHoraireMode={addHoraireMode} // Utiliser l'état du composant parent
                   />
                 </div>
               );
@@ -163,27 +170,6 @@ export default function PlanningPage() {
           />
         </div>
       </div>
-     
-      {/* 
-      Bouton flottant pour ajouter un horaire - Temporairement désactivé
-      <button
-        onClick={() => setShowCreateModal(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-600 transition-colors z-50"
-      >
-        <FiPlus className="w-6 h-6" />
-      </button>
-
-      Modal pour ajouter un horaire
-      <AjouteHoraire
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSave={(horaire) => {
-          console.log('Horaire créé:', horaire);
-          // Ici, vous appelleriez votre API pour sauvegarder l'horaire
-          // Exemple: saveHoraire(horaire).then(() => refetchPlanningData());
-        }}
-      />
-      */}
     </DirectorLayout>
   );
 }
