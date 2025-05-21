@@ -153,21 +153,11 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
     };
   };
   
-  // Fonction pour formater une date au format JJ/MM/YYYY (format français)
-  const formatDateForDisplay = (date: Date): string => {
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-  
-  // Nous n'avons plus besoin de passer la date ici car elle sera récupérée directement à partir de la cellule sélectionnée
   return (
     <SelectionManager
       isActive={addHoraireMode}
       onCellOccupiedCheck={isCellOccupied}
       onSelectionComplete={handleSelectionComplete}
-      moniteurs={moniteurs}
     >
       {/* En-tête avec les jours */}
       <div className="grid border-b bg-gray-50" style={{ gridTemplateColumns: `80px repeat(${filteredDays.length}, minmax(120px, 1fr))` }}>
@@ -291,9 +281,6 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
                           // Vérifier si cette case fait partie de la sélection en cours
                           const isInCurrentSelection = false; // Géré par SelectionManager
                           
-                          // Formater la date au format JJ/MM/YYYY pour l'affichage
-                          const formattedDate = formatDateForDisplay(day);
-                          
                           return (
                             <TimeCell
                               key={moniteurIndex}
@@ -304,7 +291,6 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
                               isSelected={isSelected || false}
                               isInCurrentSelection={isInCurrentSelection}
                               colWidth={colWidth}
-                              formattedDate={formattedDate}
                             />
                           );
                         })}

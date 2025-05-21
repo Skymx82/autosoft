@@ -143,8 +143,8 @@ export default function PlanningFilters({
     }
   }, [selectedMoniteur]);
 
-  // Utiliser le hook personnalisé pour récupérer les données du planning
-  const { isLoading, error, data, refetch } = usePlanningData(
+  // Utiliser le hook personnalisé pour récupérer les données du planning avec pagination
+  const { isLoading, error, data, refetch, loadMore, hasMore, isLoadingMore } = usePlanningData(
     userInfo.id_ecole,
     userInfo.id_bureau,
     dateRange.startDate,
@@ -154,6 +154,13 @@ export default function PlanningFilters({
     localSelectedMoniteur
   );
   
+  // Fonction pour charger plus de données lorsque l'utilisateur fait défiler vers le bas
+  const handleLoadMore = () => {
+    if (hasMore && !isLoadingMore) {
+      loadMore();
+    }
+  };
+
   // Fonction pour formater la période affichée selon la vue
   const formatPeriod = () => {
     const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
@@ -221,7 +228,24 @@ export default function PlanningFilters({
   
   // Si la prop render est fournie, on l'appelle avec les données
   if (render) {
-    return render({ isLoading, error, data, showSunday });
+    return (
+      <div>
+        {render({ isLoading, error, data, showSunday, addHoraireMode })}
+        
+        {/* Bouton "Charger plus" pour la pagination */}
+        {hasMore && data && !isLoading && (
+          <div className="flex justify-center my-4">
+            <button
+              onClick={handleLoadMore}
+              disabled={isLoadingMore}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            >
+              {isLoadingMore ? 'Chargement...' : 'Charger plus de données'}
+            </button>
+          </div>
+        )}
+      </div>
+    );
   }
   
   return (

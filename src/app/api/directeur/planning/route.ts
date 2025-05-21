@@ -13,15 +13,20 @@ export async function GET(request: Request) {
     const search = searchParams.get('search') || ''; // Recherche d'élève
     const moniteur = searchParams.get('moniteur') || 'all'; // Filtre par moniteur
     
+    // Paramètres de pagination
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = parseInt(searchParams.get('pageSize') || '50'); // Nombre d'éléments par page
+    
     // Vérifier que les paramètres nécessaires sont présents
     if (!id_ecole || !startDate || !endDate) {
       return NextResponse.json({ error: 'Paramètres manquants (id_ecole, startDate, endDate)' }, { status: 400 });
     }
     
     // --- RÉCUPÉRATION DES MONITEURS ---
+    // Sélectionner uniquement les champs nécessaires pour améliorer les performances
     let moniteursQuery = supabase
       .from('enseignants')
-      .select('id_moniteur, nom, prenom, email, tel, num_enseignant')
+      .select('id_moniteur, nom, prenom') // Réduire les champs sélectionnés pour optimiser
       .eq('id_ecole', id_ecole)
       .order('nom');
     
@@ -31,6 +36,7 @@ export async function GET(request: Request) {
     }
     
     // --- RÉCUPÉRATION DES LEÇONS DE CONDUITE ---
+    // Optimiser la requête en sélectionnant uniquement les champs nécessaires
     let leconsQuery = supabase
       .from('planning')
       .select(`
@@ -45,14 +51,13 @@ export async function GET(request: Request) {
         eleves (
           id_eleve,
           nom,
-          prenom,
-          tel,
-          categorie
+          prenom
         )
-      `)
+      `, { count: 'exact' }) // Ajouter le comptage pour la pagination
       .gte('date', startDate)
       .lte('date', endDate)
-      .eq('id_ecole', id_ecole);
+      .eq('id_ecole', id_ecole)
+      .range((page - 1) * pageSize, page * pageSize - 1); // Ajouter la pagination
       
     // Filtrer par moniteur si spécifié
     if (moniteur && moniteur !== 'all') {
@@ -66,23 +71,29 @@ export async function GET(request: Request) {
     }
     
     // --- RÉCUPÉRATION DES ÉLÈVES (pour la recherche) ---
-    // Limiter à 100 élèves pour des raisons de performance
+    // Limiter à 50 élèves pour des raisons de performance
     let elevesQuery = supabase
       .from('eleves')
-      .select('id_eleve, nom, prenom, tel, categorie, id_moniteur')
+      .select('id_eleve, nom, prenom') // Réduire les champs sélectionnés pour optimiser
       .eq('id_ecole', id_ecole)
       .order('nom')
-      .limit(100);
+      .limit(50); // Réduire la limite pour améliorer les performances
     
     // Filtrer par bureau si ce n'est pas "Tout" (id_bureau = 0)
     if (id_bureau !== '0') {
       elevesQuery = elevesQuery.eq('id_bureau', id_bureau);
     }
     
-    // Exécuter toutes les requêtes
-    const { data: moniteurs, error: moniteursError } = await moniteursQuery;
-    const { data: lecons, error: leconsError } = await leconsQuery;
-    const { data: eleves, error: elevesError } = await elevesQuery;
+    // Exécuter toutes les requêtes en parallèle pour améliorer les performances
+    const [moniteursResult, leconsResult, elevesResult] = await Promise.all([
+      moniteursQuery,
+      leconsQuery,
+      elevesQuery
+    ]);
+    
+    const { data: moniteurs, error: moniteursError } = moniteursResult;
+    const { data: lecons, error: leconsError } = leconsResult;
+    const { data: eleves, error: elevesError } = elevesResult;
     
     // Vérifier les erreurs
     if (moniteursError || leconsError || elevesError) {
@@ -135,12 +146,18 @@ export async function GET(request: Request) {
       });
     }
     
-    // Préparation de la réponse
+    // Préparation de la réponse avec informations de pagination
     const response = {
       moniteurs: moniteurs || [],
       lecons: filteredLecons || [],
       eleves: eleves || [],
-      leconsByDay: leconsByDay
+      leconsByDay: leconsByDay,
+      pagination: {
+        currentPage: page,
+        pageSize: pageSize,
+        totalItems: leconsResult.count || filteredLecons.length,
+        totalPages: Math.ceil((leconsResult.count || filteredLecons.length) / pageSize)
+      }
     };
     
     // Renvoyer toutes les données en une seule réponse
