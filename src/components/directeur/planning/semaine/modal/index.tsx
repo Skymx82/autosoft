@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { SelectionCell } from '../Selecteur';
+import { SelectionCell } from '../selection/Selecteur';
 import TabSelector from './TabSelector';
 import TimeRangeSelector from './TimeRangeSelector';
 import StudentSelector from './StudentSelector';
 import VehicleSelector from './VehicleSelector';
 import RecurrenceOptions from './RecurrenceOptions';
+import { generateRecurringSlots } from './generateRecurringSlots';
 import { 
   ModalSelectProps, 
   FormState, 
@@ -28,16 +29,6 @@ export default function ModalSelect({
   heureDebut,
   heureFin
 }: ModalSelectProps) {
-  // Afficher les données reçues par la modale
-  console.log('ModalSelect - Données reçues:');
-  console.log('selectionStart:', selectionStart);
-  console.log('selectionEnd:', selectionEnd);
-  console.log('moniteurId:', moniteurId);
-  console.log('moniteurNom:', moniteurNom);
-  console.log('moniteurPrenom:', moniteurPrenom);
-  console.log('date:', date);
-  console.log('heureDebut:', heureDebut);
-  console.log('heureFin:', heureFin);
   // État du formulaire
   const [formState, setFormState] = useState<FormState>({
     type: 'lesson',
@@ -163,10 +154,70 @@ export default function ModalSelect({
     setIsLoading(true);
     
     try {
-      await onSubmit(formState);
+      // Vérifier que les données du formulaire sont valides
+      if (!formState.date || !formState.startTime || !formState.endTime) {
+        throw new Error('Les informations de date et d\'heure sont obligatoires');
+      }
+      
+      // Générer tous les créneaux horaires en fonction des options de récurrence
+      const slots = generateRecurringSlots(formState);
+      console.log('Créneaux horaires générés:', slots);
+      
+      if (slots.length === 0) {
+        throw new Error('Aucun créneau horaire n\'a pu être généré');
+      }
+      
+      // Si un seul créneau, utiliser la méthode classique
+      if (slots.length === 1) {
+        await onSubmit(formState);
+      } else {
+        // Pour chaque créneau, créer un nouvel état de formulaire et le soumettre
+        let successCount = 0;
+        const totalSlots = slots.length;
+        
+        // Indiquer à ConfirmeSelect qu'il s'agit d'un enregistrement multiple
+        // pour éviter le rechargement de la page après chaque enregistrement
+        const isMultipleSubmit = true;
+        
+        for (let i = 0; i < slots.length; i++) {
+          const slot = slots[i];
+          const isLastSlot = i === slots.length - 1;
+          
+          try {
+            const slotFormState = {
+              ...formState,
+              date: slot.date,
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              // Désactiver la récurrence pour éviter une boucle infinie
+              isRecurring: false,
+              recurrencePattern: undefined,
+              // Indiquer s'il s'agit du dernier créneau à enregistrer
+              isLastRecurringSlot: isLastSlot,
+              // Indiquer qu'il s'agit d'un enregistrement multiple
+              isMultipleSubmit: isMultipleSubmit
+            };
+            
+            console.log(`Enregistrement du créneau ${i+1}/${slots.length}:`, slotFormState);
+            await onSubmit(slotFormState);
+            successCount++;
+          } catch (slotError) {
+            console.error(`Erreur lors de l'enregistrement du créneau ${i+1}/${slots.length} (${slot.date}):`, slotError);
+            // Continuer avec les autres créneaux malgré l'erreur
+          }
+        }
+        
+        if (successCount === 0) {
+          throw new Error('Aucun créneau n\'a pu être enregistré');
+        } else if (successCount < totalSlots) {
+          console.warn(`Seulement ${successCount}/${totalSlots} créneaux ont été enregistrés avec succès`);
+        }
+      }
+      
       onClose();
     } catch (error) {
       console.error('Erreur lors de l\'enregistrement:', error);
+      alert(`Erreur: ${error instanceof Error ? error.message : 'Une erreur est survenue lors de l\'enregistrement'}`); 
     } finally {
       setIsLoading(false);
     }

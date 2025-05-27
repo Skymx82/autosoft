@@ -154,12 +154,8 @@ export default function PlanningFilters({
     localSelectedMoniteur
   );
   
-  // Fonction pour charger plus de données lorsque l'utilisateur fait défiler vers le bas
-  const handleLoadMore = () => {
-    if (hasMore && !isLoadingMore) {
-      loadMore();
-    }
-  };
+  // Nous n'utilisons plus le chargement automatique des données supplémentaires
+  // car cela crée une boucle infinie de requêtes
 
   // Fonction pour formater la période affichée selon la vue
   const formatPeriod = () => {
@@ -236,7 +232,7 @@ export default function PlanningFilters({
         {hasMore && data && !isLoading && (
           <div className="flex justify-center my-4">
             <button
-              onClick={handleLoadMore}
+              onClick={() => loadMore()}
               disabled={isLoadingMore}
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
             >

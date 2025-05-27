@@ -1,5 +1,5 @@
 // Types partagés pour les composants de la modale
-import { SelectionCell } from '../Selecteur';
+import { SelectionCell } from '../selection/Selecteur';
 
 // Type d'événement dans le planning
 export type EventType = 'lesson' | 'unavailability' | 'exam';
@@ -37,11 +37,20 @@ export interface Instructor {
   vehicles?: number[]; // IDs des véhicules qu'il peut utiliser
 }
 
+// Interface pour un créneau horaire personnalisé
+export interface CustomTimeSlot {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+}
+
 // Interface pour les options de récurrence
 export interface RecurrencePattern {
-  frequency: 'weekly' | 'biweekly' | 'monthly';
+  frequency: 'weekly' | 'biweekly' | 'monthly' | 'custom';
   endDate: string;
   daysOfWeek?: number[]; // 0 = dimanche, 1 = lundi, etc.
+  customTimeSlots?: CustomTimeSlot[]; // Créneaux horaires personnalisés
 }
 
 // Interface pour l'état du formulaire
@@ -58,6 +67,9 @@ export interface FormState {
   isRecurring: boolean;
   recurrencePattern?: RecurrencePattern;
   comments: string;
+  // Propriétés pour la gestion des enregistrements multiples
+  isMultipleSubmit?: boolean; // Indique s'il s'agit d'un enregistrement multiple
+  isLastRecurringSlot?: boolean; // Indique s'il s'agit du dernier créneau d'un enregistrement multiple
 }
 
 // Props pour le composant ModalSelect

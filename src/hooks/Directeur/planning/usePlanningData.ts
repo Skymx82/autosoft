@@ -123,7 +123,7 @@ export function usePlanningData(
   view: 'day' | 'week' | 'month' = 'week',
   searchQuery: string = '',
   selectedMoniteur: string = 'all',
-  initialPageSize: number = 50 // Nombre d'éléments par page par défaut
+  initialPageSize: number = 100 // Taille raisonnable pour éviter les problèmes de performance
 ): UsePlanningDataResult {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
@@ -133,30 +133,35 @@ export function usePlanningData(
   const [pageSize] = useState<number>(initialPageSize);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const abortControllerRef = useRef<AbortController | null>(null);
-  
-  // Créer une clé de cache unique basée sur les paramètres (sans la page)
-  const baseCacheKey = `planning_${id_ecole}_${id_bureau}_${startDate}_${endDate}_${view}_${searchQuery}_${selectedMoniteur}`;
-  const cacheKey = `${baseCacheKey}_page${currentPage}`;
 
-  const fetchData = async (page: number = 1, isLoadingMoreData: boolean = false) => {
+  // Vérifier si les données ont changé
+  const hasDataChanged = useCallback((oldData: PlanningData, newData: PlanningData): boolean => {
+    if (oldData.lecons.length !== newData.lecons.length) return true;
+    return false;
+  }, []);
+
+  // Fonction pour charger les données
+  const fetchData = useCallback(async (page: number, isLoadingMore: boolean = false) => {
+    // Vérifier que les paramètres obligatoires sont présents
     if (!id_ecole || !startDate || !endDate) {
-      setError('Paramètres manquants');
-      setIsLoading(false);
       return;
     }
     
-    // Annuler toute requête en cours
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+    // Si on essaie de charger plus de données mais qu'il n'y a plus de données à charger
+    if (isLoadingMore && !hasMore) {
+      console.log('Pas plus de données à charger');
+      setIsLoadingMore(false);
+      return;
     }
     
-    // Vérifier si les données sont dans le cache et toujours valides
-    const cachedResult = dataCache[cacheKey];
-    const now = Date.now();
+    const cacheKey = `${id_ecole}_${id_bureau}_${startDate}_${endDate}_${view}_${searchQuery}_${selectedMoniteur}_${page}_${pageSize}`;
     
-    if (cachedResult && (now - cachedResult.timestamp < CACHE_DURATION)) {
-      // Utiliser les données du cache
-      if (isLoadingMoreData) {
+    // Vérifier si les données sont dans le cache et encore valides
+    const cachedResult = dataCache[cacheKey];
+    if (cachedResult && Date.now() - cachedResult.timestamp < CACHE_DURATION) {
+      console.log('Utilisation des données en cache pour:', cacheKey);
+      
+      if (isLoadingMore) {
         setData(prevData => mergeData(prevData, cachedResult.data));
         setIsLoadingMore(false);
       } else {
@@ -166,7 +171,7 @@ export function usePlanningData(
       return;
     }
 
-    if (isLoadingMoreData) {
+    if (isLoadingMore) {
       setIsLoadingMore(true);
     } else {
       setIsLoading(true);
@@ -209,7 +214,7 @@ export function usePlanningData(
       // Mettre à jour le cache
       dataCache[cacheKey] = {
         data: planningData,
-        timestamp: now
+        timestamp: Date.now()
       };
       
       // Ne pas mettre à jour l'état si la requête a été annulée
@@ -222,7 +227,7 @@ export function usePlanningData(
           setHasMore(false);
         }
         
-        if (isLoadingMoreData) {
+        if (isLoadingMore) {
           // Fusionner les nouvelles données avec les données existantes
           setData(prevData => mergeData(prevData, planningData));
         } else {
@@ -240,7 +245,7 @@ export function usePlanningData(
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
     } finally {
       if (abortControllerRef.current?.signal.aborted === false) {
-        if (isLoadingMoreData) {
+        if (isLoadingMore) {
           setIsLoadingMore(false);
         } else {
           setIsLoading(false);
@@ -248,7 +253,7 @@ export function usePlanningData(
         abortControllerRef.current = null;
       }
     }
-  };
+  }, [id_ecole, id_bureau, startDate, endDate, view, searchQuery, selectedMoniteur, pageSize, hasMore, mergeData]);
 
   // Réinitialiser la pagination lorsque les paramètres de recherche changent
   useEffect(() => {

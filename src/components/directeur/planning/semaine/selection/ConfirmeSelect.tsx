@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { SelectionCell } from './Selecteur';
-import ModalSelect from './modal';
+import ModalSelect from '../modal';
 
 interface SelectionControlsProps {
   onConfirm: () => void;
@@ -194,14 +194,67 @@ export default function SelectionControls({
         onSubmit={async (formData) => {
           setIsLoading(true);
           try {
-            // Simuler un appel API
-            await new Promise(resolve => setTimeout(resolve, 500));
-            console.log('Données du formulaire:', formData);
+            // Récupérer l'utilisateur actuel depuis le localStorage
+            const userData = localStorage.getItem('autosoft_user');
+            if (!userData) {
+              throw new Error('Utilisateur non trouvé dans le localStorage');
+            }
+            
+            // Parser les données utilisateur
+            const user = JSON.parse(userData);
+            const id_ecole = user.id_ecole;
+            const id_bureau = user.id_bureau;
+            
+            // Préparer les données pour l'API
+            const planningData = {
+              date: formData.date,
+              heure_debut: formData.startTime,
+              heure_fin: formData.endTime,
+              type_lecon: formData.lessonType || formData.type,
+              id_moniteur: formData.instructorId,
+              id_eleve: formData.studentId,
+              id_bureau,
+              id_ecole,
+              commentaire: formData.comments
+            };
+            
+            console.log('Envoi des données à l\'API:', planningData);
+            
+            // Appel à l'API pour enregistrer l'horaire
+            const response = await fetch('/api/directeur/planning/enregistrer', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(planningData),
+            });
+            
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || 'Erreur lors de l\'enregistrement');
+            }
+            
+            const result = await response.json();
+            console.log('Résultat de l\'enregistrement:', result);
             
             // Appeler onConfirm pour notifier le parent
             onConfirm();
+            
+            // Vérifier si c'est un enregistrement multiple et si c'est le dernier créneau
+            const isMultipleSubmit = formData.isMultipleSubmit;
+            const isLastRecurringSlot = formData.isLastRecurringSlot;
+            
+            // Ne recharger la page que s'il ne s'agit pas d'un enregistrement multiple
+            // ou s'il s'agit du dernier créneau d'un enregistrement multiple
+            if (!isMultipleSubmit || (isMultipleSubmit && isLastRecurringSlot)) {
+              console.log('Rechargement de la page après enregistrement');
+              window.location.reload();
+            } else {
+              console.log('Enregistrement intermédiaire, pas de rechargement');
+            }
           } catch (error) {
             console.error('Erreur lors de l\'enregistrement:', error);
+            alert(`Erreur: ${error instanceof Error ? error.message : 'Une erreur est survenue'}`);
           } finally {
             setIsLoading(false);
           }
