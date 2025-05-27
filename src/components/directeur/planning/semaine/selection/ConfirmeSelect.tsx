@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { SelectionCell } from './SelectionManager';
+import { SelectionCell } from './Selecteur';
+import ModalSelect from './ModalSelect';
 
 interface SelectionControlsProps {
   onConfirm: () => void;
@@ -174,114 +175,34 @@ export default function SelectionControls({
         </button>
       </div>
       
-      {/* Modal pour ajouter un horaire */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">Ajouter un horaire</h2>
+      {/* Utilisation du composant ModalSelect */}
+      <ModalSelect
+        showModal={showModal}
+        onClose={() => setShowModal(false)}
+        onSubmit={async (formData) => {
+          setIsLoading(true);
+          try {
+            // Simuler un appel API
+            await new Promise(resolve => setTimeout(resolve, 500));
+            console.log('Données du formulaire:', formData);
             
-            <form onSubmit={handleSubmit}>
-              {/* Informations sur la date et le moniteur */}
-              <div className="mb-4">
-                <p className="text-gray-700">
-                  <span className="font-medium">Date:</span> {date || selectionStart?.day || 'Non spécifiée'}
-                </p>
-                <p className="text-gray-700">
-                  <span className="font-medium">Moniteur:</span> {moniteurPrenom && moniteurNom ? `${moniteurPrenom} ${moniteurNom}` : 'Non spécifié'}
-                </p>
-              </div>
-              
-              {/* Heures de début et de fin */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Heure de début
-                  </label>
-                  <input
-                    type="time"
-                    value={heureDebut}
-                    onChange={(e) => setHeureDebut(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Heure de fin
-                  </label>
-                  <input
-                    type="time"
-                    value={heureFin}
-                    onChange={(e) => setHeureFin(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded"
-                    required
-                  />
-                </div>
-              </div>
-              
-              {/* Sélection de l'élève */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Élève
-                </label>
-                <select
-                  value={selectedEleve || ''}
-                  onChange={(e) => setSelectedEleve(parseInt(e.target.value))}
-                  className="w-full p-2 border border-gray-300 rounded"
-                  required
-                >
-                  <option value="">Sélectionner un élève</option>
-                  {eleves.map((eleve) => (
-                    <option key={eleve.id_eleve} value={eleve.id_eleve}>
-                      {eleve.prenom} {eleve.nom}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              {/* Type de leçon */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Type de leçon
-                </label>
-                <select
-                  value={typeLecon}
-                  onChange={(e) => setTypeLecon(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded"
-                  required
-                >
-                  <option value="">Sélectionner un type</option>
-                  <option value="Conduite">Conduite</option>
-                  <option value="Code">Code</option>
-                  <option value="Examen blanc">Examen blanc</option>
-                  <option value="Examen">Examen</option>
-                </select>
-              </div>
-              
-              {/* Boutons d'action */}
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                  }}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded hover:bg-gray-100"
-                  disabled={isLoading}
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Enregistrement...' : 'Enregistrer'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            // Appeler onConfirm pour notifier le parent
+            onConfirm();
+          } catch (error) {
+            console.error('Erreur lors de l\'enregistrement:', error);
+          } finally {
+            setIsLoading(false);
+          }
+        }}
+        selectionStart={selectionStart}
+        selectionEnd={selectionEnd}
+        moniteurId={moniteurId}
+        moniteurNom={moniteurNom}
+        moniteurPrenom={moniteurPrenom}
+        date={date}
+        heureDebut={heureDebut}
+        heureFin={heureFin}
+      />
     </>
   );
 }

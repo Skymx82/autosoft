@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import JourVu from './vues/JourVu';
-import SemaineVu from './vues/SemaineVu';
+import SemaineVu from './semaine/SemaineVu';
 import MoisVu from './vues/MoisVu';
 // Fonction utilitaire pour formater une heure au format HH:MM:SS en HH:MM
 const formatTimeToHHMM = (time: string): string => {

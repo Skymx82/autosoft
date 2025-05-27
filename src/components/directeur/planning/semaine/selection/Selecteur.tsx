@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, ReactNode } from 'react';
-import SelectionControls from './SelectionControls';
+import SelectionControls from './ConfirmeSelect';
 
 export interface SelectionCell {
   day: string;
