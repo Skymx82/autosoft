@@ -137,6 +137,8 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
       isActive={addHoraireMode}
       onCellOccupiedCheck={isCellOccupied}
       onSelectionComplete={handleSelectionComplete}
+      moniteurs={moniteurs}
+      date={filteredDays[0]?.toISOString().split('T')[0]}
     >
       {/* En-tête avec les jours */}
       <div className="grid border-b bg-gray-50" style={{ gridTemplateColumns: `80px repeat(${filteredDays.length}, minmax(120px, 1fr))` }}>
@@ -270,6 +272,7 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
                               isSelected={isSelected || false}
                               isInCurrentSelection={isInCurrentSelection}
                               colWidth={colWidth}
+                              formattedDate={dateStr}
                             />
                           );
                         })}
@@ -316,6 +319,7 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
                               isSelected={isSelected || false}
                               isInCurrentSelection={isInCurrentSelection}
                               colWidth={colWidth}
+                              formattedDate={dateStr}
                             />
                           );
                         })}
@@ -362,6 +366,7 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
                               isSelected={isSelected || false}
                               isInCurrentSelection={isInCurrentSelection}
                               colWidth={colWidth}
+                              formattedDate={dateStr}
                             />
                           );
                         })}
@@ -408,6 +413,7 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
                               isSelected={isSelected || false}
                               isInCurrentSelection={isInCurrentSelection}
                               colWidth={colWidth}
+                              formattedDate={dateStr}
                             />
                           );
                         })}

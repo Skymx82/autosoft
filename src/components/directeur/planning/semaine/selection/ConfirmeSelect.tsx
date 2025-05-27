@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { SelectionCell } from './Selecteur';
-import ModalSelect from './ModalSelect';
+import ModalSelect from './modal';
 
 interface SelectionControlsProps {
   onConfirm: () => void;
@@ -142,6 +142,18 @@ export default function SelectionControls({
   const handleConfirmClick = (e: React.MouseEvent) => {
     // Empêcher la propagation de l'événement pour éviter que le clic ne soit capturé par d'autres gestionnaires
     e.stopPropagation();
+    
+    // Afficher les données transmises à la modale
+    console.log('ConfirmeSelect - Données transmises à la modale:');
+    console.log('selectionStart:', selectionStart);
+    console.log('selectionEnd:', selectionEnd);
+    console.log('moniteurId:', moniteurId);
+    console.log('moniteurNom:', moniteurNom);
+    console.log('moniteurPrenom:', moniteurPrenom);
+    console.log('date:', date);
+    console.log('heureDebut:', heureDebut);
+    console.log('heureFin:', heureFin);
+    
     // Ouvrir le modal
     setShowModal(true);
   };
