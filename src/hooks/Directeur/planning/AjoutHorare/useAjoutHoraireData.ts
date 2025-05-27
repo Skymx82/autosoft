@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Student } from '@/components/directeur/planning/semaine/modal/types';
+import { Student } from '@/components/directeur/planning/ModalAjout/types';
 
 interface AjoutHoraireData {
   eleves: Student[];

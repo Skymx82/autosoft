@@ -1,5 +1,5 @@
 // Types partagés pour les composants de la modale
-import { SelectionCell } from '../selection/Selecteur';
+import { SelectionCell } from '../semaine/selection/Selecteur';
 
 // Type d'événement dans le planning
 export type EventType = 'lesson' | 'unavailability' | 'exam';

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Lecon, Moniteur } from '../PlanningGrid';
-import LeconDetailsModal from '../LeconDetailsModal';
+import LeconDetailsModal from '../ModalDetail';
 
 // Fonction utilitaire pour formater une heure au format HH:MM:SS en HH:MM
 const formatTimeToHHMM = (time: string): string => {
@@ -138,7 +138,13 @@ export default function JourVu({ moniteurs, leconsByDay, selectedDate, hours }: 
                     key={leconIndex}
                     className={`absolute left-0 right-0 mx-1 p-1 rounded border ${colorClass} text-xs overflow-hidden shadow-sm cursor-pointer hover:shadow transition-shadow`}
                     style={position}
-                    onClick={() => setSelectedLecon(lecon)}
+                    onClick={() => {
+                      // Associer le moniteur à la leçon avant de la sélectionner
+                      setSelectedLecon({
+                        ...lecon,
+                        moniteur: moniteur
+                      });
+                    }}
                   >
                     <div className="font-medium truncate">
                       {formatTimeToHHMM(lecon.heure_debut)} - {formatTimeToHHMM(lecon.heure_fin)}
@@ -156,12 +162,19 @@ export default function JourVu({ moniteurs, leconsByDay, selectedDate, hours }: 
       </div>
       
       {/* Modal pour afficher les détails d'une leçon */}
-      {selectedLecon && (
-        <LeconDetailsModal 
-          lecon={selectedLecon} 
-          onClose={() => setSelectedLecon(null)} 
-        />
-      )}
+      <LeconDetailsModal 
+        lecon={selectedLecon!} 
+        onClose={() => setSelectedLecon(null)} 
+        showModal={selectedLecon !== null}
+        onUpdate={async (updatedLecon, action) => {
+          // Ici, vous pouvez ajouter la logique pour mettre à jour la leçon
+          console.log(`Leçon mise à jour avec l'action: ${action}`, updatedLecon);
+          // Exemple: appeler une API pour mettre à jour la leçon
+          // await updateLecon(updatedLecon);
+          // Fermer le modal après la mise à jour
+          setSelectedLecon(null);
+        }}
+      />
     </div>
   );
 }

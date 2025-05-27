@@ -13,7 +13,6 @@ export const getMoniteurColor = (moniteurId: number) => {
     'bg-purple-100 text-purple-800 border-purple-300',
     'bg-indigo-100 text-indigo-800 border-indigo-300',
     'bg-pink-100 text-pink-800 border-pink-300',
-    'bg-gray-100 text-gray-800 border-gray-300',
     'bg-teal-100 text-teal-800 border-teal-300',
     'bg-orange-100 text-orange-800 border-orange-300',
     'bg-lime-100 text-lime-800 border-lime-300',
@@ -24,6 +23,41 @@ export const getMoniteurColor = (moniteurId: number) => {
   // Utiliser l'ID du moniteur pour sélectionner une couleur de manière déterministe
   const colorIndex = moniteurId % colors.length;
   return colors[colorIndex];
+};
+
+// Fonction pour obtenir la couleur en fonction du type de leçon
+export const getLeconTypeColor = (typeLecon: string, statutLecon: string) => {
+  // Couleurs spécifiques par type de leçon
+  if (statutLecon === 'Annulée') return 'bg-gray-300 text-gray-700 border-gray-400';
+  if (statutLecon === 'Réalisée') return 'bg-green-200 text-green-800 border-green-400';
+  
+  // Liste des motifs d'indisponibilité
+  const indisponibiliteMotifs = ['Congé', 'Maladie', 'Formation', 'Réunion', 'Autre', 'Indisponible'];
+  
+  // Liste des types d'examens (valeurs exactes utilisées dans le formulaire)
+  const examenTypes = ['Examen code', 'Examen conduite', 'Examen plateau'];
+  
+  // Si le type de leçon est un motif d'indisponibilité, utiliser la même couleur grise
+  if (indisponibiliteMotifs.includes(typeLecon)) {
+    return 'bg-gray-300 text-gray-800 border-gray-400'; // Gris uni plus clair pour toutes les indisponibilités
+  }
+  
+  // Si le type de leçon est un type d'examen, utiliser une couleur rouge vif pour les examens
+  if (examenTypes.includes(typeLecon)) {
+    return 'bg-red-200 text-red-800 border-red-500'; // Rouge vif pour tous les types d'examens
+  }
+  
+  switch (typeLecon) {
+    case 'Disponible':
+      return 'bg-green-50 text-green-700 border-green-300';
+    case 'Examen':
+      return 'bg-purple-200 text-purple-800 border-purple-400';
+    case 'Préparation examen':
+      return 'bg-purple-300 text-purple-900 border-purple-500';
+    // Autres types spécifiques peuvent être ajoutés ici
+    default:
+      return ''; // Retourne une chaîne vide pour utiliser la couleur du moniteur par défaut
+  }
 };
 
 interface LeconItemProps {
@@ -44,7 +78,14 @@ export default function LeconItem({
   moniteurCount, 
   onClick 
 }: LeconItemProps) {
-  const color = getMoniteurColor(moniteur.id_moniteur);
+  // Obtenir la couleur spécifique au type de leçon
+  const typeColor = getLeconTypeColor(lecon.type_lecon, lecon.statut_lecon);
+  
+  // Si pas de couleur spécifique au type, utiliser la couleur du moniteur
+  const moniteurColor = getMoniteurColor(moniteur.id_moniteur);
+  
+  // Utiliser la couleur du type si disponible, sinon celle du moniteur
+  const color = typeColor || moniteurColor;
   
   return (
     <div

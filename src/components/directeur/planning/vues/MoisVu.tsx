@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Lecon, Moniteur } from '../PlanningGrid';
-import LeconDetailsModal from '../LeconDetailsModal';
+import LeconDetailsModal from '../ModalDetail';
 
 // Fonction utilitaire pour formater une heure au format HH:MM:SS en HH:MM
 const formatTimeToHHMM = (time: string): string => {
@@ -187,7 +187,13 @@ export default function MoisVu({ moniteurs, leconsByDay, days, showSunday = fals
                               <div 
                                 key={moniteur.id_moniteur} 
                                 className={`w-6 h-6 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full ${colorStyle} cursor-pointer flex items-center justify-center text-xs font-medium shadow-sm`}
-                                onClick={() => setSelectedLecon(leconsDuJour[0])}
+                                onClick={() => {
+                                  // Associer le moniteur à la leçon avant de la sélectionner
+                                  setSelectedLecon({
+                                    ...leconsDuJour[0],
+                                    moniteur: moniteur
+                                  });
+                                }}
                                 title={`${moniteur.prenom} ${moniteur.nom} - ${nbLecons} leçon(s):\n${leconsSummary}`}
                               >
                                 {nbLecons > 1 ? nbLecons : ''}
@@ -207,12 +213,19 @@ export default function MoisVu({ moniteurs, leconsByDay, days, showSunday = fals
       </div>
       
       {/* Modal pour afficher les détails d'une leçon */}
-      {selectedLecon && (
-        <LeconDetailsModal 
-          lecon={selectedLecon} 
-          onClose={() => setSelectedLecon(null)} 
-        />
-      )}
+      <LeconDetailsModal 
+        lecon={selectedLecon!} 
+        onClose={() => setSelectedLecon(null)} 
+        showModal={selectedLecon !== null}
+        onUpdate={async (updatedLecon, action) => {
+          // Ici, vous pouvez ajouter la logique pour mettre à jour la leçon
+          console.log(`Leçon mise à jour avec l'action: ${action}`, updatedLecon);
+          // Exemple: appeler une API pour mettre à jour la leçon
+          // await updateLecon(updatedLecon);
+          // Fermer le modal après la mise à jour
+          setSelectedLecon(null);
+        }}
+      />
     </div>
   );
 }

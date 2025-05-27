@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { SelectionCell } from '../selection/Selecteur';
+import { SelectionCell } from '../semaine/selection/Selecteur';
 import TabSelector from './TabSelector';
 import TimeRangeSelector from './TimeRangeSelector';
 import StudentSelector from './StudentSelector';
@@ -379,9 +379,9 @@ export default function ModalSelect({
                   required
                 >
                   <option value="">Sélectionner un type</option>
-                  <option value="Code">Examen code</option>
-                  <option value="Conduite">Examen conduite</option>
-                  <option value="Plateau">Examen plateau</option>
+                  <option value="Examen code">Examen code</option>
+                  <option value="Examen conduite">Examen conduite</option>
+                  <option value="Examen plateau">Examen plateau</option>
                 </select>
               </div>
               

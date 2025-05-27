@@ -205,6 +205,7 @@ CREATE TABLE planning (
   id_moniteur INTEGER REFERENCES enseignants(id_moniteur) ON DELETE CASCADE,
   id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE CASCADE,
   statut_lecon VARCHAR(50) DEFAULT 'Prévue',
+  commentaire VARCHAR(255),
   id_notation_eleve INTEGER REFERENCES notation(id_notation_eleve) ON DELETE SET NULL,
   id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
   id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE

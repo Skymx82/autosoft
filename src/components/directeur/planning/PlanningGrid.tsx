@@ -42,6 +42,8 @@ interface Lecon {
   id_moniteur: number;
   id_eleve: number;
   eleves: Eleve | null;
+  moniteur?: Moniteur;
+  commentaire?: string;
 }
 
 // Exporter les types pour qu'ils soient utilisables par les autres composants

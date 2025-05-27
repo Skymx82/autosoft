@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { SelectionCell } from './Selecteur';
-import ModalSelect from '../modal';
+import ModalSelect from '../../ModalAjout';
 
 interface SelectionControlsProps {
   onConfirm: () => void;
