@@ -228,16 +228,10 @@ export default function PlanningFilters({
       <div>
         {render({ isLoading, error, data, showSunday, addHoraireMode })}
         
-        {/* Bouton "Charger plus" pour la pagination */}
-        {hasMore && data && !isLoading && (
+        {/* Indicateur de chargement pour les données supplémentaires */}
+        {isLoadingMore && (
           <div className="flex justify-center my-4">
-            <button
-              onClick={() => loadMore()}
-              disabled={isLoadingMore}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-            >
-              {isLoadingMore ? 'Chargement...' : 'Charger plus de données'}
-            </button>
+            <div className="text-gray-500 text-sm italic">Chargement en cours...</div>
           </div>
         )}
       </div>

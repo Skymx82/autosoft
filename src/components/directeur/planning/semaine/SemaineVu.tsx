@@ -151,8 +151,8 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
         ))}
       </div>
       
-      {/* Ligne avec les initiales des moniteurs */}
-      <div className="grid border-b bg-gray-100" style={{ gridTemplateColumns: `80px repeat(${filteredDays.length}, minmax(120px, 1fr))` }}>
+      {/* Ligne avec les initiales des moniteurs - Version desktop uniquement */}
+      <div className="hidden md:grid border-b bg-gray-100" style={{ gridTemplateColumns: `80px repeat(${filteredDays.length}, minmax(120px, 1fr))` }}>
         <div className="p-1 font-medium text-gray-500 border-r text-xs">Moniteurs</div>
         {filteredDays.map((day, dayIndex) => {
           // Formatage manuel de la date au format YYYY-MM-DD
@@ -202,6 +202,25 @@ export default function SemaineVu({ moniteurs, leconsByDay, days, hours, showSun
             </div>
           );
         })}
+      </div>
+      
+      {/* Version mobile - Légende des moniteurs (utilise toute la largeur du calendrier) */}
+      <div className="md:hidden border-b bg-gray-100 p-2" style={{ gridColumn: '1 / -1' }}>
+        <div className="font-medium text-gray-700 text-xs mb-1">Légende des moniteurs:</div>
+        <div className="grid" style={{ gridTemplateColumns: `repeat(${moniteurs.length}, 1fr)`, gap: '4px' }}>
+          {moniteurs.map((moniteur, index) => {
+            const color = getMoniteurColor(moniteur.id_moniteur);
+            return (
+              <div 
+                key={index} 
+                className={`text-xs px-2 py-1 ${color.split(' ')[0]} flex items-center justify-center border border-gray-200`}
+                style={{ color: 'black' }}
+              >
+                <span className="font-medium truncate">{moniteur.prenom} {moniteur.nom.charAt(0)}.</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
       
       {/* Corps du planning avec les heures */}
