@@ -53,6 +53,9 @@ export default function LeconDetailsModal({
       await onUpdate(updatedLecon, 'cancel');
       setShowCancelConfirm(false);
       onClose();
+      
+      // Rafraîchir la page pour voir les changements
+      window.location.reload();
     } catch (error) {
       console.error('Erreur lors de l\'annulation de la leçon:', error);
       alert('Erreur lors de l\'annulation de la leçon');
@@ -76,6 +79,9 @@ export default function LeconDetailsModal({
       await onUpdate(updatedLecon, 'complete');
       setShowCompleteConfirm(false);
       onClose();
+      
+      // Rafraîchir la page pour voir les changements
+      window.location.reload();
     } catch (error) {
       console.error('Erreur lors de la validation de la leçon:', error);
       alert('Erreur lors de la validation de la leçon');

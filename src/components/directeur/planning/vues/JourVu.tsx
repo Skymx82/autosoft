@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Lecon, Moniteur } from '../PlanningGrid';
 import LeconDetailsModal from '../ModalDetail';
+import { updateLecon } from '../../../../utils/Directeur/Planning/route';
 
 // Fonction utilitaire pour formater une heure au format HH:MM:SS en HH:MM
 const formatTimeToHHMM = (time: string): string => {
@@ -167,12 +168,20 @@ export default function JourVu({ moniteurs, leconsByDay, selectedDate, hours }: 
         onClose={() => setSelectedLecon(null)} 
         showModal={selectedLecon !== null}
         onUpdate={async (updatedLecon, action) => {
-          // Ici, vous pouvez ajouter la logique pour mettre à jour la leçon
-          console.log(`Leçon mise à jour avec l'action: ${action}`, updatedLecon);
-          // Exemple: appeler une API pour mettre à jour la leçon
-          // await updateLecon(updatedLecon);
-          // Fermer le modal après la mise à jour
-          setSelectedLecon(null);
+          try {
+            // Mettre à jour la leçon dans la base de données
+            const updatedLeconFromServer = await updateLecon(updatedLecon);
+            console.log(`Leçon mise à jour avec l'action: ${action}`, updatedLeconFromServer);
+            
+            // Vous pourriez également mettre à jour l'état local si nécessaire
+            // pour refléter les changements sans avoir à recharger la page
+            
+            // Fermer le modal après la mise à jour
+            setSelectedLecon(null);
+          } catch (error) {
+            console.error('Erreur lors de la mise à jour de la leçon:', error);
+            alert('Erreur lors de la mise à jour de la leçon. Veuillez réessayer.');
+          }
         }}
       />
     </div>
