@@ -204,6 +204,7 @@ CREATE TABLE planning (
   type_lecon VARCHAR(50),
   id_moniteur INTEGER REFERENCES enseignants(id_moniteur) ON DELETE CASCADE,
   id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE CASCADE,
+  id_vehicule INTEGER REFERENCES vehicule(id_vehicule) ON DELETE SET NULL,
   statut_lecon VARCHAR(50) DEFAULT 'Prévue',
   commentaire VARCHAR(255),
   id_notation_eleve INTEGER REFERENCES notation(id_notation_eleve) ON DELETE SET NULL,
@@ -350,6 +351,104 @@ CREATE TABLE examen_resultats (
   resultat VARCHAR(20),
   nb_tentative INTEGER DEFAULT 1,
   commentaire TEXT,
+  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
+  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+);
+
+-- Table Véhicule pour la gestion du parc automobile
+CREATE TABLE vehicule (
+  id_vehicule SERIAL PRIMARY KEY,
+  immatriculation VARCHAR(20) NOT NULL,
+  marque VARCHAR(50) NOT NULL,
+  modele VARCHAR(50) NOT NULL,
+  annee INTEGER,
+  type_vehicule VARCHAR(50) NOT NULL, -- Auto, Moto, Poids lourd, etc.
+  categorie_permis VARCHAR(10) NOT NULL, -- B, A, C, etc.
+  boite_vitesse VARCHAR(20), -- Manuelle, Automatique
+  carburant VARCHAR(20), -- Essence, Diesel, Électrique, Hybride
+  date_acquisition DATE,
+  date_mise_en_service DATE,
+  kilometrage_actuel INTEGER DEFAULT 0,
+  dernier_controle_technique DATE,
+  prochain_controle_technique DATE,
+  dernier_entretien DATE,
+  kilometrage_dernier_entretien INTEGER,
+  prochain_entretien_km INTEGER,
+  prochain_entretien_date DATE,
+  assurance_numero_contrat VARCHAR(50),
+  assurance_date_expiration DATE,
+  cout_acquisition DECIMAL(10, 2),
+  valeur_residuelle DECIMAL(10, 2),
+  cout_entretien_total DECIMAL(10, 2) DEFAULT 0,
+  cout_carburant_total DECIMAL(10, 2) DEFAULT 0,
+  consommation_moyenne DECIMAL(5, 2), -- L/100km
+  statut VARCHAR(20) DEFAULT 'Actif', -- Actif, En maintenance, Hors service, Vendu
+  notes TEXT,
+  equipements TEXT, -- Équipements spécifiques (double commande, etc.)
+  documents JSONB, -- Pour stocker les liens vers les documents (carte grise, assurance, etc.)
+  historique_entretiens JSONB, -- Historique des entretiens
+  historique_incidents JSONB, -- Accidents, pannes, etc.
+  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
+  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+);
+
+-- Table pour le suivi du kilométrage des véhicules
+CREATE TABLE kilometrage_vehicule (
+  id_kilometrage SERIAL PRIMARY KEY,
+  id_vehicule INTEGER REFERENCES vehicule(id_vehicule) ON DELETE CASCADE,
+  date_releve DATE NOT NULL,
+  kilometrage INTEGER NOT NULL,
+  id_moniteur INTEGER REFERENCES enseignants(id_moniteur) ON DELETE SET NULL,
+  notes TEXT,
+  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
+  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+);
+
+-- Table pour les entretiens des véhicules
+CREATE TABLE entretien_vehicule (
+  id_entretien SERIAL PRIMARY KEY,
+  id_vehicule INTEGER REFERENCES vehicule(id_vehicule) ON DELETE CASCADE,
+  date_entretien DATE NOT NULL,
+  type_entretien VARCHAR(50) NOT NULL, -- Révision, Réparation, Contrôle technique, etc.
+  description TEXT,
+  kilometrage INTEGER,
+  cout DECIMAL(10, 2),
+  prestataire VARCHAR(100),
+  facture_reference VARCHAR(50),
+  prochaine_echeance_km INTEGER,
+  prochaine_echeance_date DATE,
+  pieces_changees TEXT,
+  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
+  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+);
+
+-- Table pour les dépenses liées aux véhicules (carburant, péages, etc.)
+CREATE TABLE depense_vehicule (
+  id_depense SERIAL PRIMARY KEY,
+  id_vehicule INTEGER REFERENCES vehicule(id_vehicule) ON DELETE CASCADE,
+  date_depense DATE NOT NULL,
+  type_depense VARCHAR(50) NOT NULL, -- Carburant, Péage, Parking, etc.
+  montant DECIMAL(10, 2) NOT NULL,
+  quantite DECIMAL(10, 2), -- Pour le carburant en litres
+  kilometrage INTEGER,
+  lieu VARCHAR(100),
+  id_moniteur INTEGER REFERENCES enseignants(id_moniteur) ON DELETE SET NULL,
+  notes TEXT,
+  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
+  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+);
+
+-- Table pour les réservations de véhicules (si différent du planning des leçons)
+CREATE TABLE reservation_vehicule (
+  id_reservation SERIAL PRIMARY KEY,
+  id_vehicule INTEGER REFERENCES vehicule(id_vehicule) ON DELETE CASCADE,
+  date_debut TIMESTAMP NOT NULL,
+  date_fin TIMESTAMP NOT NULL,
+  motif VARCHAR(100),
+  id_moniteur INTEGER REFERENCES enseignants(id_moniteur) ON DELETE SET NULL,
+  id_planning INTEGER REFERENCES planning(id_planning) ON DELETE SET NULL,
+  statut VARCHAR(20) DEFAULT 'Confirmée', -- Confirmée, Annulée, Terminée
+  notes TEXT,
   id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
   id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
 );
