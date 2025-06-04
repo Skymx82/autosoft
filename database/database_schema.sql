@@ -438,20 +438,5 @@ CREATE TABLE depense_vehicule (
   id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
 );
 
--- Table pour les réservations de véhicules (si différent du planning des leçons)
-CREATE TABLE reservation_vehicule (
-  id_reservation SERIAL PRIMARY KEY,
-  id_vehicule INTEGER REFERENCES vehicule(id_vehicule) ON DELETE CASCADE,
-  date_debut TIMESTAMP NOT NULL,
-  date_fin TIMESTAMP NOT NULL,
-  motif VARCHAR(100),
-  id_moniteur INTEGER REFERENCES enseignants(id_moniteur) ON DELETE SET NULL,
-  id_planning INTEGER REFERENCES planning(id_planning) ON DELETE SET NULL,
-  statut VARCHAR(20) DEFAULT 'Confirmée', -- Confirmée, Annulée, Terminée
-  notes TEXT,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
-);
-
 -- Commentaire de fin
 -- Schéma de base de données terminé

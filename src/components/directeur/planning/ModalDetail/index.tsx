@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Lecon } from '../PlanningGrid';
-import { FiPhone, FiMail, FiClock, FiCalendar, FiUser, FiTruck, FiMapPin, FiFileText, FiAlertCircle } from 'react-icons/fi';
+import { FiMail, FiClock, FiCalendar, FiUser, FiTruck, FiMapPin, FiFileText, FiAlertCircle, FiEdit } from 'react-icons/fi';
+import SendMessage from './SendMessage';
+import DateEtHoraires from './DateEtHoraires';
+import Vehicule from './Vehicule';
+import Eleve from './Eleve';
+import { PlanningDetails } from './types';
 
 interface LeconDetailsModalProps {
   lecon: Lecon;
@@ -11,54 +16,7 @@ interface LeconDetailsModalProps {
   showModal: boolean;
 }
 
-interface PlanningDetails {
-  id_planning: number;
-  date: string;
-  heure_debut: string;
-  heure_fin: string;
-  type_lecon: string | null;
-  id_moniteur: number | null;
-  id_eleve: number | null;
-  id_vehicule: number | null;
-  statut_lecon: string;
-  commentaire: string | null;
-  id_notation_eleve: number | null;
-  id_bureau: number | null;
-  id_ecole: number | null;
-  enseignants: {
-    id_moniteur: number;
-    nom: string;
-    prenom: string;
-    email: string;
-    tel: string;
-  } | null;
-  eleves: {
-    id_eleve: number;
-    nom: string;
-    prenom: string;
-    mail: string;
-    tel: string;
-    categorie: string;
-  } | null;
-  vehicule: {
-    id_vehicule: number;
-    immatriculation: string;
-    marque: string;
-    modele: string;
-    type_vehicule: string;
-    categorie_permis: string;
-    statut: string;
-  } | null;
-  bureau: {
-    id_bureau: number;
-    nom: string;
-  } | null;
-  auto_ecole: {
-    id_ecole: number;
-    nom: string;
-  } | null;
-  notation: any | null;
-}
+// L'interface PlanningDetails est maintenant importée depuis le fichier types.ts
 
 export default function LeconDetailsModal({ 
   lecon, 
@@ -71,6 +29,7 @@ export default function LeconDetailsModal({
   const [error, setError] = useState<string | null>(null);
   const [commentaire, setCommentaire] = useState<string>('');
   const [isEditingComment, setIsEditingComment] = useState<boolean>(false);
+  const [isEditingDetails, setIsEditingDetails] = useState<boolean>(false);
   
   // Fonction pour annuler une leçon
   const handleCancel = async () => {
@@ -158,7 +117,7 @@ export default function LeconDetailsModal({
         },
         body: JSON.stringify({
           id_planning: planningDetails.id_planning,
-          commentaire
+          commentaire: commentaire
         }),
       });
       
@@ -169,12 +128,71 @@ export default function LeconDetailsModal({
       const updatedPlanning = await response.json();
       setPlanningDetails(updatedPlanning);
       setIsEditingComment(false);
+      
+      if (onUpdate && lecon) {
+        await onUpdate({
+          ...lecon,
+          commentaire: commentaire
+        }, 'edit');
+      }
     } catch (err) {
       console.error('Erreur lors de la mise à jour du commentaire:', err);
       setError('Impossible de mettre à jour le commentaire. Veuillez réessayer.');
     }
   };
   
+  // Fonction pour sauvegarder les modifications des détails de la leçon
+  const handleSaveDetails = async (updatedDetails: PlanningDetails) => {
+    try {
+      const response = await fetch('/api/directeur/planning/ModalDetail', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id_planning: updatedDetails.id_planning,
+          date: updatedDetails.date,
+          heure_debut: updatedDetails.heure_debut,
+          heure_fin: updatedDetails.heure_fin,
+          type_lecon: updatedDetails.type_lecon,
+          commentaire: updatedDetails.commentaire,
+          id_moniteur: updatedDetails.id_moniteur,
+          id_eleve: updatedDetails.id_eleve,
+          id_vehicule: updatedDetails.id_vehicule
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erreur lors de la mise à jour: ${response.status}`);
+      }
+      
+      const updatedPlanning = await response.json();
+      setPlanningDetails(updatedPlanning);
+      setIsEditingDetails(false);
+      
+      if (onUpdate && lecon) {
+        await onUpdate({
+          ...lecon,
+          date: updatedDetails.date,
+          heure_debut: updatedDetails.heure_debut,
+          heure_fin: updatedDetails.heure_fin,
+          type_lecon: updatedDetails.type_lecon,
+          commentaire: updatedDetails.commentaire
+        }, 'edit');
+      }
+    } catch (err) {
+      console.error('Erreur lors de la mise à jour des détails:', err);
+      throw new Error('Impossible de mettre à jour les détails. Veuillez réessayer.');
+    }
+  };
+  
+  // Initialiser le commentaire quand les détails sont chargés
+  useEffect(() => {
+    if (planningDetails) {
+      setCommentaire(planningDetails.commentaire || '');
+    }
+  }, [planningDetails]);
+
   useEffect(() => {
     // Fonction pour récupérer les détails du planning
     const fetchPlanningDetails = async () => {
@@ -235,8 +253,14 @@ export default function LeconDetailsModal({
   // Si la modale n'est pas visible, ne rien afficher
   if (!showModal) return null;
   
+  // Log pour déboguer le rendu
+  console.log('Rendu de LeconDetailsModal, isEditingDetails:', isEditingDetails);
+  console.log('planningDetails existe:', !!planningDetails);
+  
   return (
-    <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50" onClick={onClose}>
+    <>
+      {/* Modale principale */}
+      <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-lg shadow-xl p-0 max-w-4xl w-full border border-gray-200 max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
         {/* En-tête avec titre, statut et bouton de fermeture */}
         <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-gray-50">
@@ -269,13 +293,16 @@ export default function LeconDetailsModal({
           <div className="flex items-center justify-between p-3 bg-gray-100 border-b border-gray-200">
             <div className="flex space-x-2">
               {planningDetails.eleves?.tel && (
-                <a 
-                  href={`tel:${planningDetails.eleves.tel}`} 
-                  className="flex items-center px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-                  title="Appeler l'élève"
-                >
-                  <FiPhone className="mr-1" /> Appeler
-                </a>
+                <SendMessage
+                  phoneNumber={planningDetails.eleves.tel}
+                  label="Envoyer un message"
+                  leconDetails={{
+                    date: planningDetails.date ? formatDate(planningDetails.date) : undefined,
+                    heure: planningDetails.heure_debut ? formatTime(planningDetails.heure_debut) : undefined,
+                    moniteur: planningDetails.enseignants ? `${planningDetails.enseignants.prenom} ${planningDetails.enseignants.nom}` : undefined,
+                    type: planningDetails.type_lecon || undefined
+                  }}
+                />
               )}
               {planningDetails.eleves?.mail && (
                 <a 
@@ -289,10 +316,15 @@ export default function LeconDetailsModal({
             </div>
             <div className="flex space-x-2">
               <button 
-                onClick={() => setIsEditingComment(true)} 
+                onClick={() => {
+                  console.log('Bouton Modifier cliqué');
+                  console.log('isEditingDetails avant:', isEditingDetails);
+                  setIsEditingDetails(true);
+                  console.log('isEditingDetails après:', true);
+                }} 
                 className="flex items-center px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
               >
-                <FiFileText className="mr-1" /> Modifier
+                <FiEdit className="mr-1" /> Modifier
               </button>
               <button 
                 onClick={handleCancel} 
@@ -354,102 +386,20 @@ export default function LeconDetailsModal({
               <div className="space-y-4 p-4">
                 {/* Informations principales - Date, heure et statut */}
                 <div className="flex flex-wrap gap-4 mb-4">
-                  <div className="flex-1 min-w-[200px] p-3 bg-blue-50 rounded-md border border-blue-100">
-                    <div className="flex items-center mb-2">
-                      <FiCalendar className="text-blue-500 mr-2" />
-                      <h4 className="font-medium">Date et horaires</h4>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-sm">
-                        <span className="text-gray-500">Date: </span>
-                        <span className="font-medium">{formatDate(planningDetails.date)}</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="text-gray-500">Début: </span>
-                        <span className="font-medium">{formatTime(planningDetails.heure_debut)}</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="text-gray-500">Fin: </span>
-                        <span className="font-medium">{formatTime(planningDetails.heure_fin)}</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className="text-gray-500">Type: </span>
-                        <span className="font-medium">{planningDetails.type_lecon || 'Non spécifié'}</span>
-                      </div>
-                    </div>
-                  </div>
+                  <DateEtHoraires 
+                    planningDetails={planningDetails}
+                    onSave={handleSaveDetails}
+                    formatDate={formatDate}
+                    formatTime={formatTime}
+                  />
                   
-                  {/* Informations véhicule - Mise en avant */}
-                  {planningDetails.vehicule ? (
-                    <div className="flex-1 min-w-[200px] p-3 bg-green-50 rounded-md border border-green-100">
-                      <div className="flex items-center mb-2">
-                        <FiTruck className="text-green-500 mr-2" />
-                        <h4 className="font-medium">Véhicule</h4>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-sm">
-                          <span className="text-gray-500">Immatriculation: </span>
-                          <span className="font-medium">{planningDetails.vehicule.immatriculation}</span>
-                        </div>
-                        <div className="text-sm">
-                          <span className="text-gray-500">Modèle: </span>
-                          <span className="font-medium">{planningDetails.vehicule.marque} {planningDetails.vehicule.modele}</span>
-                        </div>
-                        <div className="text-sm">
-                          <span className="text-gray-500">Type: </span>
-                          <span className="font-medium">{planningDetails.vehicule.type_vehicule}</span>
-                        </div>
-                        <div className="text-sm">
-                          <span className="text-gray-500">Catégorie: </span>
-                          <span className="font-medium">{planningDetails.vehicule.categorie_permis}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex-1 min-w-[200px] p-3 bg-gray-50 rounded-md border border-gray-200">
-                      <div className="flex items-center mb-2">
-                        <FiTruck className="text-gray-500 mr-2" />
-                        <h4 className="font-medium">Véhicule</h4>
-                      </div>
-                      <p className="text-sm text-gray-500">Aucun véhicule assigné à cette leçon</p>
-                    </div>
-                  )}
+                  {/* Informations véhicule */}
+                  <Vehicule planningDetails={planningDetails} onSave={handleSaveDetails} />
                 </div>
                 
                 {/* Deuxième rangée - Élève et moniteur */}
                 <div className="flex flex-wrap gap-4 mb-4">
-                  {/* Informations élève */}
-                  {planningDetails.eleves && (
-                    <div className="flex-1 min-w-[200px] p-3 bg-gray-50 rounded-md border border-gray-200">
-                      <div className="flex items-center mb-2">
-                        <FiUser className="text-blue-500 mr-2" />
-                        <h4 className="font-medium">Élève</h4>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium">
-                          {planningDetails.eleves.prenom} {planningDetails.eleves.nom}
-                        </div>
-                        {planningDetails.eleves.tel && (
-                          <div className="text-sm">
-                            <span className="text-gray-500">Tél: </span>
-                            <a href={`tel:${planningDetails.eleves.tel}`} className="text-blue-500 hover:underline">{planningDetails.eleves.tel}</a>
-                          </div>
-                        )}
-                        {planningDetails.eleves.mail && (
-                          <div className="text-sm">
-                            <span className="text-gray-500">Email: </span>
-                            <a href={`mailto:${planningDetails.eleves.mail}`} className="text-blue-500 hover:underline">{planningDetails.eleves.mail}</a>
-                          </div>
-                        )}
-                        {planningDetails.eleves.categorie && (
-                          <div className="text-sm">
-                            <span className="text-gray-500">Catégorie: </span>
-                            <span>{planningDetails.eleves.categorie}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                  <Eleve planningDetails={planningDetails} onSave={handleSaveDetails} />
                   
                   {/* Informations moniteur */}
                   {planningDetails.enseignants && (
@@ -530,5 +480,6 @@ export default function LeconDetailsModal({
       </div>
     </div>
     </div>
+    </>
   );
 }
