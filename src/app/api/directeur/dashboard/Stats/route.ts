@@ -264,7 +264,7 @@ export async function GET(request: Request) {
     // --- RÉPONSE FINALE ---
     
     // Log pour le débogage
-    console.log('Statistiques du tableau de bord:', {
+    /*console.log('Statistiques du tableau de bord:', {
       eleves: {
         moisActuel: currentElevesCount,
         moisPrecedent: lastMonthElevesCount,
@@ -291,7 +291,7 @@ export async function GET(request: Request) {
         moisPrecedent: totalCALastMonth,
         pourcentageChangement: caPercentChange
       }
-    });
+    });*/
     
     // Préparer les données pour le graphique d'évolution du chiffre d'affaires
     const monthlyRevenue = Array(12).fill(0);

@@ -6,9 +6,9 @@ import { EventType, TabSelectorProps } from './types';
 export default function TabSelector({ activeTab, onTabChange }: TabSelectorProps) {
   // Définition des onglets disponibles
   const tabs: { id: EventType; label: string; icon: string }[] = [
-    { id: 'lesson', label: 'Leçon', icon: '📚' },
-    { id: 'unavailability', label: 'Indisponibilité', icon: '🚫' },
-    { id: 'exam', label: 'Examen', icon: '📝' },
+    { id: 'lesson', label: 'Leçon', icon: '' },
+    { id: 'unavailability', label: 'Indisponibilité', icon: '' },
+    { id: 'exam', label: 'Examen', icon: '' },
   ];
 
   return (

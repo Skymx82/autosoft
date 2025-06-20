@@ -1,4 +1,4 @@
-import EleveLeconsSummary from '@/components/directeur/planning/EleveLeconsSummary';
+import EleveLeconsSummary from '@/components/directeur/planning/ModalEleve/EleveLeconsSummary';
 import { notFound } from 'next/navigation';
 
 // Cette fonction est nécessaire pour Next.js 15

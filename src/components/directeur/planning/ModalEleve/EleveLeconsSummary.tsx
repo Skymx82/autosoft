@@ -167,20 +167,40 @@ export default function EleveLeconsSummary({ id_eleve }: EleveLeconsSummaryProps
 
   return (
     <div>
-      <div className="bg-white rounded-lg overflow-hidden">
-        <div className="p-2">
-          <div className="mb-6">
+      <div className="bg-white rounded-lg overflow-hidden text-black">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
             <h1 className="text-xl font-bold text-gray-800">
               Récapitulatif des leçons
             </h1>
           </div>
-        </div>
-
-        <div className="p-6">
+          
+          <div className="p-3 bg-gray-50 rounded-md border border-gray-200 mb-6">
+            <div className="flex items-center mb-2">
+              <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+              <h4 className="font-medium">Informations de l'élève</h4>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
+                {eleve.prenom?.charAt(0)}{eleve.nom?.charAt(0)}
+              </div>
+              <div>
+                <p className="font-medium text-gray-800">{eleve.prenom} {eleve.nom}</p>
+              </div>
+            </div>
+          </div>
+          
           {lecons.length > 0 ? (
             <div className="space-y-6">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h2 className="text-lg font-medium text-blue-800 mb-2">Informations générales</h2>
+              <div className="p-3 bg-gray-50 rounded-md border border-gray-200 mb-6">
+                <div className="flex items-center mb-2">
+                  <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                  </svg>
+                  <h4 className="font-medium">Informations générales</h4>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-gray-700"><span className="font-medium">Nombre total de leçons:</span> {lecons.length}</p>
@@ -197,8 +217,13 @@ export default function EleveLeconsSummary({ id_eleve }: EleveLeconsSummaryProps
                 </div>
               </div>
 
-              <div>
-                <h2 className="text-lg font-medium text-gray-800 mb-3">Liste des leçons</h2>
+              <div className="p-3 bg-gray-50 rounded-md border border-gray-200 mb-6">
+                <div className="flex items-center mb-2">
+                  <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                  </svg>
+                  <h4 className="font-medium">Liste des leçons</h4>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">

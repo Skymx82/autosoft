@@ -27,37 +27,66 @@ export const getMoniteurColor = (moniteurId: number) => {
 
 // Fonction pour obtenir la couleur en fonction du type de leçon
 export const getLeconTypeColor = (typeLecon: string, statutLecon: string) => {
-  // Couleurs spécifiques par type de leçon
-  if (statutLecon === 'Annulée') return 'bg-gray-300 text-gray-700 border-gray-400';
-  if (statutLecon === 'Réalisée') return 'bg-green-200 text-green-800 border-green-400';
+  // Base de couleur en fonction du type d'événement
+  let baseColor = '';
   
-  // Liste des motifs d'indisponibilité
-  const indisponibiliteMotifs = ['Congé', 'Maladie', 'Formation', 'Réunion', 'Autre', 'Indisponible'];
+  // ===== LEÇONS DE CONDUITE (nuances de bleu) =====
+  if (typeLecon === 'Conduite') {
+    baseColor = 'bg-blue-100 text-blue-800 border-blue-400';
+  } else if (typeLecon === 'Code') {
+    baseColor = 'bg-blue-50 text-blue-700 border-blue-300';
+  } else if (typeLecon === 'Évaluation') {
+    baseColor = 'bg-blue-200 text-blue-900 border-blue-500';
+  } 
   
-  // Liste des types d'examens (valeurs exactes utilisées dans le formulaire)
-  const examenTypes = ['Examen code', 'Examen conduite', 'Examen plateau'];
+  // ===== EXAMENS (nuances de rouge/violet) =====
+  else if (typeLecon === 'Examen code') {
+    baseColor = 'bg-red-100 text-red-800 border-red-400';
+  } else if (typeLecon === 'Examen conduite') {
+    baseColor = 'bg-red-200 text-red-900 border-red-500';
+  } else if (typeLecon === 'Examen plateau') {
+    baseColor = 'bg-red-300 text-red-900 border-red-600';
+  } else if (typeLecon === 'Examen') {
+    baseColor = 'bg-red-200 text-red-900 border-red-500';
+  } else if (typeLecon === 'Examen blanc') {
+    baseColor = 'bg-orange-100 text-orange-800 border-orange-400';
+  } else if (typeLecon === 'Préparation examen') {
+    baseColor = 'bg-purple-100 text-purple-800 border-purple-400';
+  } 
   
-  // Si le type de leçon est un motif d'indisponibilité, utiliser la même couleur grise
-  if (indisponibiliteMotifs.includes(typeLecon)) {
-    return 'bg-gray-300 text-gray-800 border-gray-400'; // Gris uni plus clair pour toutes les indisponibilités
+  // ===== INDISPONIBILITÉS (nuances de gris) =====
+  else if (typeLecon === 'Congé') {
+    baseColor = 'bg-gray-100 text-gray-700 border-gray-300';
+  } else if (typeLecon === 'Maladie') {
+    baseColor = 'bg-gray-200 text-gray-800 border-gray-400';
+  } else if (typeLecon === 'Formation') {
+    baseColor = 'bg-gray-300 text-gray-800 border-gray-500';
+  } else if (typeLecon === 'Réunion') {
+    baseColor = 'bg-gray-200 text-gray-800 border-gray-400';
+  } else if (typeLecon === 'Autre' || typeLecon === 'Indisponible') {
+    baseColor = 'bg-gray-200 text-gray-700 border-gray-400';
+  } 
+  
+  // ===== DISPONIBILITÉS (nuances de vert) =====
+  else if (typeLecon === 'Disponible') {
+    baseColor = 'bg-green-50 text-green-700 border-green-300';
+  } 
+  
+  // Si aucune couleur spécifique n'est définie, utiliser la couleur du moniteur
+  else {
+    return '';
   }
   
-  // Si le type de leçon est un type d'examen, utiliser une couleur rouge vif pour les examens
-  if (examenTypes.includes(typeLecon)) {
-    return 'bg-red-200 text-red-800 border-red-500'; // Rouge vif pour tous les types d'examens
+  // ===== MODIFICATEURS DE STATUT =====
+  if (statutLecon === 'Annulée') {
+    // Pour les leçons annulées: version désaturée avec bordure pointillée
+    return baseColor.replace('bg-', 'bg-opacity-50 bg-') + ' border-dashed';
+  } else if (statutLecon === 'Réalisée') {
+    // Pour les leçons réalisées: bordure plus épaisse avec motif de hachures
+    return baseColor + ' border-2 lecon-realisee';
   }
   
-  switch (typeLecon) {
-    case 'Disponible':
-      return 'bg-green-50 text-green-700 border-green-300';
-    case 'Examen':
-      return 'bg-purple-200 text-purple-800 border-purple-400';
-    case 'Préparation examen':
-      return 'bg-purple-300 text-purple-900 border-purple-500';
-    // Autres types spécifiques peuvent être ajoutés ici
-    default:
-      return ''; // Retourne une chaîne vide pour utiliser la couleur du moniteur par défaut
-  }
+  return baseColor;
 };
 
 interface LeconItemProps {

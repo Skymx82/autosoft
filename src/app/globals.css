@@ -19,6 +19,17 @@
   }
 }
 
+/* Classe pour les hachures des leçons réalisées */
+.lecon-realisee {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 5px,
+    rgba(0, 0, 0, 0.2) 5px,
+    rgba(0, 0, 0, 0.2) 10px
+  );
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

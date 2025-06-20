@@ -6,7 +6,7 @@ import { usePlanningData } from '@/hooks/Directeur/planning/usePlanningData';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useRouter } from 'next/navigation';
-import EleveLeconsSummary from './EleveLeconsSummary';
+import EleveLeconsSummary from './ModalEleve/EleveLeconsSummary';
 import { fr } from 'date-fns/locale';
 
 interface PlanningFiltersProps {

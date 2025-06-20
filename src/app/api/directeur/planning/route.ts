@@ -3,6 +3,9 @@ import { supabase } from '@/lib/supabase';
 
 export async function GET(request: Request) {
   try {
+    // Appeler la fonction PostgreSQL pour mettre à jour les leçons passées
+    await supabase.rpc('update_past_lessons');
+    
     // Extraire les paramètres de la requête
     const { searchParams } = new URL(request.url);
     const id_ecole = searchParams.get('id_ecole');
