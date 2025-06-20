@@ -14,6 +14,7 @@ export async function POST(request: Request) {
       type_lecon, 
       id_moniteur, 
       id_eleve, 
+      id_vehicule,
       id_bureau, 
       id_ecole,
       commentaire
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
       type_lecon: type_lecon || null,
       id_moniteur,
       id_eleve: id_eleve || null,
+      id_vehicule: id_vehicule || null,
       statut_lecon: 'Prévue',
       id_bureau: id_bureau || null,
       id_ecole,

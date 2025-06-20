@@ -33,19 +33,9 @@ export default function SelectionControls({
   const [showModal, setShowModal] = useState(false);
   const [heureDebut, setHeureDebut] = useState('');
   const [heureFin, setHeureFin] = useState('');
-  const [eleves, setEleves] = useState<any[]>([]);
   const [selectedEleve, setSelectedEleve] = useState<number | null>(null);
   const [typeLecon, setTypeLecon] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Charger la liste des élèves (simulé pour l'instant)
-  useEffect(() => {
-    setEleves([
-      { id_eleve: 1, nom: 'Dupont', prenom: 'Jean' },
-      { id_eleve: 2, nom: 'Martin', prenom: 'Sophie' },
-      { id_eleve: 3, nom: 'Durand', prenom: 'Pierre' },
-    ]);
-  }, []);
   
   // Fonction pour formater l'heure au format HH:MM
   const formatTimeToHHMM = (timeStr: string): string => {
@@ -213,6 +203,7 @@ export default function SelectionControls({
               type_lecon: formData.lessonType || formData.type,
               id_moniteur: formData.instructorId,
               id_eleve: formData.studentId,
+              id_vehicule: formData.vehicleId,
               id_bureau,
               id_ecole,
               commentaire: formData.comments

@@ -18,6 +18,8 @@ export interface PlanningDetails {
     prenom: string;
     email: string;
     tel: string;
+    num_enseignant?: string | null;
+    date_delivrance_num?: string | null;
   } | null;
   eleves: {
     id_eleve: number;

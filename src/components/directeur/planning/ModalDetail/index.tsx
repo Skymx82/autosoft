@@ -7,6 +7,7 @@ import SendMessage from './SendMessage';
 import DateEtHoraires from './DateEtHoraires';
 import Vehicule from './Vehicule';
 import Eleve from './Eleve';
+import Moniteur from './Moniteur';
 import { PlanningDetails } from './types';
 
 interface LeconDetailsModalProps {
@@ -176,8 +177,8 @@ export default function LeconDetailsModal({
           date: updatedDetails.date,
           heure_debut: updatedDetails.heure_debut,
           heure_fin: updatedDetails.heure_fin,
-          type_lecon: updatedDetails.type_lecon,
-          commentaire: updatedDetails.commentaire
+          type_lecon: updatedDetails.type_lecon || "",  // Convertir null en chaîne vide
+          commentaire: updatedDetails.commentaire || ""  // Convertir null en chaîne vide
         }, 'edit');
       }
     } catch (err) {
@@ -402,31 +403,10 @@ export default function LeconDetailsModal({
                   <Eleve planningDetails={planningDetails} onSave={handleSaveDetails} />
                   
                   {/* Informations moniteur */}
-                  {planningDetails.enseignants && (
-                    <div className="flex-1 min-w-[200px] p-3 bg-gray-50 rounded-md border border-gray-200">
-                      <div className="flex items-center mb-2">
-                        <FiUser className="text-green-500 mr-2" />
-                        <h4 className="font-medium">Moniteur</h4>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium">
-                          {planningDetails.enseignants.prenom} {planningDetails.enseignants.nom}
-                        </div>
-                        {planningDetails.enseignants.tel && (
-                          <div className="text-sm">
-                            <span className="text-gray-500">Tél: </span>
-                            <a href={`tel:${planningDetails.enseignants.tel}`} className="text-blue-500 hover:underline">{planningDetails.enseignants.tel}</a>
-                          </div>
-                        )}
-                        {planningDetails.enseignants.email && (
-                          <div className="text-sm">
-                            <span className="text-gray-500">Email: </span>
-                            <a href={`mailto:${planningDetails.enseignants.email}`} className="text-blue-500 hover:underline">{planningDetails.enseignants.email}</a>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                  <Moniteur 
+                    planningDetails={planningDetails}
+                    onSave={handleSaveDetails}
+                  />
                 </div>
                 
                 {/* Informations administratives */}
