@@ -20,7 +20,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'id_ecole doit être un nombre valide' }, { status: 400 });
     }
     
-    // --- RÉCUPÉRATION DES ÉLÈVES ---
     let elevesQuery = supabase
       .from('eleves')
       .select(`
@@ -56,7 +55,6 @@ export async function GET(request: Request) {
     }
     
     // Transformer les données pour correspondre au format attendu par le composant StudentSelector
-    // Utiliser des valeurs statiques pour les heures restantes et la progression
     const formattedEleves = eleves.map(eleve => ({
       id_eleve: eleve.id_eleve,
       nom: eleve.nom,
@@ -68,9 +66,7 @@ export async function GET(request: Request) {
       progress: 50 // Valeur statique pour la progression (50%)
     }));
     
-    return NextResponse.json({
-      eleves: formattedEleves
-    });
+    return NextResponse.json({ eleves: formattedEleves });
     
   } catch (error) {
     console.error('Erreur serveur:', error);

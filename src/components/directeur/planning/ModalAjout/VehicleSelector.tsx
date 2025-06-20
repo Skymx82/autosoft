@@ -11,88 +11,54 @@ export default function VehicleSelector({
 }: VehicleSelectorProps) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   
-  // Simuler le chargement des véhicules depuis une API
+  // Charger les véhicules depuis l'API
   useEffect(() => {
-    // Dans une vraie application, cela serait un appel API
     const fetchVehicles = async () => {
-      // Données simulées
-      const mockVehicles: Vehicle[] = [
-        { 
-          id: 1, 
-          name: 'Renault Clio', 
-          type: 'Voiture', 
-          licenseCategories: ['B', 'B manuelle'],
-          isAvailable: true
-        },
-        { 
-          id: 2, 
-          name: 'Peugeot 208', 
-          type: 'Voiture', 
-          licenseCategories: ['B', 'B manuelle'],
-          isAvailable: true
-        },
-        { 
-          id: 3, 
-          name: 'Toyota Yaris', 
-          type: 'Voiture automatique', 
-          licenseCategories: ['B', 'B auto'],
-          isAvailable: true
-        },
-        { 
-          id: 4, 
-          name: 'Yamaha MT-07', 
-          type: 'Moto', 
-          licenseCategories: ['A', 'A2'],
-          isAvailable: true
-        },
-        { 
-          id: 5, 
-          name: 'Honda CB500', 
-          type: 'Moto', 
-          licenseCategories: ['A1', 'A2'],
-          isAvailable: false
-        },
-        { 
-          id: 6, 
-          name: 'Scania R450', 
-          type: 'Poids lourd', 
-          licenseCategories: ['C', 'CE'],
-          isAvailable: true
-        },
-        { 
-          id: 7, 
-          name: 'Mercedes Sprinter', 
-          type: 'Utilitaire', 
-          licenseCategories: ['B', 'B manuelle'],
-          isAvailable: true
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Récupérer l'ID de l'école et du bureau depuis le localStorage ou d'autres sources
+        // Pour l'instant, on utilise des valeurs statiques pour la démonstration
+        const id_ecole = localStorage.getItem('id_ecole') || '1';
+        const id_bureau = localStorage.getItem('id_bureau') || '1';
+        
+        // Appel à l'API pour récupérer les véhicules
+        const response = await fetch(
+          `/api/directeur/planning/AjoutHoraire/vehicule?id_ecole=${id_ecole}&id_bureau=${id_bureau}`
+        );
+        
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP: ${response.status}`);
         }
-      ];
-      
-      setVehicles(mockVehicles);
+        
+        const data = await response.json();
+        
+        if (data.vehicules) {
+          setVehicles(data.vehicules);
+        } else {
+          setVehicles([]);
+        }
+      } catch (err) {
+        console.error('Erreur lors du chargement des véhicules:', err);
+        setError('Impossible de charger la liste des véhicules.');
+        setVehicles([]);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     fetchVehicles();
   }, []);
   
-  // Filtrer les véhicules en fonction de la catégorie de permis et du moniteur
+  // Mettre à jour la liste des véhicules
   useEffect(() => {
-    if (!licenseCategory) {
-      setFilteredVehicles([]);
-      return;
-    }
-    
-    // Filtrer par catégorie de permis et disponibilité
-    const filtered = vehicles.filter(vehicle => 
-      vehicle.licenseCategories.includes(licenseCategory as any) && 
-      vehicle.isAvailable
-    );
-    
-    // Dans une vraie application, on filtrerait également par les véhicules
-    // que le moniteur est autorisé à utiliser
-    
-    setFilteredVehicles(filtered);
-  }, [vehicles, licenseCategory, instructorId]);
+    // Afficher tous les véhicules sans filtrage
+    setFilteredVehicles(vehicles);
+  }, [vehicles]);
   
   // Gérer le changement de véhicule
   const handleVehicleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -110,7 +76,7 @@ export default function VehicleSelector({
           value={selectedVehicleId || ''}
           onChange={handleVehicleChange}
           className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 appearance-none"
-          disabled={!licenseCategory || filteredVehicles.length === 0}
+          disabled={!licenseCategory || filteredVehicles.length === 0 || isLoading}
           required
         >
           <option value="">Sélectionner un véhicule</option>
@@ -120,6 +86,11 @@ export default function VehicleSelector({
             </option>
           ))}
         </select>
+        {isLoading && (
+          <div className="absolute inset-y-0 right-0 flex items-center pr-8">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+          </div>
+        )}
         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
           <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -127,8 +98,14 @@ export default function VehicleSelector({
         </div>
       </div>
       
-      {licenseCategory && filteredVehicles.length === 0 && (
+      {error && (
         <p className="mt-1 text-sm text-red-600">
+          {error}
+        </p>
+      )}
+      
+      {!isLoading && licenseCategory && filteredVehicles.length === 0 && !error && (
+        <p className="mt-1 text-sm text-amber-600">
           Aucun véhicule disponible pour cette catégorie de permis.
         </p>
       )}

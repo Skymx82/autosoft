@@ -1,19 +1,15 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-/**
- * Récupère les véhicules associés à un bureau et une auto-école
- * GET /api/directeur/planning/ModalDetail/vehicule?id_bureau=123&id_ecole=456
- */
 export async function GET(request: Request) {
   try {
-    // Récupérer les paramètres de la requête
+    // Extraire les paramètres de la requête
     const { searchParams } = new URL(request.url);
-    const id_bureau = searchParams.get('id_bureau');
     const id_ecole = searchParams.get('id_ecole');
-
-    // Vérifier que les paramètres nécessaires sont fournis
-    if (!id_bureau || !id_ecole) {
+    const id_bureau = searchParams.get('id_bureau');
+    
+    // Vérifier que les paramètres nécessaires sont présents
+    if (!id_ecole || !id_bureau) {
       return NextResponse.json(
         { error: 'Les paramètres id_bureau et id_ecole sont requis' },
         { status: 400 }
@@ -42,12 +38,21 @@ export async function GET(request: Request) {
       );
     }
 
-    return NextResponse.json({ vehicules });
+    // Transformer les données pour correspondre au format attendu par le composant VehicleSelector
+    const formattedVehicules = vehicules.map(vehicule => ({
+      id: vehicule.id_vehicule,
+      name: `${vehicule.marque} ${vehicule.modele} (${vehicule.immatriculation})`,
+      type: vehicule.type_vehicule,
+      licenseCategories: [vehicule.categorie_permis],
+      isAvailable: vehicule.statut === 'Disponible'
+    }));
+
+    return NextResponse.json({
+      vehicules: formattedVehicules
+    });
+    
   } catch (error) {
-    console.error('Erreur lors de la récupération des véhicules:', error);
-    return NextResponse.json(
-      { error: 'Erreur lors de la récupération des véhicules' },
-      { status: 500 }
-    );
+    console.error('Erreur serveur:', error);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
