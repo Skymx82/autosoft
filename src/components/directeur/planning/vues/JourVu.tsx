@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Lecon, Moniteur } from '../PlanningGrid';
 import LeconDetailsModal from '../ModalDetail';
 import { updateLecon } from '../../../../utils/Directeur/Planning/route';
+import SelectionManagerJour, { SelectionCell } from '../jour/selection/SelecteurJour';
+import TimeCell from '../jour/cellule';
 
 // Fonction utilitaire pour formater une heure au format HH:MM:SS en HH:MM
 const formatTimeToHHMM = (time: string): string => {
@@ -88,10 +90,49 @@ interface JourVuProps {
   };
   selectedDate: Date;
   hours: string[];
+  addHoraireMode?: boolean; // Mode d'ajout d'horaire
 }
 
-export default function JourVu({ moniteurs, leconsByDay, selectedDate, hours }: JourVuProps) {
+export default function JourVu({ moniteurs, leconsByDay, selectedDate, hours, addHoraireMode = false }: JourVuProps) {
   const [selectedLecon, setSelectedLecon] = useState<Lecon | null>(null);
+  const [selectedCell, setSelectedCell] = useState<{day: string, time: string, moniteur: number} | null>(null);
+
+  // Fonction pour vérifier si une cellule est occupée
+  const isCellOccupied = (day: string, time: string, moniteur: number) => {
+    const leconsDuMoniteur = leconsByDay[day]?.[moniteur] || [];
+    
+    // Extraire les heures et minutes du créneau
+    const [hourStr, minuteStr] = time.split(':');
+    const hour = parseInt(hourStr);
+    const minute = parseInt(minuteStr || '0');
+    
+    // Convertir en minutes pour faciliter la comparaison
+    const timeInMinutes = hour * 60 + minute;
+    
+    // Vérifier si le créneau est déjà occupé par une leçon
+    return leconsDuMoniteur.some(lecon => {
+      const leconStart = lecon.heure_debut.split(':').map(Number);
+      const leconEnd = lecon.heure_fin.split(':').map(Number);
+      
+      const leconStartInMinutes = leconStart[0] * 60 + leconStart[1];
+      const leconEndInMinutes = leconEnd[0] * 60 + leconEnd[1];
+      
+      return timeInMinutes >= leconStartInMinutes && timeInMinutes < leconEndInMinutes;
+    });
+  };
+
+  // Fonction appelée lorsqu'une sélection est complétée
+  const handleSelectionComplete = (start: SelectionCell, end: SelectionCell) => {
+    // Ici, vous pouvez implémenter la logique pour traiter la sélection complétée
+    console.log(`Sélection complétée: de ${start.time} à ${end.time} le ${start.day} avec le moniteur ${start.moniteur}`);
+    
+    // Mettre à jour la cellule sélectionnée si nécessaire
+    setSelectedCell({
+      day: start.day,
+      time: start.time,
+      moniteur: start.moniteur
+    });
+  };
   
   // Calculer la position et la hauteur d'une leçon en fonction de son heure de début et de fin
   const calculateLeconPosition = (heure_debut: string, heure_fin: string) => {
@@ -118,8 +159,22 @@ export default function JourVu({ moniteurs, leconsByDay, selectedDate, hours }: 
   const date = String(selectedDate.getDate()).padStart(2, '0');
   const dateStr = `${year}-${month}-${date}`;
   
+  // Générer les créneaux de 15 minutes pour la sélection
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let h = 8; h < 20; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+      }
+    }
+    return slots;
+  };
+  
+  const timeSlots = generateTimeSlots();
+  
   return (
     <div className="h-full">
+      
       {/* En-tête avec les moniteurs */}
       <div className="grid border-b bg-blue-50" style={{ gridTemplateColumns: `80px repeat(${moniteurs.length}, minmax(120px, 1fr))` }}>
         <div className="p-2 font-medium text-gray-600 border-r bg-blue-100"></div>
@@ -131,25 +186,122 @@ export default function JourVu({ moniteurs, leconsByDay, selectedDate, hours }: 
       </div>
       
       {/* Corps du planning avec les heures et les leçons */}
-      <div className="grid" style={{ gridTemplateColumns: `80px repeat(${moniteurs.length}, minmax(120px, 1fr))` }}>
-        {/* Colonne des heures */}
-        <div className="border-r border-b bg-gray-50">
-          {hours.map((hour, hourIndex) => (
-            <div key={hourIndex} className={`h-[50px] border-b p-1 text-xs font-medium ${hourIndex % 2 === 0 ? 'bg-gray-100' : 'bg-gray-50'}`}>
-              {hour}
-            </div>
-          ))}
-        </div>
-        
-        {/* Colonnes des moniteurs avec leurs leçons */}
-        {moniteurs.map((moniteur, moniteurIndex) => {
-          const leconsDuJour = leconsByDay[dateStr]?.[moniteur.id_moniteur] || [];
+      <SelectionManagerJour
+        isActive={addHoraireMode}
+        onCellOccupiedCheck={isCellOccupied}
+        onSelectionComplete={handleSelectionComplete}
+        moniteurs={moniteurs}
+        date={dateStr}
+      >
+        <div className="grid" style={{ gridTemplateColumns: `80px repeat(${moniteurs.length}, minmax(120px, 1fr))` }}>
+          {/* Colonne des heures */}
+          <div className="border-r border-b bg-gray-50">
+            {hours.map((hour, hourIndex) => (
+              <div key={hourIndex} className={`h-[50px] border-b p-1 text-xs font-medium ${hourIndex % 2 === 0 ? 'bg-gray-100' : 'bg-gray-50'}`}>
+                {hour}
+              </div>
+            ))}
+          </div>
           
-          return (
-            <div key={moniteur.id_moniteur} className={`border-r border-b relative ${moniteurIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
+          {/* Colonnes des moniteurs avec leurs leçons */}
+          {moniteurs.map((moniteur, moniteurIndex) => {
+            const leconsDuJour = leconsByDay[dateStr]?.[moniteur.id_moniteur] || [];
+            
+            return (
+              <div key={moniteur.id_moniteur} className={`border-r border-b relative ${moniteurIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
+              {/* Mode sélection: afficher les cellules de 15 minutes pour la sélection */}
+              {addHoraireMode && (
+                <div className="absolute top-0 left-0 w-full h-full">
+                  {hours.map((hour, hourIndex) => {
+                    const hourValue = parseInt(hour.split(':')[0]);
+                    
+                    // Créer 4 tranches de 15 minutes pour chaque heure
+                    return [
+                      // 0-15 minutes
+                      <div key={`${hourIndex}-0`} className="absolute w-full" 
+                           style={{ top: `${hourIndex * 50}px`, height: '12.5px' }}
+                           data-day={dateStr}
+                           data-time={`${hourValue}:00`}
+                           data-moniteur={moniteur.id_moniteur}
+                           data-formatted-date={dateStr}>
+                        <TimeCell
+                          day={dateStr}
+                          time={`${hourValue}:00`}
+                          moniteur={moniteur.id_moniteur}
+                          isOccupied={isCellOccupied(dateStr, `${hourValue}:00`, moniteur.id_moniteur)}
+                          isSelected={false}
+                          isInCurrentSelection={false}
+                          formattedDate={dateStr}
+                        />
+                      </div>,
+                      // 15-30 minutes
+                      <div key={`${hourIndex}-1`} className="absolute w-full border-b border-gray-200" 
+                           style={{ top: `${hourIndex * 50 + 12.5}px`, height: '12.5px' }}
+                           data-day={dateStr}
+                           data-time={`${hourValue}:15`}
+                           data-moniteur={moniteur.id_moniteur}
+                           data-formatted-date={dateStr}>
+                        <TimeCell
+                          day={dateStr}
+                          time={`${hourValue}:15`}
+                          moniteur={moniteur.id_moniteur}
+                          isOccupied={isCellOccupied(dateStr, `${hourValue}:15`, moniteur.id_moniteur)}
+                          isSelected={false}
+                          isInCurrentSelection={false}
+                          formattedDate={dateStr}
+                        />
+                      </div>,
+                      // 30-45 minutes
+                      <div key={`${hourIndex}-2`} className="absolute w-full border-b border-gray-200" 
+                           style={{ top: `${hourIndex * 50 + 25}px`, height: '12.5px' }}
+                           data-day={dateStr}
+                           data-time={`${hourValue}:30`}
+                           data-moniteur={moniteur.id_moniteur}
+                           data-formatted-date={dateStr}>
+                        <TimeCell
+                          day={dateStr}
+                          time={`${hourValue}:30`}
+                          moniteur={moniteur.id_moniteur}
+                          isOccupied={isCellOccupied(dateStr, `${hourValue}:30`, moniteur.id_moniteur)}
+                          isSelected={false}
+                          isInCurrentSelection={false}
+                          formattedDate={dateStr}
+                        />
+                      </div>,
+                      // 45-60 minutes
+                      <div key={`${hourIndex}-3`} className="absolute w-full" 
+                           style={{ top: `${hourIndex * 50 + 37.5}px`, height: '12.5px' }}
+                           data-day={dateStr}
+                           data-time={`${hourValue}:45`}
+                           data-moniteur={moniteur.id_moniteur}
+                           data-formatted-date={dateStr}>
+                        <TimeCell
+                          day={dateStr}
+                          time={`${hourValue}:45`}
+                          moniteur={moniteur.id_moniteur}
+                          isOccupied={isCellOccupied(dateStr, `${hourValue}:45`, moniteur.id_moniteur)}
+                          isSelected={false}
+                          isInCurrentSelection={false}
+                          formattedDate={dateStr}
+                        />
+                      </div>
+                    ];
+                  })}
+                </div>
+              )}
+              
               {/* Lignes d'heures (une par heure) */}
               {hours.map((hour, hourIndex) => (
-                <div key={hourIndex} className={`h-[50px] border-b ${hourIndex % 2 === 0 ? 'bg-white/80' : 'bg-gray-50/50'}`}></div>
+                <div key={hourIndex} className={`h-[50px] border-b ${hourIndex % 2 === 0 ? 'bg-white/80' : 'bg-gray-50/50'}`}>
+                  {/* Lignes de 15 minutes à l'intérieur de chaque heure (visible uniquement en mode addHoraireMode) */}
+                  {addHoraireMode && (
+                    <>
+                      <div className="h-1/4 border-b border-gray-200"></div>
+                      <div className="h-1/4 border-b border-gray-200"></div>
+                      <div className="h-1/4 border-b border-gray-200"></div>
+                    </>
+                  )}
+                </div>
               ))}
               
               {/* Leçons du jour pour ce moniteur */}
@@ -180,33 +332,36 @@ export default function JourVu({ moniteurs, leconsByDay, selectedDate, hours }: 
                   </div>
                 );
               })}
-            </div>
-          );
-        })}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      </SelectionManagerJour>
       
       {/* Modal pour afficher les détails d'une leçon */}
-      <LeconDetailsModal 
-        lecon={selectedLecon!} 
-        onClose={() => setSelectedLecon(null)} 
-        showModal={selectedLecon !== null}
-        onUpdate={async (updatedLecon, action) => {
-          try {
-            // Mettre à jour la leçon dans la base de données
-            const updatedLeconFromServer = await updateLecon(updatedLecon);
-            console.log(`Leçon mise à jour avec l'action: ${action}`, updatedLeconFromServer);
-            
-            // Vous pourriez également mettre à jour l'état local si nécessaire
-            // pour refléter les changements sans avoir à recharger la page
-            
-            // Fermer le modal après la mise à jour
-            setSelectedLecon(null);
-          } catch (error) {
-            console.error('Erreur lors de la mise à jour de la leçon:', error);
-            alert('Erreur lors de la mise à jour de la leçon. Veuillez réessayer.');
-          }
-        }}
-      />
+      {selectedLecon && (
+        <LeconDetailsModal 
+          lecon={selectedLecon} 
+          onClose={() => setSelectedLecon(null)} 
+          showModal={selectedLecon !== null}
+          onUpdate={async (updatedLecon, action) => {
+            try {
+              // Mettre à jour la leçon dans la base de données
+              const updatedLeconFromServer = await updateLecon(updatedLecon);
+              console.log(`Leçon mise à jour avec l'action: ${action}`, updatedLeconFromServer);
+              
+              // Vous pourriez également mettre à jour l'état local si nécessaire
+              // pour refléter les changements sans avoir à recharger la page
+              
+              // Fermer le modal après la mise à jour
+              setSelectedLecon(null);
+            } catch (error) {
+              console.error('Erreur lors de la mise à jour de la leçon:', error);
+              alert('Erreur lors de la mise à jour de la leçon. Veuillez réessayer.');
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

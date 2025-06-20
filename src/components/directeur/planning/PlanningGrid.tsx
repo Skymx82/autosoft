@@ -263,6 +263,7 @@ export default function PlanningGrid({
             leconsByDay={leconsByDay}
             selectedDate={days[0]}
             hours={hours}
+            addHoraireMode={addHoraireMode}
           />
         ) : currentView === 'week' ? (
           // Vue Semaine - Utilisation du composant SemaineVu
