@@ -3,7 +3,44 @@ import { supabase } from '@/lib/supabase';
 
 export async function GET(request: Request) {
   try {
-    // Appeler la fonction PostgreSQL pour mettre à jour les leçons passées
+    /**
+     * MISE À JOUR AUTOMATIQUE DES STATUTS DES LEÇONS PASSÉES
+     * -----------------------------------------------------
+     * À chaque chargement du planning, on appelle une fonction PostgreSQL qui met à jour
+     * automatiquement le statut des leçons passées de "Prévue" à "Réalisée".
+     * 
+     * Fonctionnement :
+     * 1. La fonction PostgreSQL `update_past_lessons()` est définie dans la base de données Supabase
+     * 2. Elle est appelée via supabase.rpc() à chaque requête GET sur cette API
+     * 3. La fonction met à jour toutes les leçons dont :
+     *    - La date est antérieure à aujourd'hui, OU
+     *    - La date est aujourd'hui ET l'heure de fin est passée
+     *    - ET le statut est "Prévue" ou "Planifiée"
+     * 
+     * Code SQL de la fonction dans Supabase :
+     * ```sql
+     * CREATE OR REPLACE FUNCTION update_past_lessons()
+      RETURNS void AS $$
+      BEGIN
+        -- Mettre à jour les leçons dont la date est passée, en utilisant le fuseau horaire français
+        UPDATE planning
+        SET statut_lecon = 'Réalisée'
+        WHERE 
+          (date < (CURRENT_TIMESTAMP AT TIME ZONE 'Europe/Paris')::date 
+          OR 
+          (date = (CURRENT_TIMESTAMP AT TIME ZONE 'Europe/Paris')::date 
+          AND 
+          heure_fin < (CURRENT_TIMESTAMP AT TIME ZONE 'Europe/Paris')::time))
+          AND statut_lecon IN ('Prévue', 'Planifiée');
+      END;
+      $$ LANGUAGE plpgsql;
+     * ```
+     * 
+     * Avantages de cette approche :
+     * - Mise à jour automatique sans intervention manuelle
+     * - Exécution directe dans la base de données (performances optimales)
+     * - Centralisation de la logique métier
+     */
     await supabase.rpc('update_past_lessons');
     
     // Extraire les paramètres de la requête

@@ -17,43 +17,66 @@ const formatTimeToHHMM = (time: string): string => {
 
 // Fonction utilitaire pour obtenir le style de couleur en fonction du type de leçon
 const getLeconColor = (type_lecon: string, statut_lecon: string): string => {
-  if (statut_lecon === 'Annulée') return 'bg-red-300 border-red-400';
-  if (statut_lecon === 'Réalisée') return 'bg-green-100 border-green-400';
+  // Base de couleur en fonction du type d'événement
+  let baseColor = '';
   
-  switch (type_lecon) {
-    case 'B manuelle':
-      return 'bg-blue-100 border-blue-400';
-    case 'B auto':
-      return 'bg-indigo-100 border-indigo-400';
-    case 'B manuelle conduite accompagnée':
-      return 'bg-blue-200 border-blue-500';
-    case 'B auto conduite accompagnée':
-      return 'bg-indigo-200 border-indigo-500';
-    case 'A':
-    case 'A1':
-    case 'A2':
-      return 'bg-red-100 border-red-400';
-    case 'C':
-    case 'C1':
-    case 'C1E':
-    case 'CE':
-      return 'bg-yellow-100 border-yellow-400';
-    case 'D':
-    case 'D1':
-    case 'D1E':
-    case 'DE':
-      return 'bg-orange-100 border-orange-400';
-    case 'Examen':
-      return 'bg-purple-100 border-purple-400';
-    case 'Indisponible':
-      return 'bg-gray-200 border-gray-400';
-    case 'Préparation examen':
-      return 'bg-purple-200 border-purple-500';
-    case 'Disponible':
-      return 'bg-green-50 border-green-300';
-    default:
-      return 'bg-gray-100 border-gray-300';
+  // ===== LEÇONS DE CONDUITE (nuances de bleu) =====
+  if (type_lecon === 'Conduite') {
+    baseColor = 'bg-blue-100 text-blue-800 border-blue-400';
+  } else if (type_lecon === 'Code') {
+    baseColor = 'bg-blue-50 text-blue-700 border-blue-300';
+  } else if (type_lecon === 'Évaluation') {
+    baseColor = 'bg-blue-200 text-blue-900 border-blue-500';
+  } 
+  
+  // ===== EXAMENS (nuances de rouge/violet) =====
+  else if (type_lecon === 'Examen code') {
+    baseColor = 'bg-red-100 text-red-800 border-red-400';
+  } else if (type_lecon === 'Examen conduite') {
+    baseColor = 'bg-red-200 text-red-900 border-red-500';
+  } else if (type_lecon === 'Examen plateau') {
+    baseColor = 'bg-red-300 text-red-900 border-red-600';
+  } else if (type_lecon === 'Examen') {
+    baseColor = 'bg-red-200 text-red-900 border-red-500';
+  } else if (type_lecon === 'Examen blanc') {
+    baseColor = 'bg-orange-100 text-orange-800 border-orange-400';
+  } else if (type_lecon === 'Préparation examen') {
+    baseColor = 'bg-purple-100 text-purple-800 border-purple-400';
+  } 
+  
+  // ===== INDISPONIBILITÉS (nuances de gris) =====
+  else if (type_lecon === 'Congé') {
+    baseColor = 'bg-gray-100 text-gray-700 border-gray-300';
+  } else if (type_lecon === 'Maladie') {
+    baseColor = 'bg-gray-200 text-gray-800 border-gray-400';
+  } else if (type_lecon === 'Formation') {
+    baseColor = 'bg-gray-300 text-gray-800 border-gray-500';
+  } else if (type_lecon === 'Réunion') {
+    baseColor = 'bg-gray-200 text-gray-800 border-gray-400';
+  } else if (type_lecon === 'Autre' || type_lecon === 'Indisponible') {
+    baseColor = 'bg-gray-200 text-gray-700 border-gray-400';
+  } 
+  
+  // ===== DISPONIBILITÉS (nuances de vert) =====
+  else if (type_lecon === 'Disponible') {
+    baseColor = 'bg-green-50 text-green-700 border-green-300';
+  } 
+  
+  // Si aucune couleur spécifique n'est définie, utiliser la couleur du moniteur
+  else {
+    return 'bg-gray-100 text-gray-700 border-gray-300';
   }
+  
+  // ===== MODIFICATEURS DE STATUT =====
+  if (statut_lecon === 'Annulée') {
+    // Pour les leçons annulées: version désaturée avec bordure pointillée
+    return baseColor.replace('bg-', 'bg-opacity-50 bg-') + ' border-dashed';
+  } else if (statut_lecon === 'Réalisée') {
+    // Pour les leçons réalisées: bordure plus épaisse avec motif de hachures
+    return baseColor + ' border-2 lecon-realisee';
+  }
+  
+  return baseColor;
 };
 
 interface JourVuProps {
