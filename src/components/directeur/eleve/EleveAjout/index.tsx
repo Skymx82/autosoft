@@ -83,7 +83,7 @@ function FormContent() {
 export default function EleveAjout({ onClose }: { onClose?: () => void }) {
   return (
     <FormProvider>
-      <div className="bg-white p-6 rounded-lg shadow-md max-w-4xl mx-auto">
+      <div className="bg-white p-6 max-w-4xl mx-auto">
         {/* Navigation entre les étapes */}
         <StepNavigation onClose={onClose} />
         

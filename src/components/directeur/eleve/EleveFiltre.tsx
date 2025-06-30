@@ -156,6 +156,22 @@ export default function EleveFiltre({
   const [categoriesPermis, setCategoriesPermis] = useState<string[]>(['B', 'A', 'A1', 'A2', 'C', 'D', 'BE', 'CE', 'DE']);
   const [showEleveAjout, setShowEleveAjout] = useState(false);
   
+  // Effet pour bloquer le défilement du body quand le modal est ouvert
+  useEffect(() => {
+    if (showEleveAjout) {
+      // Désactiver le défilement sur le body
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Réactiver le défilement sur le body
+      document.body.style.overflow = 'auto';
+    }
+    
+    // Nettoyer l'effet lors du démontage du composant
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [showEleveAjout]);
+  
   // États pour les suggestions d'élèves
   const [suggestions, setSuggestions] = useState<Array<{id_eleve: number, nom: string, prenom: string}>>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -307,9 +323,10 @@ export default function EleveFiltre({
             >
               <option value="all">Tous les statuts</option>
               <option value="Actif">Actif</option>
-              <option value="Inactif">Inactif</option>
-              <option value="En formation">En formation</option>
-              <option value="Terminé">Terminé</option>
+              <option value="Complet">Complet</option>
+              <option value="En attente">En attente</option>
+              <option value="Brouillon">Brouillon</option>
+              <option value="Archivé">Archivé</option>
             </select>
           </div>
         </div>
@@ -368,7 +385,7 @@ export default function EleveFiltre({
       
       {/* Modal pour l'ajout d'élève */}
       {showEleveAjout && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 backdrop-blur-sm bg-transparent z-50 flex items-center justify-center p-4 overflow-hidden">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-4 border-b">
               <h2 className="text-xl font-semibold">Ajouter un nouvel élève</h2>
