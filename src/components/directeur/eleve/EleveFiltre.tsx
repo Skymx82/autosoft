@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FiSearch, FiFilter, FiX, FiChevronDown, FiUser, FiCalendar, FiMapPin, FiTag, FiSettings, FiPlus } from 'react-icons/fi';
+import { BiBuildings } from 'react-icons/bi';
 import { supabase } from '@/lib/supabase';
 import EleveAjout from './EleveAjout';
 
@@ -155,6 +156,7 @@ export default function EleveFiltre({
   const [bureaux, setBureaux] = useState<Array<{id_bureau: number, nom: string}>>([]);
   const [categoriesPermis, setCategoriesPermis] = useState<string[]>(['B', 'A', 'A1', 'A2', 'C', 'D', 'BE', 'CE', 'DE']);
   const [showEleveAjout, setShowEleveAjout] = useState(false);
+  const [showBureauWarning, setShowBureauWarning] = useState(false);
   
   // Effet pour bloquer le défilement du body quand le modal est ouvert
   useEffect(() => {
@@ -343,7 +345,20 @@ export default function EleveFiltre({
           </button>
           
           <button
-            onClick={() => setShowEleveAjout(true)}
+            onClick={() => {
+              // Vérifier si un bureau est sélectionné
+              const userDataStr = localStorage.getItem('autosoft_user');
+              const userData = userDataStr ? JSON.parse(userDataStr) : null;
+              const id_bureau = userData?.id_bureau || 0;
+              
+              if (id_bureau === 0) {
+                // Afficher le modal d'avertissement
+                setShowBureauWarning(true);
+              } else {
+                // Ouvrir le modal d'ajout d'élève
+                setShowEleveAjout(true);
+              }
+            }}
             className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             title="Ajouter un élève"
           >
@@ -378,6 +393,30 @@ export default function EleveFiltre({
                   <option value="thisYear">Cette année</option>
                 </select>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal d'avertissement pour sélection de bureau */}
+      {showBureauWarning && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-transparent z-50 flex items-center justify-center p-4 overflow-hidden">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 text-yellow-500">
+                <FiFilter className="w-12 h-12" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Sélection de bureau requise</h3>
+              <p className="text-gray-600 mb-6">
+                Veuillez sélectionner un bureau sur lequel l'élève sera enregistré. 
+                Pour changer de bureau, cliquez sur l'icône <BiBuildings className="inline h-5 w-5" /> dans la barre de navigation.
+              </p>
+              <button
+                onClick={() => setShowBureauWarning(false)}
+                className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Compris
+              </button>
             </div>
           </div>
         </div>

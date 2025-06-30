@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { FiCalendar, FiChevronLeft, FiChevronRight, FiSettings, FiSearch, FiUser, FiX, FiPlus } from 'react-icons/fi';
+import { FiCalendar, FiChevronLeft, FiChevronRight, FiSettings, FiSearch, FiUser, FiX, FiPlus, FiFilter } from 'react-icons/fi';
+import { BiBuildings } from 'react-icons/bi';
 import { usePlanningData } from '@/hooks/Directeur/planning/usePlanningData';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -71,6 +72,9 @@ export default function PlanningFilters({
   // Utiliser la prop si fournie, sinon utiliser l'état local
   const [localShowSunday, setLocalShowSunday] = useState(false);
   const showSunday = showSundayProp !== undefined ? showSundayProp : localShowSunday;
+  
+  // État pour le modal d'avertissement de bureau
+  const [showBureauWarning, setShowBureauWarning] = useState(false);
   
   // Fonction pour mettre à jour l'état showSunday
   const handleShowSundayChange = (show: boolean) => {
@@ -468,9 +472,20 @@ export default function PlanningFilters({
           {/* Bouton pour ajouter un horaire */}
           <button
             onClick={() => {
-              console.log('PlanningFilters - Bouton + cliqué, ancien état:', addHoraireMode);
-              handleAddHoraireModeChange(!addHoraireMode);
-              console.log('PlanningFilters - Nouvel état:', !addHoraireMode);
+              // Vérifier si un bureau est sélectionné
+              const userDataStr = localStorage.getItem('autosoft_user');
+              const userData = userDataStr ? JSON.parse(userDataStr) : null;
+              const id_bureau = userData?.id_bureau || 0;
+              
+              if (id_bureau === 0) {
+                // Afficher le modal d'avertissement
+                setShowBureauWarning(true);
+              } else {
+                // Activer/désactiver le mode ajout d'horaire
+                console.log('PlanningFilters - Bouton + cliqué, ancien état:', addHoraireMode);
+                handleAddHoraireModeChange(!addHoraireMode);
+                console.log('PlanningFilters - Nouvel état:', !addHoraireMode);
+              }
             }}
             className={`p-2 rounded-full text-white ${addHoraireMode ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'} transition-colors ml-auto flex items-center`}
             title={addHoraireMode ? 'Désactiver le mode ajout d\'horaire' : 'Activer le mode ajout d\'horaire'}
@@ -530,6 +545,30 @@ export default function PlanningFilters({
                 />
                 <span className="ml-2 text-sm text-gray-700">Afficher le dimanche</span>
               </label>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal d'avertissement pour sélection de bureau */}
+      {showBureauWarning && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-transparent z-50 flex items-center justify-center p-4 overflow-hidden">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 text-yellow-500">
+                <FiFilter className="w-12 h-12" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Sélection de bureau requise</h3>
+              <p className="text-gray-600 mb-6">
+                Veuillez sélectionner un bureau avant d'ajouter des horaires. 
+                Pour changer de bureau, cliquez sur l'icône <BiBuildings className="inline h-5 w-5" /> dans la barre de navigation.
+              </p>
+              <button
+                onClick={() => setShowBureauWarning(false)}
+                className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Compris
+              </button>
             </div>
           </div>
         </div>
