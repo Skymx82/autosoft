@@ -28,6 +28,7 @@ interface EleveFilters {
   statut: string;
   categoriePermis: string;
   dateInscription: string;
+  showArchived: boolean;
 }
 
 export default function ElevesPage() {
@@ -102,7 +103,8 @@ export default function ElevesPage() {
     bureau: 'all',
     statut: 'all',
     categoriePermis: 'all',
-    dateInscription: 'all'
+    dateInscription: 'all',
+    showArchived: false
   });
   
   // Fonctions pour gérer les changements de filtres
@@ -143,6 +145,12 @@ export default function ElevesPage() {
     // Filtrer les élèves en fonction des filtres
     let filtered = [...eleves];
     
+    // Filtre pour les élèves archivés
+    if (!currentFilters.showArchived) {
+      // Si showArchived est false, on exclut les élèves archivés
+      filtered = filtered.filter(eleve => eleve.statut_dossier !== 'Archivé');
+    }
+    
     // Filtre par terme de recherche
     if (currentFilters.searchTerm) {
       const searchLower = currentFilters.searchTerm.toLowerCase();
@@ -163,7 +171,6 @@ export default function ElevesPage() {
           eleve.tel.includes(searchLower) : 
           false;
         
-        // Retourner true si l'un des critères correspond
         return nameMatch || emailMatch || telMatch;
       });
     }
@@ -250,6 +257,58 @@ export default function ElevesPage() {
     }
   };
   
+  // Fonction pour supprimer un élève
+  const deleteEleve = async (id_eleve: number) => {
+    try {
+      // Récupérer l'ID de l'école depuis le localStorage
+      if (typeof window === 'undefined') {
+        throw new Error("Cette fonction ne peut être exécutée que côté client");
+      }
+      
+      const storedUser = localStorage.getItem('autosoft_user');
+      if (!storedUser) {
+        throw new Error("Utilisateur non connecté");
+      }
+      
+      const userData = JSON.parse(storedUser);
+      const id_ecole = userData.id_ecole;
+      
+      if (!id_ecole) {
+        throw new Error("ID de l'auto-école non disponible");
+      }
+      
+      // Construire l'URL avec les paramètres
+      const url = `/api/directeur/eleves/ElevesTable?id_ecole=${id_ecole}&id_eleve=${id_eleve}`;
+      
+      // Faire la requête DELETE
+      const response = await fetch(url, {
+        method: 'DELETE',
+      });
+      
+      // Vérifier si la requête a réussi
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Erreur HTTP: ${response.status}`);
+      }
+      
+      // Mettre à jour la liste des élèves après la suppression
+      setEleves(prev => prev.filter(eleve => eleve.id_eleve !== id_eleve));
+      setFilteredEleves(prev => prev.filter(eleve => eleve.id_eleve !== id_eleve));
+      
+      // Si l'élève était sélectionné, le retirer de la sélection
+      if (selectedEleves.includes(id_eleve)) {
+        setSelectedEleves(prev => prev.filter(id => id !== id_eleve));
+      }
+      
+      // Afficher un message de succès (à implémenter selon votre système de notification)
+      console.log("Élève supprimé avec succès");
+      
+    } catch (error) {
+      console.error('Erreur lors de la suppression de l\'élève:', error);
+      // Afficher un message d'erreur (à implémenter selon votre système de notification)
+    }
+  };
+  
   return (
     <DirectorLayout>
       <div className="flex flex-col h-full relative">
@@ -287,6 +346,7 @@ export default function ElevesPage() {
             selectedEleves={selectedEleves}
             toggleEleveSelection={toggleEleveSelection}
             toggleAllEleves={toggleAllEleves}
+            onDeleteEleve={deleteEleve}
           />
         </div>
       </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiSearch, FiFilter, FiX, FiChevronDown, FiUser, FiCalendar, FiMapPin, FiTag, FiSettings, FiPlus } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiX, FiChevronDown, FiUser, FiCalendar, FiMapPin, FiTag, FiSettings, FiPlus, FiTrash2 } from 'react-icons/fi';
 import { BiBuildings } from 'react-icons/bi';
 import { supabase } from '@/lib/supabase';
 import EleveAjout from './EleveAjout';
@@ -12,6 +12,7 @@ export interface EleveFilters {
   statut: string;
   categoriePermis: string;
   dateInscription: string;
+  showArchived: boolean;
 }
 
 interface EleveFiltreProps {
@@ -52,6 +53,7 @@ export default function EleveFiltre({
   const [localStatut, setLocalStatut] = useState('all');
   const [localCategoriePermis, setLocalCategoriePermis] = useState('all');
   const [localDateInscription, setLocalDateInscription] = useState('all');
+  const [showArchived, setShowArchived] = useState(false);
   
   // Utiliser les props si fournies, sinon utiliser les états locaux
   const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : localSearchTerm;
@@ -73,7 +75,8 @@ export default function EleveFiltre({
           bureau,
           statut,
           categoriePermis,
-          dateInscription
+          dateInscription,
+          showArchived
         });
       }
     }
@@ -91,7 +94,8 @@ export default function EleveFiltre({
           bureau: value,
           statut,
           categoriePermis,
-          dateInscription
+          dateInscription,
+          showArchived
         });
       }
     }
@@ -109,7 +113,8 @@ export default function EleveFiltre({
           bureau,
           statut: value,
           categoriePermis,
-          dateInscription
+          dateInscription,
+          showArchived
         });
       }
     }
@@ -127,7 +132,8 @@ export default function EleveFiltre({
           bureau,
           statut,
           categoriePermis: value,
-          dateInscription
+          dateInscription,
+          showArchived
         });
       }
     }
@@ -145,7 +151,8 @@ export default function EleveFiltre({
           bureau,
           statut,
           categoriePermis,
-          dateInscription: value
+          dateInscription: value,
+          showArchived
         });
       }
     }
@@ -372,7 +379,36 @@ export default function EleveFiltre({
         <div className="mt-4 p-4 border rounded-lg bg-gray-50">
           <h3 className="text-sm font-medium text-gray-700 mb-3">Filtres avancés</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {/* Espace vide intentionnellement laissé pour maintenir la structure de la grille */}
+            {/* Bouton pour afficher les élèves archivés */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Élèves archivés
+              </label>
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    const newShowArchived = !showArchived;
+                    setShowArchived(newShowArchived);
+                    if (onFilterChange) {
+                      onFilterChange({
+                        searchTerm,
+                        bureau,
+                        statut,
+                        categoriePermis,
+                        dateInscription,
+                        showArchived: newShowArchived
+                      });
+                    }
+                  }}
+                  className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${showArchived 
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 border-blue-600' 
+                    : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'}`}
+                >
+                  <FiTrash2 className="w-4 h-4 mr-1" />
+                  Élèves archivés
+                </button>
+              </div>
+            </div>
             
             {/* Filtre par date d'inscription */}
             <div>

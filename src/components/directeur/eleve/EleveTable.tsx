@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { FiEdit, FiTrash2, FiEye, FiCheck, FiX } from 'react-icons/fi';
+import { FiEdit, FiTrash2, FiEye, FiCheck, FiX, FiAlertTriangle } from 'react-icons/fi';
+import EleveDetailModal from './EleveDetailModal';
 
 interface Eleve {
   id_eleve: number;
@@ -25,22 +26,49 @@ interface EleveTableProps {
   selectedEleves: number[];
   toggleEleveSelection: (id_eleve: number) => void;
   toggleAllEleves: () => void;
+  onDeleteEleve?: (id_eleve: number) => void;
 }
 
 export default function EleveTable({ 
   eleves, 
   selectedEleves, 
   toggleEleveSelection, 
-  toggleAllEleves 
+  toggleAllEleves,
+  onDeleteEleve
 }: EleveTableProps) {
-  // État pour la pagination
+  // États pour la pagination et les modals
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [eleveToDelete, setEleveToDelete] = useState<Eleve | null>(null);
+  const [eleveToShow, setEleveToShow] = useState<Eleve | null>(null);
+  const [confirmPrenom, setConfirmPrenom] = useState('');
+  const [deleteError, setDeleteError] = useState('');
   
+  // Fonction pour obtenir l'ordre de priorité d'un statut
+  const getStatusPriority = (status?: string) => {
+    switch(status) {
+      case 'Actif': return 1;
+      case 'Complet': return 2;
+      case 'Incomplet': return 3;
+      case 'En attente': return 4;
+      case 'Brouillon': return 5;
+      default: return 6;
+    }
+  };
+  
+  // Trier les élèves par statut selon l'ordre de priorité défini
+  const sortedEleves = [...eleves].sort((a, b) => {
+    const priorityA = getStatusPriority(a.statut_dossier);
+    const priorityB = getStatusPriority(b.statut_dossier);
+    return priorityA - priorityB;
+  });
+
   // Calculer les indices des élèves à afficher
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentEleves = eleves.slice(indexOfFirstItem, indexOfLastItem);
+  const currentEleves = sortedEleves.slice(indexOfFirstItem, indexOfLastItem);
   
   // Fonction pour formater une date
   const formatDate = (dateString?: string) => {
@@ -173,13 +201,26 @@ export default function EleveTable({
                 {/* Priorité 1 - Toujours visible */}
                 <td className="px-2 sm:px-4 md:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex space-x-2">
-                    <button className="text-blue-600 hover:text-blue-900" title="Voir les détails">
+                    <button 
+                      className="text-blue-600 hover:text-blue-900" 
+                      title="Voir les détails"
+                      onClick={() => {
+                        setEleveToShow(eleve);
+                        setShowDetailModal(true);
+                      }}
+                    >
                       <FiEye />
                     </button>
-                    <button className="text-indigo-600 hover:text-indigo-900" title="Modifier">
-                      <FiEdit />
-                    </button>
-                    <button className="text-red-600 hover:text-red-900" title="Supprimer">
+                    <button 
+                      className="text-red-600 hover:text-red-900" 
+                      title="Supprimer"
+                      onClick={() => {
+                        setEleveToDelete(eleve);
+                        setShowDeleteModal(true);
+                        setConfirmPrenom('');
+                        setDeleteError('');
+                      }}
+                    >
                       <FiTrash2 />
                     </button>
                   </div>
@@ -270,6 +311,85 @@ export default function EleveTable({
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Modal de confirmation de suppression */}
+      {showDeleteModal && eleveToDelete && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/30 z-50 flex items-center justify-center p-4 overflow-hidden text-gray-800">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 text-red-500">
+                <FiAlertTriangle className="w-12 h-12" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Confirmation de suppression</h3>
+              <p className="text-gray-600 mb-6">
+                Vous êtes sur le point de supprimer l'élève <span className="font-semibold">{eleveToDelete.nom} {eleveToDelete.prenom}</span>.
+                <br /><br />
+                Pour confirmer, veuillez saisir le prénom de l'élève (<span className="font-semibold">{eleveToDelete.prenom}</span>) ci-dessous :
+              </p>
+              <div className="w-full mb-4">
+                <input
+                  type="text"
+                  value={confirmPrenom}
+                  onChange={(e) => {
+                    setConfirmPrenom(e.target.value);
+                    setDeleteError('');
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Saisir le prénom"
+                />
+              </div>
+              {deleteError && (
+                <div className="w-full mb-4 p-2 bg-red-100 text-red-700 text-sm rounded">
+                  {deleteError}
+                </div>
+              )}
+              <div className="flex space-x-3 w-full">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setEleveToDelete(null);
+                    setConfirmPrenom('');
+                    setDeleteError('');
+                  }}
+                  className="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirmPrenom === eleveToDelete.prenom) {
+                      // Appeler la fonction de suppression
+                      if (onDeleteEleve) {
+                        onDeleteEleve(eleveToDelete.id_eleve);
+                      }
+                      setShowDeleteModal(false);
+                      setEleveToDelete(null);
+                      setConfirmPrenom('');
+                    } else {
+                      setDeleteError('Le prénom ne correspond pas. Veuillez réessayer.');
+                    }
+                  }}
+                  className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de détails de l'élève */}
+      {showDetailModal && eleveToShow && (
+        <EleveDetailModal
+          showModal={showDetailModal}
+          onClose={() => {
+            setShowDetailModal(false);
+            setEleveToShow(null);
+          }}
+          eleveId={eleveToShow.id_eleve}
+        />
       )}
     </div>
   );
