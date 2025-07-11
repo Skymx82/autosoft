@@ -276,7 +276,7 @@ export default function EleveFiltre({
   };
   
   return (
-    <div className="bg-white shadow-sm p-4 w-full text-black">
+    <div className="bg-white shadow-sm px-4 pt-4 pb-0 w-full text-black">
       <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
         {/* Barre de recherche */}
         <div className="flex items-center space-x-2 md:space-x-3 lg:space-x-4 flex-wrap gap-y-2">
@@ -323,21 +323,7 @@ export default function EleveFiltre({
             </select>
           </div>
           
-          {/* Sélecteur de statut */}
-          <div className="w-48">
-            <select
-              value={statut}
-              onChange={(e) => handleStatutChange(e.target.value)}
-              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
-            >
-              <option value="all">Tous les statuts</option>
-              <option value="Actif">Actif</option>
-              <option value="Complet">Complet</option>
-              <option value="En attente">En attente</option>
-              <option value="Brouillon">Brouillon</option>
-              <option value="Archivé">Archivé</option>
-            </select>
-          </div>
+          {/* Le sélecteur de statut a été déplacé en bas des filtres principaux */}
         </div>
         
         {/* Boutons d'action */}
@@ -374,9 +360,56 @@ export default function EleveFiltre({
         </div>
       </div>
       
+      {/* Onglets de statut (prenant toute la largeur) */}
+      <div className="w-full border-b-0">
+        <div className="grid grid-cols-7 w-full">
+          <button
+            onClick={() => handleStatutChange('all')}
+            className={`text-center py-2 border-b-2 font-medium text-sm ${statut === 'all' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          >
+            Tous les statuts
+          </button>
+          <button
+            onClick={() => handleStatutChange('Actif')}
+            className={`text-center py-2 border-b-2 font-medium text-sm ${statut === 'Actif' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          >
+            Actif
+          </button>
+          <button
+            onClick={() => handleStatutChange('En attente')}
+            className={`text-center py-2 border-b-2 font-medium text-sm ${statut === 'En attente' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          >
+            En attente
+          </button>
+          <button
+            onClick={() => handleStatutChange('Complet')}
+            className={`text-center py-1 border-b-2 font-medium text-sm ${statut === 'Complet' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          >
+            Complet
+          </button>
+          <button
+            onClick={() => handleStatutChange('Incomplet')}
+            className={`text-center py-1 border-b-2 font-medium text-sm ${statut === 'Incomplet' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          >
+            Incomplet
+          </button>
+          <button
+            onClick={() => handleStatutChange('Brouillon')}
+            className={`text-center py-2 border-b-2 font-medium text-sm ${statut === 'Brouillon' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          >
+            Brouillon
+          </button>
+          <button
+            onClick={() => handleStatutChange('Archivé')}
+            className={`text-center py-2 border-b-2 font-medium text-sm ${statut === 'Archivé' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          >
+            Archivé
+          </button>
+        </div>
+      </div>
       {/* Panneau de paramètres (affiché conditionnellement) */}
       {isExpanded && (
-        <div className="mt-4 p-4 border rounded-lg bg-gray-50">
+        <div className="p-4 border rounded-lg bg-gray-50">
           <h3 className="text-sm font-medium text-gray-700 mb-3">Filtres avancés</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {/* Bouton pour afficher les élèves archivés */}

@@ -248,6 +248,9 @@ export default function InfoAdmin({ eleve, loading, onSave }: InfoAdminProps) {
                     <span className={`inline-block px-2 py-1 rounded-full text-xs ${
                       eleve.statut_dossier === 'Actif' ? 'bg-green-100 text-green-800' :
                       eleve.statut_dossier === 'En attente' ? 'bg-yellow-100 text-yellow-800' :
+                      eleve.statut_dossier === 'Complet' ? 'bg-blue-100 text-blue-800' :
+                      eleve.statut_dossier === 'Incomplet' ? 'bg-red-100 text-red-800' :
+                      eleve.statut_dossier === 'Brouillon' ? 'bg-purple-100 text-purple-800' :
                       eleve.statut_dossier === 'Archivé' ? 'bg-gray-100 text-gray-800' :
                       'bg-blue-100 text-blue-800'
                     }`}>
@@ -312,8 +315,10 @@ export default function InfoAdmin({ eleve, loading, onSave }: InfoAdminProps) {
                 <option value="">Sélectionner un statut</option>
                 <option value="Actif">Actif</option>
                 <option value="En attente">En attente</option>
+                <option value="Complet">Complet</option>
+                <option value="Incomplet">Incomplet</option>
+                <option value="Brouillon">Brouillon</option>
                 <option value="Archivé">Archivé</option>
-                <option value="Suspendu">Suspendu</option>
               </select>
               {validationErrors.statut_dossier && (
                 <p className="text-red-500 text-xs mt-1">{validationErrors.statut_dossier}</p>
