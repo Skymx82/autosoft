@@ -211,18 +211,21 @@ export default function EleveTable({
                     >
                       <FiEye />
                     </button>
-                    <button 
-                      className="text-red-600 hover:text-red-900" 
-                      title="Supprimer"
-                      onClick={() => {
-                        setEleveToDelete(eleve);
-                        setShowDeleteModal(true);
-                        setConfirmPrenom('');
-                        setDeleteError('');
-                      }}
-                    >
-                      <FiTrash2 />
-                    </button>
+                    {/* N'afficher le bouton de suppression que si l'élève n'est pas archivé */}
+                    {eleve.statut_dossier !== 'Archivé' && (
+                      <button 
+                        className="text-red-600 hover:text-red-900" 
+                        title="Supprimer"
+                        onClick={() => {
+                          setEleveToDelete(eleve);
+                          setShowDeleteModal(true);
+                          setConfirmPrenom('');
+                          setDeleteError('');
+                        }}
+                      >
+                        <FiTrash2 />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

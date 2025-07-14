@@ -173,21 +173,7 @@ export async function DELETE(req: NextRequest) {
       }
     }
     
-    // 3. Supprimer les heures de conduite associées à l'élève
-    const { error: deleteHeuresError } = await supabase
-      .from('heures_conduite')
-      .delete()
-      .eq('id_eleve', id_eleve);
-    
-    if (deleteHeuresError) {
-      console.error('Erreur lors de la suppression des heures de conduite:', deleteHeuresError);
-      return NextResponse.json(
-        { error: "Erreur lors de la suppression des heures de conduite de l'élève" },
-        { status: 500 }
-      );
-    }
-    
-    // 4. Archiver l'élève en mettant à jour son statut
+    // 3. Archiver l'élève en mettant à jour son statut
     const { error: updateEleveError } = await supabase
       .from('eleves')
       .update({ 

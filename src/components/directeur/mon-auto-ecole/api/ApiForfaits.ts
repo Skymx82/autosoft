@@ -115,3 +115,27 @@ export const deleteForfait = async (id_forfait: number): Promise<void> => {
     throw error;
   }
 };
+
+/**
+ * Récupère les forfaits par type de permis
+ */
+export const fetchForfaitsByTypePermis = async (typePermis: string): Promise<Forfait[]> => {
+  try {
+    const idEcole = getIdEcole();
+    
+    const { data, error } = await supabase
+      .from('forfait')
+      .select('*')
+      .eq('id_ecole', idEcole)
+      .eq('type_permis', typePermis)
+      .eq('actif', true)
+      .order('tarif_base', { ascending: true });
+      
+    if (error) throw error;
+    
+    return data || [];
+  } catch (error) {
+    console.error('Erreur lors de la récupération des forfaits par type de permis:', error);
+    throw error;
+  }
+};

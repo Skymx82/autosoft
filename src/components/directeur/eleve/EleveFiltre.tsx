@@ -102,6 +102,13 @@ export default function EleveFiltre({
   };
   
   const handleStatutChange = (value: string) => {
+    // Si le statut est "Archivé", on active automatiquement l'affichage des élèves archivés
+    const shouldShowArchived = value === 'Archivé' ? true : showArchived;
+    
+    if (value === 'Archivé') {
+      setShowArchived(true);
+    }
+    
     if (externalSetStatut) {
       externalSetStatut(value);
     } else {
@@ -114,7 +121,7 @@ export default function EleveFiltre({
           statut: value,
           categoriePermis,
           dateInscription,
-          showArchived
+          showArchived: shouldShowArchived
         });
       }
     }

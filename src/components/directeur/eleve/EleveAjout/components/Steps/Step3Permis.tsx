@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFormContext } from '../../context/FormContext';
 import { useFormValidation } from '../../hooks/useFormValidation';
 import { 
@@ -8,10 +8,14 @@ import {
   CheckboxField,
   RadioGroupField
 } from '../FormFields';
+import { fetchForfaitsByTypePermis, Forfait } from '@/components/directeur/mon-auto-ecole/api/ApiForfaits';
 
 export default function Step3Permis() {
-  const { formState } = useFormContext();
+  const { formState, updateMultipleFields } = useFormContext();
   const { validateField } = useFormValidation();
+  const [forfaits, setForfaits] = useState<Forfait[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Options pour les catégories de permis
   const categoriesPermisOptions = [
@@ -25,13 +29,42 @@ export default function Step3Permis() {
     { value: 'BE', label: 'Permis BE - Voiture + remorque' }
   ];
 
-  // Options pour les forfaits (à remplacer par des données réelles)
-  const forfaitOptions = [
-    { value: '1', label: 'Forfait standard - 20h' },
-    { value: '2', label: 'Forfait accéléré - 30h' },
-    { value: '3', label: 'Forfait intensif - 40h' },
-    { value: '4', label: 'Forfait code uniquement' }
-  ];
+  // Charger les forfaits lorsque le type de permis change
+  useEffect(() => {
+    const typePermis = formState.categoriePermis;
+    if (typePermis) {
+      loadForfaits(typePermis);
+    }
+  }, [formState.categoriePermis]);
+
+  // Fonction pour charger les forfaits en fonction du type de permis
+  const loadForfaits = async (typePermis: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchForfaitsByTypePermis(typePermis);
+      setForfaits(data);
+      
+      // Réinitialiser le forfait sélectionné si le type de permis change
+      if (formState.idForfait) {
+        const forfaitExists = data.some(f => f.id_forfait.toString() === formState.idForfait);
+        if (!forfaitExists) {
+          updateMultipleFields({ idForfait: '' });
+        }
+      }
+    } catch (err: any) {
+      console.error('Erreur lors du chargement des forfaits:', err);
+      setError('Impossible de charger les forfaits pour ce type de permis');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Convertir les forfaits en options pour le select
+  const forfaitOptions = forfaits.map(forfait => ({
+    value: forfait.id_forfait.toString(),
+    label: `${forfait.nom} - ${forfait.nb_heures_incluses}h - ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(forfait.tarif_base)}`
+  }));
 
   // Options pour les types de financeurs
   const financeurOptions = [
@@ -93,8 +126,17 @@ export default function Step3Permis() {
             label="Forfait choisi"
             options={forfaitOptions}
             required
-            placeholder="Sélectionnez un forfait"
+            placeholder={loading ? "Chargement des forfaits..." : "Sélectionnez un forfait"}
+            disabled={loading || forfaitOptions.length === 0}
           />
+          {error && (
+            <div className="mt-2 text-sm text-red-600">{error}</div>
+          )}
+          {!loading && !error && forfaitOptions.length === 0 && formState.categoriePermis && (
+            <div className="mt-2 text-sm text-amber-600">
+              Aucun forfait disponible pour ce type de permis. Veuillez contacter l'administration.
+            </div>
+          )}
         </div>
 
         {/* Type de financeur */}
