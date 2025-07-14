@@ -24,6 +24,7 @@ export interface Student {
   tel?: string;
   email?: string;
   licenseCategory?: LicenseCategory;
+  categorie?: string; // Catégorie de permis de l'élève dans la base de données
   remainingHours?: number;
   progress?: number; // Pourcentage de progression
 }

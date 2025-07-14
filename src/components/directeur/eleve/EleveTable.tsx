@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { FiEdit, FiTrash2, FiEye, FiCheck, FiX, FiAlertTriangle } from 'react-icons/fi';
+import { useState, useRef, useEffect } from 'react';
+import { FiEdit, FiTrash2, FiEye, FiCheck, FiX, FiAlertTriangle, FiRepeat } from 'react-icons/fi';
 import EleveDetailModal from './EleveDetailModal';
 
 interface Eleve {
@@ -45,6 +45,98 @@ export default function EleveTable({
   const [eleveToShow, setEleveToShow] = useState<Eleve | null>(null);
   const [confirmPrenom, setConfirmPrenom] = useState('');
   const [deleteError, setDeleteError] = useState('');
+  
+  // État pour le menu déroulant de statut
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Fermer le menu déroulant lorsqu'on clique en dehors
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setStatusDropdownOpen(null);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
+  // Fonction pour mettre à jour le statut d'un élève
+  const updateEleveStatus = async (id_eleve: number, status: string) => {
+    try {
+      console.log(`Début de la mise à jour du statut pour l'élève ${id_eleve} vers ${status}`);
+      
+      // Récupérer l'ID de l'école depuis le localStorage
+      if (typeof window === 'undefined') {
+        throw new Error("Cette fonction ne peut être exécutée que côté client");
+      }
+      
+      const storedUser = localStorage.getItem('autosoft_user');
+      if (!storedUser) {
+        throw new Error("Utilisateur non connecté");
+      }
+      
+      const userData = JSON.parse(storedUser);
+      const id_ecole = userData.id_ecole;
+      console.log(`ID école récupéré: ${id_ecole}`);
+      
+      if (!id_ecole) {
+        throw new Error("ID de l'auto-école non disponible");
+      }
+      
+      // Préparer les données pour la requête
+      const requestData = {
+        id_eleves: [id_eleve],
+        status,
+        id_ecole
+      };
+      console.log('Données envoyées à l\'API:', requestData);
+      
+      // Faire la requête de mise à jour en utilisant la nouvelle route API
+      const response = await fetch(`/api/directeur/eleves/ElevesTable`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      });
+      
+      console.log(`Réponse de l'API - Status: ${response.status}`);
+      
+      // Vérifier si la requête a réussi
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Erreur HTTP ${response.status}:`, errorText);
+        throw new Error(`Erreur HTTP: ${response.status} - ${errorText}`);
+      }
+      
+      // Récupérer les données
+      const data = await response.json();
+      console.log('Réponse de l\'API:', data);
+      
+      // Fermer le menu déroulant
+      setStatusDropdownOpen(null);
+      
+      // Mettre à jour la sélection si l'élève est sélectionné
+      if (status === 'Archivé' && selectedEleves.includes(id_eleve)) {
+        toggleEleveSelection(id_eleve);
+      }
+      
+      console.log(`Statut de l'élève mis à jour avec succès: ${status}`);
+      console.log('Rechargement de la page...');
+      
+      // Effectuer un hard refresh de la page après un court délai pour s'assurer que les logs sont affichés
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+      
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du statut de l\'élève:', error);
+    }
+  };
   
   // Fonction pour obtenir l'ordre de priorité d'un statut
   const getStatusPriority = (status?: string) => {
@@ -185,9 +277,11 @@ export default function EleveTable({
                 <td className="px-2 sm:px-4 md:px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     eleve.statut_dossier === 'Actif' ? 'bg-green-100 text-green-800' :
-                    eleve.statut_dossier === 'Inactif' ? 'bg-red-100 text-red-800' :
-                    eleve.statut_dossier === 'En formation' ? 'bg-blue-100 text-blue-800' :
-                    eleve.statut_dossier === 'Terminé' ? 'bg-gray-100 text-gray-800' :
+                    eleve.statut_dossier === 'En attente' ? 'bg-yellow-100 text-yellow-800' :
+                    eleve.statut_dossier === 'Complet' ? 'bg-blue-100 text-blue-800' :
+                    eleve.statut_dossier === 'Incomplet' ? 'bg-orange-100 text-orange-800' :
+                    eleve.statut_dossier === 'Brouillon' ? 'bg-gray-100 text-gray-800' :
+                    eleve.statut_dossier === 'Archivé' ? 'bg-gray-200 text-gray-700' :
                     'bg-gray-100 text-gray-800'
                   }`}>
                     {eleve.statut_dossier || 'Non défini'}
@@ -211,6 +305,66 @@ export default function EleveTable({
                     >
                       <FiEye />
                     </button>
+                    {/* Bouton pour changer le statut */}
+                    <div className="relative" ref={statusDropdownRef}>
+                      <button 
+                        className="text-blue-600 hover:text-blue-900" 
+                        title="Changer le statut"
+                        onClick={() => {
+                          setStatusDropdownOpen(statusDropdownOpen === eleve.id_eleve ? null : eleve.id_eleve);
+                        }}
+                      >
+                        <FiRepeat className="w-[1em] h-[1em]" />
+                      </button>
+                      {statusDropdownOpen === eleve.id_eleve && (
+                        <div className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-xl ring-1 ring-black ring-opacity-5 z-10 border border-gray-200">
+                          <div className="py-1">
+                            <button 
+                              className="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                              onClick={() => updateEleveStatus(eleve.id_eleve, 'Actif')}
+                            >
+                              <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                              Actif
+                            </button>
+                            <button 
+                              className="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                              onClick={() => updateEleveStatus(eleve.id_eleve, 'Complet')}
+                            >
+                              <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
+                              Complet
+                            </button>
+                            <button 
+                              className="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                              onClick={() => updateEleveStatus(eleve.id_eleve, 'Incomplet')}
+                            >
+                              <span className="inline-block w-2 h-2 rounded-full bg-orange-500 mr-2"></span>
+                              Incomplet
+                            </button>
+                            <button 
+                              className="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                              onClick={() => updateEleveStatus(eleve.id_eleve, 'En attente')}
+                            >
+                              <span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-2"></span>
+                              En attente
+                            </button>
+                            <button 
+                              className="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                              onClick={() => updateEleveStatus(eleve.id_eleve, 'Brouillon')}
+                            >
+                              <span className="inline-block w-2 h-2 rounded-full bg-gray-500 mr-2"></span>
+                              Brouillon
+                            </button>
+                            <button 
+                              className="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                              onClick={() => updateEleveStatus(eleve.id_eleve, 'Archivé')}
+                            >
+                              <span className="inline-block w-2 h-2 rounded-full bg-gray-400 mr-2"></span>
+                              Archivé
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     {/* N'afficher le bouton de suppression que si l'élève n'est pas archivé */}
                     {eleve.statut_dossier !== 'Archivé' && (
                       <button 

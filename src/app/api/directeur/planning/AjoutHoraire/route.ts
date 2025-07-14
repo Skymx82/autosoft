@@ -28,9 +28,11 @@ export async function GET(request: Request) {
         prenom,
         tel,
         mail,
-        categorie
+        categorie,
+        statut_dossier
       `)
       .eq('id_ecole', id_ecole_num)
+      .eq('statut_dossier', 'Actif') // Filtrer uniquement les élèves avec statut "Actif"
       .order('nom');
     
     // Filtrer par bureau si ce n'est pas "Tout" (id_bureau = 0)

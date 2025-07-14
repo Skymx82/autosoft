@@ -173,7 +173,7 @@ export default function StudentSelector({
             </div>
             <div className="text-right">
               <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                {selectedStudent.licenseCategory}
+                {selectedStudent.categorie || 'Non définie'}
               </span>
             </div>
           </div>
@@ -196,31 +196,7 @@ export default function StudentSelector({
         </div>
       )}
       
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Catégorie de permis
-        </label>
-        <select
-          value={licenseCategory}
-          onChange={handleLicenseCategoryChange}
-          className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
-          required
-        >
-          <option value="">Sélectionner une catégorie</option>
-          <option value="A">A - Moto</option>
-          <option value="A1">A1 - Moto légère</option>
-          <option value="A2">A2 - Moto intermédiaire</option>
-          <option value="B">B - Voiture</option>
-          <option value="B auto">B auto - Voiture automatique</option>
-          <option value="B manuelle">B manuelle - Voiture manuelle</option>
-          <option value="C">C - Poids lourd</option>
-          <option value="C1">C1 - Poids lourd léger</option>
-          <option value="CE">CE - Poids lourd avec remorque</option>
-          <option value="D">D - Bus</option>
-          <option value="D1">D1 - Minibus</option>
-          <option value="DE">DE - Bus avec remorque</option>
-        </select>
-      </div>
+      {/* Le sélecteur de catégorie de permis a été supprimé car nous utilisons déjà la catégorie de l'élève */}
     </div>
   );
 }

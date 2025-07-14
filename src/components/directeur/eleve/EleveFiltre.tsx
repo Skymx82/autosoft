@@ -13,6 +13,7 @@ export interface EleveFilters {
   categoriePermis: string;
   dateInscription: string;
   showArchived: boolean;
+  itemsPerPage?: number;
 }
 
 interface EleveFiltreProps {
@@ -54,6 +55,7 @@ export default function EleveFiltre({
   const [localCategoriePermis, setLocalCategoriePermis] = useState('all');
   const [localDateInscription, setLocalDateInscription] = useState('all');
   const [showArchived, setShowArchived] = useState(false);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   
   // Utiliser les props si fournies, sinon utiliser les états locaux
   const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : localSearchTerm;
@@ -330,6 +332,22 @@ export default function EleveFiltre({
             </select>
           </div>
           
+          {/* Filtre par date d'inscription */}
+          <div className="w-48 lg:w-56">
+            <select
+              id="dateInscription"
+              value={dateInscription}
+              onChange={(e) => handleDateInscriptionChange(e.target.value)}
+              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
+            >
+              <option value="all">Toutes les dates</option>
+              <option value="last7days">7 derniers jours</option>
+              <option value="last30days">30 derniers jours</option>
+              <option value="last90days">90 derniers jours</option>
+              <option value="thisYear">Cette année</option>
+            </select>
+          </div>
+          
           {/* Le sélecteur de statut a été déplacé en bas des filtres principaux */}
         </div>
         
@@ -383,12 +401,6 @@ export default function EleveFiltre({
             Actif
           </button>
           <button
-            onClick={() => handleStatutChange('En attente')}
-            className={`text-center py-2 border-b-2 font-medium text-sm ${statut === 'En attente' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-          >
-            En attente
-          </button>
-          <button
             onClick={() => handleStatutChange('Complet')}
             className={`text-center py-1 border-b-2 font-medium text-sm ${statut === 'Complet' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
           >
@@ -399,6 +411,12 @@ export default function EleveFiltre({
             className={`text-center py-1 border-b-2 font-medium text-sm ${statut === 'Incomplet' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
           >
             Incomplet
+          </button>
+          <button
+            onClick={() => handleStatutChange('En attente')}
+            className={`text-center py-2 border-b-2 font-medium text-sm ${statut === 'En attente' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          >
+            En attente
           </button>
           <button
             onClick={() => handleStatutChange('Brouillon')}
@@ -419,16 +437,18 @@ export default function EleveFiltre({
         <div className="p-4 border rounded-lg bg-gray-50">
           <h3 className="text-sm font-medium text-gray-700 mb-3">Filtres avancés</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {/* Bouton pour afficher les élèves archivés */}
+            {/* Filtre pour le nombre d'élèves par page */}
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Élèves archivés
+              <label htmlFor="itemsPerPage" className="block text-xs font-medium text-gray-700 mb-1">
+                Élèves par page
               </label>
               <div className="relative">
-                <button
-                  onClick={() => {
-                    const newShowArchived = !showArchived;
-                    setShowArchived(newShowArchived);
+                <select
+                  id="itemsPerPage"
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    setItemsPerPage(value);
                     if (onFilterChange) {
                       onFilterChange({
                         searchTerm,
@@ -436,37 +456,18 @@ export default function EleveFiltre({
                         statut,
                         categoriePermis,
                         dateInscription,
-                        showArchived: newShowArchived
+                        showArchived,
+                        itemsPerPage: value
                       });
                     }
                   }}
-                  className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${showArchived 
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 border-blue-600' 
-                    : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'}`}
-                >
-                  <FiTrash2 className="w-4 h-4 mr-1" />
-                  Élèves archivés
-                </button>
-              </div>
-            </div>
-            
-            {/* Filtre par date d'inscription */}
-            <div>
-              <label htmlFor="dateInscription" className="block text-xs font-medium text-gray-700 mb-1">
-                Date d'inscription
-              </label>
-              <div className="relative">
-                <select
-                  id="dateInscription"
-                  value={dateInscription}
-                  onChange={(e) => handleDateInscriptionChange(e.target.value)}
                   className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
                 >
-                  <option value="all">Toutes les dates</option>
-                  <option value="last7days">7 derniers jours</option>
-                  <option value="last30days">30 derniers jours</option>
-                  <option value="last90days">90 derniers jours</option>
-                  <option value="thisYear">Cette année</option>
+                  <option value="5">5 élèves</option>
+                  <option value="10">10 élèves</option>
+                  <option value="20">20 élèves</option>
+                  <option value="50">50 élèves</option>
+                  <option value="100">100 élèves</option>
                 </select>
               </div>
             </div>
