@@ -56,17 +56,25 @@ ALTER TABLE auto_ecole ADD CONSTRAINT fk_auto_ecole_bureau FOREIGN KEY (id_burea
 -- Table Forfait améliorée
 CREATE TABLE forfait (
   id_forfait SERIAL PRIMARY KEY,
-  nom VARCHAR(255) NOT NULL,
+  nom VARCHAR(100) NOT NULL,
   description TEXT,
-  type_permis VARCHAR(50),
-  tarif_base DECIMAL(10, 2),
-  nb_heures_incluses INTEGER,
+  type_permis VARCHAR(10) NOT NULL,
+  tarif_base DECIMAL(10,2) NOT NULL,
+  nb_heures_incluses INTEGER NOT NULL,
+  prix_heure_supp DECIMAL(10,2) NOT NULL, -- Prix d'une heure supplémentaire
+  prix_presentation_examen DECIMAL(10,2), -- Prix de présentation à l'examen
+  duree_validite_jours INTEGER, -- Durée de validité du forfait en jours
+  frais_inscription DECIMAL(10,2), -- Frais d'inscription séparés
+  paiement_fractionnable BOOLEAN, -- Possibilité de payer en plusieurs fois
+  nb_max_echeances INTEGER, -- Nombre maximum d'échéances pour le paiement
+  actif BOOLEAN DEFAULT true, -- Forfait actif ou archivé
   id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
 );
 
 -- Table Permis
 CREATE TABLE permis (
   id_permis SERIAL PRIMARY KEY,
+  id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE CASCADE,
   num_permis VARCHAR(50),
   type_permis VARCHAR(10) NOT NULL,
   date_permis DATE,
@@ -112,7 +120,6 @@ CREATE TABLE eleves (
   interesse_code BOOLEAN DEFAULT FALSE,
   profession VARCHAR(100),
   type_financeur VARCHAR(100),
-  id_permis INTEGER REFERENCES permis(id_permis) ON DELETE SET NULL,
   adresse TEXT,
   code_postal VARCHAR(10),
   ville VARCHAR(100),
