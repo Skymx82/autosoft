@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import DirectorLayout from '@/components/directeur/layout/DirectorLayout';
-import PlanningFilters from '@/components/directeur/planning/PlanningFilters';
-import PlanningGrid from '@/components/directeur/planning/PlanningGrid';
+import PlanningFilters from '@/app/(protected)/directeur/planning/components/PlanningFilters';
+import PlanningGrid from '@/app/(protected)/directeur/planning/components/PlanningGrid';
 import { FiPlus } from 'react-icons/fi';
 
 export default function PlanningPage() {

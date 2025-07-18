@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import DirectorLayout from '@/components/directeur/layout/DirectorLayout';
-import EleveTable from '@/components/directeur/eleve/EleveTable';
-import EleveFiltre from '@/components/directeur/eleve/EleveFiltre';
+import EleveTable from '@/app/(protected)/directeur/eleves/components/EleveTable';
+import EleveFiltre from '@/app/(protected)/directeur/eleves/components/EleveFiltre';
 import { FiPlus, FiChevronDown } from 'react-icons/fi';
 import Link from 'next/link';
 
@@ -62,7 +62,7 @@ export default function ElevesPage() {
       }
       
       // Construire l'URL avec les paramètres
-      let url = `/api/directeur/eleves/ElevesTable?id_ecole=${id_ecole}&id_bureau=${id_bureau}`;
+      let url = `/directeur/eleves/api/ElevesTable?id_ecole=${id_ecole}&id_bureau=${id_bureau}`;
       // Toujours inclure id_bureau pour éviter les problèmes de filtrage
       
       // Faire la requête
@@ -280,7 +280,7 @@ export default function ElevesPage() {
       }
       
       // Faire la requête de suppression
-      const response = await fetch(`/api/directeur/eleves/ElevesTable?id_eleve=${id_eleve}&id_ecole=${id_ecole}`, {
+      const response = await fetch(`/directeur/eleves/api/ElevesTable?id_eleve=${id_eleve}&id_ecole=${id_ecole}`, {
         method: 'DELETE',
       });
       
@@ -334,7 +334,7 @@ export default function ElevesPage() {
       }
       
       // Faire la requête de mise à jour avec la nouvelle route API
-      const response = await fetch(`/api/directeur/eleves/ElevesTable`, {
+      const response = await fetch(`/directeur/eleves/api/ElevesTable`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

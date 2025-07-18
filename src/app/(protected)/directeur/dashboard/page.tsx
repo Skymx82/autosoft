@@ -1,10 +1,10 @@
 'use client';
 
 import DirectorLayout from '@/components/directeur/layout/DirectorLayout';
-import StatisticsCards from '@/components/directeur/dashboard/StatisticsCards';
-import RevenueChart from '@/components/directeur/dashboard/RevenueChart';
-import QuickActions from '@/components/directeur/dashboard/QuickActions';
-import ResourceOccupation from '@/components/directeur/dashboard/ResourceOccupation';
+import StatisticsCards from '@/app/(protected)/directeur/dashboard/components/StatisticsCards';
+import RevenueChart from '@/app/(protected)/directeur/dashboard/components/RevenueChart';
+import QuickActions from '@/app/(protected)/directeur/dashboard/components/QuickActions';
+import ResourceOccupation from '@/app/(protected)/directeur/dashboard/components/ResourceOccupation';
 
 export default function DirecteurDashboard() {
   return (

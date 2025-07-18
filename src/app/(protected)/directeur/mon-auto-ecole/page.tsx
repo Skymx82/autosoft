@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { FiInfo, FiMapPin, FiPackage, FiUsers, FiSettings, FiArrowLeft } from 'react-icons/fi';
+import { FiInfo, FiMapPin, FiPackage, FiUsers, FiSettings, FiArrowLeft, FiTruck } from 'react-icons/fi';
 import DirectorLayout from '@/components/directeur/layout/DirectorLayout';
-import AutoEcoleInfoGenerales from '@/components/directeur/mon-auto-ecole/InfoGenerales';
-import AutoEcoleBureaux from '@/components/directeur/mon-auto-ecole/Bureaux';
-import AutoEcoleForfaits from '@/components/directeur/mon-auto-ecole/Forfaits';
-import AutoEcolePersonnel from '@/components/directeur/mon-auto-ecole/Personnel';
-import AutoEcoleParametres from '@/components/directeur/mon-auto-ecole/Parametres';
+import AutoEcoleInfoGenerales from '@/app/(protected)/directeur/mon-auto-ecole/components/InfoGenerales';
+import AutoEcoleBureaux from '@/app/(protected)/directeur/mon-auto-ecole/components/Bureaux';
+import AutoEcoleForfaits from '@/app/(protected)/directeur/mon-auto-ecole/components/Forfaits';
+import AutoEcolePersonnel from '@/app/(protected)/directeur/mon-auto-ecole/components/Personnel';
+import AutoEcoleParametres from '@/app/(protected)/directeur/mon-auto-ecole/components/Parametres';
+import AutoEcoleVehicules from '@/app/(protected)/directeur/mon-auto-ecole/components/Vehicules';
 
 export default function MonAutoEcolePage() {
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -33,6 +34,12 @@ export default function MonAutoEcolePage() {
       description: 'Configurez les différentes formules et tarifs proposés à vos élèves.'
     },
     { 
+      id: 'vehicules', 
+      name: 'Véhicules', 
+      icon: <FiTruck className="w-12 h-12" />,
+      description: 'Gérez votre parc automobile : voitures, motos et autres véhicules.'
+    },
+    { 
       id: 'personnel', 
       name: 'Personnel', 
       icon: <FiUsers className="w-12 h-12" />,
@@ -55,6 +62,8 @@ export default function MonAutoEcolePage() {
         return <AutoEcoleBureaux />;
       case 'forfaits':
         return <AutoEcoleForfaits />;
+      case 'vehicules':
+        return <AutoEcoleVehicules />;
       case 'personnel':
         return <AutoEcolePersonnel />;
       case 'parametres':
