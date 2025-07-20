@@ -27,6 +27,9 @@ interface ComptaFiltreProps {
   setModeReglement?: (mode: string) => void;
   // Callback pour notifier des changements
   onFilterChange?: (filters: ComptaFilters) => void;
+  // Gestion des onglets
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
   // Fonction de rendu optionnelle
   render?: (data: { isLoading: boolean; error: string | null; data: any }) => React.ReactNode;
 }
@@ -43,6 +46,8 @@ export default function ComptaFiltre({
   modeReglement: externalModeReglement,
   setModeReglement: externalSetModeReglement,
   onFilterChange,
+  activeTab: externalActiveTab,
+  onTabChange,
   render
 }: ComptaFiltreProps) {
   // États locaux pour les filtres (utilisés si les props ne sont pas fournies)
@@ -55,8 +60,22 @@ export default function ComptaFiltre({
   const [isExpanded, setIsExpanded] = useState(false);
   
   // États pour l'interface
-  const [activeTab, setActiveTab] = useState('depenses');
+  const [localActiveTab, setLocalActiveTab] = useState('dashboard');
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  
+  // Utiliser la prop activeTab si fournie, sinon utiliser l'état local
+  const activeTab = externalActiveTab !== undefined ? externalActiveTab : localActiveTab;
+  
+  // Fonction pour gérer le changement d'onglet
+  const handleTabChange = (tab: string) => {
+    if (onTabChange) {
+      onTabChange(tab);
+    } else {
+      setLocalActiveTab(tab);
+    }
+    // Fermer le menu déroulant si ouvert
+    setShowMoreMenu(false);
+  };
   
   // Référence pour le menu déroulant
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -179,7 +198,7 @@ export default function ComptaFiltre({
   };
   
   // Listes des catégories et modes de règlement
-  const categories = activeTab === 'depenses' 
+  const categories = activeTab === 'dashboard' 
     ? ['Fonctionnement', 'Déplacements', 'Frais fixes', 'Cotisations et taxes'] 
     : ['Formation B', 'Formation A', 'Formation C', 'Formation D'];
   
@@ -264,10 +283,10 @@ export default function ComptaFiltre({
           <button
             onClick={() => {
               // Action pour ajouter une nouvelle entrée selon l'onglet actif
-              console.log(`Ajouter un(e) ${activeTab === 'depenses' ? 'dépense' : activeTab === 'recettes' ? 'recette' : activeTab}`);
+              console.log(`Ajouter un(e) ${activeTab === 'dashboard' ? 'élément au tableau de bord' : activeTab === 'recettes' ? 'recette' : activeTab}`);
             }}
             className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            title={`Ajouter ${activeTab === 'depenses' ? 'une dépense' : activeTab === 'recettes' ? 'une recette' : ''}`}
+            title={`Ajouter ${activeTab === 'dashboard' ? 'un élément' : activeTab === 'recettes' ? 'une recette' : ''}`}
           >
             <FiPlus className="w-5 h-5" />
           </button>
@@ -275,53 +294,54 @@ export default function ComptaFiltre({
       </div>
       
       {/* Onglets de navigation avec menu déroulant pour les options supplémentaires */}
-      <div className="w-full border-b mt-4">
+      <div className="w-full mt-1">
         <div className="grid grid-cols-6 w-full">
           {/* Onglets principaux toujours visibles */}
           <button
-            onClick={() => setActiveTab('depenses')}
+            onClick={() => handleTabChange('dashboard')}
+            className={`text-center py-2 border-b-2 font-medium text-sm ${activeTab === 'dashboard' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+          >
+            Tableau de bord
+          </button>
+          <button
+            onClick={() => handleTabChange('depenses')}
             className={`text-center py-2 border-b-2 font-medium text-sm ${activeTab === 'depenses' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
           >
             Dépenses
           </button>
           <button
-            onClick={() => setActiveTab('recettes')}
+            onClick={() => handleTabChange('recettes')}
             className={`text-center py-2 border-b-2 font-medium text-sm ${activeTab === 'recettes' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
           >
             Recettes
           </button>
           <button
-            onClick={() => setActiveTab('chiffre-affaires')}
+            onClick={() => handleTabChange('chiffre-affaires')}
             className={`text-center py-2 border-b-2 font-medium text-sm ${activeTab === 'chiffre-affaires' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
           >
             Chiffre d'affaires
           </button>
           <button
-            onClick={() => setActiveTab('factures')}
+            onClick={() => handleTabChange('factures')}
             className={`text-center py-2 border-b-2 font-medium text-sm ${activeTab === 'factures' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
           >
             Factures
-          </button>
-          <button
-            onClick={() => setActiveTab('tva')}
-            className={`text-center py-2 border-b-2 font-medium text-sm ${activeTab === 'tva' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-          >
-            TVA
           </button>
           
           {/* Menu déroulant pour les autres options */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowMoreMenu(!showMoreMenu)}
-              className={`w-full text-center py-2 border-b-2 font-medium text-sm flex items-center justify-center ${showMoreMenu || ['voitures', 'devis-contrats', 'resultats', 'justificatifs', 'suivi-paiements'].includes(activeTab) ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+              className={`w-full text-center py-2 border-b-2 font-medium text-sm flex items-center justify-center ${showMoreMenu || ['voitures', 'devis-contrats', 'resultats', 'justificatifs', 'suivi-paiements', 'tva'].includes(activeTab) ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
             >
-              {['voitures', 'devis-contrats', 'resultats', 'justificatifs', 'suivi-paiements'].includes(activeTab) ? 
+              {['voitures', 'devis-contrats', 'resultats', 'justificatifs', 'suivi-paiements', 'tva'].includes(activeTab) ? 
                 {
                   'voitures': 'Voitures',
                   'devis-contrats': 'Devis/Contrats',
                   'resultats': 'Résultats',
                   'justificatifs': 'Justificatifs',
-                  'suivi-paiements': 'Suivi paiements'
+                  'suivi-paiements': 'Suivi paiements',
+                  'tva': 'TVA'
                 }[activeTab] : 'Plus'}
               <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -333,54 +353,46 @@ export default function ComptaFiltre({
               <div className="absolute right-0 left-0 mt-2 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
                 <div className="py-1" role="menu" aria-orientation="vertical">
                   <button
-                    onClick={() => {
-                      setActiveTab('voitures');
-                      setShowMoreMenu(false);
-                    }}
+                    onClick={() => handleTabChange('voitures')}
                     className={`block w-full text-left px-4 py-2 text-sm ${activeTab === 'voitures' ? 'bg-gray-100 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
                     role="menuitem"
                   >
                     Voitures
                   </button>
                   <button
-                    onClick={() => {
-                      setActiveTab('devis-contrats');
-                      setShowMoreMenu(false);
-                    }}
+                    onClick={() => handleTabChange('devis-contrats')}
                     className={`block w-full text-left px-4 py-2 text-sm ${activeTab === 'devis-contrats' ? 'bg-gray-100 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
                     role="menuitem"
                   >
                     Devis/Contrats
                   </button>
                   <button
-                    onClick={() => {
-                      setActiveTab('resultats');
-                      setShowMoreMenu(false);
-                    }}
+                    onClick={() => handleTabChange('resultats')}
                     className={`block w-full text-left px-4 py-2 text-sm ${activeTab === 'resultats' ? 'bg-gray-100 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
                     role="menuitem"
                   >
                     Résultats
                   </button>
                   <button
-                    onClick={() => {
-                      setActiveTab('justificatifs');
-                      setShowMoreMenu(false);
-                    }}
+                    onClick={() => handleTabChange('justificatifs')}
                     className={`block w-full text-left px-4 py-2 text-sm ${activeTab === 'justificatifs' ? 'bg-gray-100 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
                     role="menuitem"
                   >
                     Dépôts de justificatifs
                   </button>
                   <button
-                    onClick={() => {
-                      setActiveTab('suivi-paiements');
-                      setShowMoreMenu(false);
-                    }}
+                    onClick={() => handleTabChange('suivi-paiements')}
                     className={`block w-full text-left px-4 py-2 text-sm ${activeTab === 'suivi-paiements' ? 'bg-gray-100 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
                     role="menuitem"
                   >
                     Suivi paiements élèves
+                  </button>
+                  <button
+                    onClick={() => handleTabChange('tva')}
+                    className={`block w-full text-left px-4 py-2 text-sm ${activeTab === 'tva' ? 'bg-gray-100 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
+                    role="menuitem"
+                  >
+                    TVA
                   </button>
                 </div>
               </div>
