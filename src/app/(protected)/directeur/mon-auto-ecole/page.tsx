@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { FiInfo, FiMapPin, FiPackage, FiUsers, FiSettings, FiArrowLeft, FiTruck } from 'react-icons/fi';
-import DirectorLayout from '@/components/directeur/layout/DirectorLayout';
+import DirectorLayout from '@/components/layout/DirectorLayout';
 import AutoEcoleInfoGenerales from '@/app/(protected)/directeur/mon-auto-ecole/components/InfoGenerales';
 import AutoEcoleBureaux from '@/app/(protected)/directeur/mon-auto-ecole/components/Bureaux';
 import AutoEcoleForfaits from '@/app/(protected)/directeur/mon-auto-ecole/components/Forfaits';

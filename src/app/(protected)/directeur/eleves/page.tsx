@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import DirectorLayout from '@/components/directeur/layout/DirectorLayout';
+import DirectorLayout from '@/components/layout/DirectorLayout';
 import EleveTable from '@/app/(protected)/directeur/eleves/components/EleveTable';
 import EleveFiltre from '@/app/(protected)/directeur/eleves/components/EleveFiltre';
 import { FiPlus, FiChevronDown } from 'react-icons/fi';

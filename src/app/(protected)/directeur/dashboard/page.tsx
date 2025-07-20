@@ -1,6 +1,6 @@
 'use client';
 
-import DirectorLayout from '@/components/directeur/layout/DirectorLayout';
+import DirectorLayout from '@/components/layout/DirectorLayout';
 import StatisticsCards from '@/app/(protected)/directeur/dashboard/components/StatisticsCards';
 import RevenueChart from '@/app/(protected)/directeur/dashboard/components/RevenueChart';
 import QuickActions from '@/app/(protected)/directeur/dashboard/components/QuickActions';

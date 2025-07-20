@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import DirectorLayout from '@/components/layout/DirectorLayout';
-import PlanningFilters from '@/app/(protected)/directeur/planning/components/PlanningFilters';
-import PlanningGrid from '@/app/(protected)/directeur/planning/components/PlanningGrid';
+import MoniteurLayout from '@/components/layout/MoniteurLayout';
+import PlanningFilters from '@/app/(protected)/moniteur/planning/components/PlanningFilters';
+import PlanningGrid from '@/app/(protected)/moniteur/planning/components/PlanningGrid';
 import { FiPlus } from 'react-icons/fi';
 
 export default function PlanningPage() {
@@ -11,7 +11,6 @@ export default function PlanningPage() {
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [dateRange, setDateRange] = useState<{startDate: Date, endDate: Date}>({startDate: new Date(), endDate: new Date()});
-  const [selectedMoniteurId, setSelectedMoniteurId] = useState<string | null>(null);
   // État pour gérer l'option "Afficher le dimanche"
   const [showSunday, setShowSunday] = useState(false);
   
@@ -95,21 +94,17 @@ export default function PlanningPage() {
   };
   
   return (
-    <DirectorLayout>
-      <div className="flex flex-col h-full relative">
+    <MoniteurLayout>
+      <div className="flex flex-col h-full relative w-full">
         {/* Barre de filtres fixe en haut - collée au layout */}
-        <div ref={filterRef} className="bg-white shadow-sm border-b border-gray-200">
+        <div ref={filterRef} className="bg-white shadow-sm border-b border-gray-200 w-full">
           <PlanningFilters 
             currentView={currentView}
             setCurrentView={setCurrentView}
             currentDate={currentDate}
             setCurrentDate={setCurrentDate}
-            selectedMoniteur={selectedMoniteurId}
-            setSelectedMoniteur={setSelectedMoniteurId}
             showSundayProp={showSunday}
             setShowSunday={setShowSunday}
-            addHoraireModeProp={addHoraireMode}
-            setAddHoraireMode={setAddHoraireMode}
           />
         </div>
         
@@ -121,12 +116,8 @@ export default function PlanningPage() {
             setCurrentView={setCurrentView}
             currentDate={currentDate}
             setCurrentDate={setCurrentDate}
-            selectedMoniteur={selectedMoniteurId}
-            setSelectedMoniteur={setSelectedMoniteurId}
             showSundayProp={showSunday}
             setShowSunday={setShowSunday}
-            addHoraireModeProp={addHoraireMode}
-            setAddHoraireMode={setAddHoraireMode}
             render={({ isLoading, error, data, showSunday: filterShowSunday }) => {
               if (isLoading) {
                 return (
@@ -160,7 +151,7 @@ export default function PlanningPage() {
                     startDate={dateRange.startDate}
                     endDate={dateRange.endDate}
                     currentView={currentView}
-                    selectedMoniteurId={selectedMoniteurId ? parseInt(selectedMoniteurId) : null}
+                    selectedMoniteurId={null}
                     showSunday={showSunday}
                     addHoraireMode={addHoraireMode} // Utiliser l'état du composant parent
                   />
@@ -170,6 +161,6 @@ export default function PlanningPage() {
           />
         </div>
       </div>
-    </DirectorLayout>
+    </MoniteurLayout>
   );
 }

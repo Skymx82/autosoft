@@ -96,6 +96,7 @@ CREATE TABLE enseignants (
   date_delivrance_num DATE,
   id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
   id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+  id_utilisateur INTEGER REFERENCES utilisateur(id_utilisateur) ON DELETE CASCADE
 );
 
 -- Table Elèves
