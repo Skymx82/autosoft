@@ -35,23 +35,6 @@ const Dashboard: React.FC<DashboardProps> = ({ id_ecole: propIdEcole, id_bureau:
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [userInfo, setUserInfo] = useState<{ id_ecole: string; id_bureau: string }>({ id_ecole: '1', id_bureau: '0' });
-  
-  // Récupérer les informations utilisateur depuis le localStorage
-  useEffect(() => {
-    try {
-      const userData = localStorage.getItem('autosoft_user');
-      if (userData) {
-        const user = JSON.parse(userData);
-        setUserInfo({
-          id_ecole: propIdEcole || user.id_ecole,
-          id_bureau: propIdBureau || user.id_bureau
-        });
-      }
-    } catch (err) {
-      console.error('Erreur lors de la récupération des informations utilisateur:', err);
-    }
-  }, [propIdEcole, propIdBureau]);
   
   // Récupérer les données du tableau de bord
   useEffect(() => {
@@ -60,9 +43,31 @@ const Dashboard: React.FC<DashboardProps> = ({ id_ecole: propIdEcole, id_bureau:
         setLoading(true);
         setError(null);
         
-        // Construire l'URL avec les paramètres
-        const url = `/directeur/comptabilite/components/dashboard/api?id_ecole=${userInfo.id_ecole}${userInfo.id_bureau !== '0' ? `&id_bureau=${userInfo.id_bureau}` : ''}`;
+        // Récupérer les informations utilisateur depuis le localStorage ou les props
+        let id_ecole = propIdEcole;
+        let id_bureau = propIdBureau;
         
+        if (!id_ecole || !id_bureau) {
+          try {
+            const userData = localStorage.getItem('autosoft_user');
+            if (userData) {
+              const user = JSON.parse(userData);
+              id_ecole = id_ecole || user.id_ecole;
+              id_bureau = id_bureau || user.id_bureau;
+            }
+          } catch (err) {
+            console.error('Erreur lors de la récupération des informations utilisateur:', err);
+          }
+        }
+        
+        // Valeurs par défaut si toujours undefined
+        id_ecole = id_ecole || '1';
+        id_bureau = id_bureau || '0';
+        
+        // Construire l'URL avec les paramètres
+        const url = `/directeur/comptabilite/components/dashboard/api?id_ecole=${id_ecole}&id_bureau=${id_bureau}`;
+        
+        console.log(`Fetching dashboard data from: ${url}`);
         const response = await fetch(url);
         
         if (!response.ok) {
@@ -80,7 +85,7 @@ const Dashboard: React.FC<DashboardProps> = ({ id_ecole: propIdEcole, id_bureau:
     };
     
     fetchDashboardData();
-  }, [userInfo.id_ecole, userInfo.id_bureau]);
+  }, [propIdEcole, propIdBureau]);
   
   // Valeurs par défaut en cas de chargement ou d'erreur
   const recettesMoisCourant = dashboardData?.statistiques?.recettes?.montant || 0;

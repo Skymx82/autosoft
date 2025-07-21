@@ -231,6 +231,20 @@ CREATE TABLE transactions (
   id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
 )
   
+CREATE TABLE depense (
+  id_depense SERIAL PRIMARY KEY,
+  date_depense DATE NOT NULL,
+  description_depense VARCHAR(255),
+  categorie_depense VARCHAR(50),
+  montant_depense DECIMAL(10, 2) NOT NULL,
+  tva_depense DECIMAL(10, 2) NOT NULL,
+  fournisseur_depense VARCHAR(100),
+  mode_paiement_depense VARCHAR(50),
+  statut_depense VARCHAR(50) DEFAULT 'payé',
+  id_transaction INTEGER REFERENCES transactions(id_transaction) ON DELETE SET NULL,
+  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
+  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+)
 
 -- Table Statistique
 CREATE TABLE statistique (

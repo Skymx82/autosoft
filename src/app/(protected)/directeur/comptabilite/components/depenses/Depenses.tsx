@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { FiPlus, FiFilter, FiDownload, FiEdit, FiTrash2 } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { FiPlus, FiFilter, FiDownload, FiEdit, FiTrash2, FiLoader } from 'react-icons/fi';
+import { FaSpinner } from 'react-icons/fa';
 
 interface Depense {
   id: string;
@@ -16,81 +17,164 @@ interface Depense {
 }
 
 interface DepensesProps {
-  // Vous pouvez ajouter des props spécifiques ici
+  id_ecole?: string;
+  id_bureau?: string;
 }
 
-const Depenses: React.FC<DepensesProps> = () => {
+const Depenses: React.FC<DepensesProps> = ({ id_ecole: propIdEcole, id_bureau: propIdBureau }) => {
   const [showFilters, setShowFilters] = useState(false);
-  
-  // Données fictives pour l'exemple
-  const depenses: Depense[] = [
-    {
-      id: 'DEP-001',
-      date: '2025-07-01',
-      categorie: 'Carburant',
-      description: 'Essence véhicule école',
-      montant: 85.50,
-      tva: 17.10,
-      fournisseur: 'Total Energies',
-      modePaiement: 'Carte bancaire',
-      statut: 'payé'
-    },
-    {
-      id: 'DEP-002',
-      date: '2025-07-05',
-      categorie: 'Entretien véhicule',
-      description: 'Révision Peugeot 208',
-      montant: 320.75,
-      tva: 64.15,
-      fournisseur: 'Garage Martin',
-      modePaiement: 'Virement',
-      statut: 'payé'
-    },
-    {
-      id: 'DEP-003',
-      date: '2025-07-10',
-      categorie: 'Fournitures bureau',
-      description: 'Papeterie et cartouches imprimante',
-      montant: 124.90,
-      tva: 24.98,
-      fournisseur: 'Bureau Center',
-      modePaiement: 'Carte bancaire',
-      statut: 'payé'
-    },
-    {
-      id: 'DEP-004',
-      date: '2025-07-15',
-      categorie: 'Loyer',
-      description: 'Loyer bureau juillet 2025',
-      montant: 950.00,
-      tva: 190.00,
-      fournisseur: 'SCI Immobilière',
-      modePaiement: 'Prélèvement',
-      statut: 'payé'
-    },
-    {
-      id: 'DEP-005',
-      date: '2025-07-18',
-      categorie: 'Assurance',
-      description: 'Assurance flotte véhicules',
-      montant: 450.30,
-      tva: 0,
-      fournisseur: 'Assur Auto',
-      modePaiement: 'Prélèvement',
-      statut: 'payé'
-    },
-    {
-      id: 'DEP-006',
-      date: '2025-07-20',
-      categorie: 'Maintenance',
-      description: 'Réparation climatisation',
-      montant: 280.00,
-      tva: 56.00,
-      fournisseur: 'Clim Services',
-      modePaiement: 'Chèque',
-      statut: 'en attente'
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [depenses, setDepenses] = useState<Depense[]>([]);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    filtres: {
+      categorie: null,
+      fournisseur: null,
+      statut: null,
+      dateDebut: null,
+      dateFin: null
     }
-  ];
+  });
+  const [statistiques, setStatistiques] = useState({
+    totalHT: 0,
+    totalTVA: 0,
+    totalTTC: 0
+  });
+  
+  // Filtres pour la recherche
+  const [filtres, setFiltres] = useState({
+    categorie: '',
+    fournisseur: '',
+    statut: '',
+    dateDebut: '',
+    dateFin: ''
+  });
+  
+  // Fonction pour charger les dépenses
+  const fetchDepenses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Récupérer les informations utilisateur depuis le localStorage ou les props
+      let id_ecole = propIdEcole;
+      let id_bureau = propIdBureau;
+      
+      if (!id_ecole || !id_bureau) {
+        try {
+          const userData = localStorage.getItem('autosoft_user');
+          if (userData) {
+            const user = JSON.parse(userData);
+            id_ecole = id_ecole || user.id_ecole;
+            id_bureau = id_bureau || user.id_bureau;
+          }
+        } catch (err) {
+          console.error('Erreur lors de la récupération des informations utilisateur:', err);
+        }
+      }
+      
+      // Valeurs par défaut si toujours undefined
+      id_ecole = id_ecole || '1';
+      id_bureau = id_bureau || '0';
+      
+      // Construire l'URL avec les paramètres
+      let url = `/directeur/comptabilite/components/depenses/api?id_ecole=${id_ecole}`;
+      
+      // Toujours inclure id_bureau dans l'URL
+      url += `&id_bureau=${id_bureau}`;
+      
+      // Ajouter les paramètres de pagination
+      url += `&page=${pagination.page}&limit=${pagination.limit}`;
+      
+      // Ajouter les filtres s'ils sont définis
+      if (filtres.categorie) url += `&categorie=${encodeURIComponent(filtres.categorie)}`;
+      if (filtres.fournisseur) url += `&fournisseur=${encodeURIComponent(filtres.fournisseur)}`;
+      if (filtres.statut) url += `&statut=${encodeURIComponent(filtres.statut)}`;
+      if (filtres.dateDebut) url += `&dateDebut=${encodeURIComponent(filtres.dateDebut)}`;
+      if (filtres.dateFin) url += `&dateFin=${encodeURIComponent(filtres.dateFin)}`;
+      
+      console.log(`Fetching depenses data from: ${url}`);
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      setDepenses(data.depenses);
+      setPagination(data.pagination);
+      setStatistiques(data.statistiques);
+      
+    } catch (err) {
+      console.error('Erreur lors de la récupération des dépenses:', err);
+      setError('Impossible de charger les dépenses. Veuillez réessayer.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Charger les dépenses au chargement du composant et lorsque les filtres changent
+  useEffect(() => {
+    fetchDepenses();
+  }, [propIdEcole, propIdBureau, pagination.page, pagination.limit]);
+  
+  // Fonction pour appliquer les filtres
+  const appliquerFiltres = () => {
+    setPagination(prev => ({ ...prev, page: 1 })); // Revenir à la première page
+    // fetchDepenses sera appelé via le useEffect quand pagination.page change
+  };
+  
+  // Fonction pour réinitialiser les filtres
+  const reinitialiserFiltres = () => {
+    setFiltres({
+      categorie: '',
+      fournisseur: '',
+      statut: '',
+      dateDebut: '',
+      dateFin: ''
+    });
+    setPagination(prev => ({ ...prev, page: 1 }));
+    // fetchDepenses sera appelé via le useEffect quand pagination.page change
+  };
+  
+  // Fonction pour changer de page
+  const changerPage = (nouvellePage: number) => {
+    if (nouvellePage > 0 && nouvellePage <= pagination.totalPages) {
+      setPagination(prev => ({ ...prev, page: nouvellePage }));
+      // fetchDepenses sera appelé via le useEffect quand pagination.page change
+    }
+  };
+  
+  // Afficher un indicateur de chargement
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center h-64">
+        <FiLoader className="animate-spin text-blue-500 w-8 h-8 mb-4" />
+        <p className="text-gray-500">Chargement des dépenses...</p>
+      </div>
+    );
+  }
+  
+  // Afficher un message d'erreur
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center h-64">
+        <div className="text-red-500 mb-4">⚠️</div>
+        <p className="text-red-500">{error}</p>
+        <button 
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          onClick={() => window.location.reload()}
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
   
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
