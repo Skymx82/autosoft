@@ -1,7 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FiFilter, FiDownload, FiCalendar } from 'react-icons/fi';
+import { FiFilter, FiDownload, FiPrinter, FiEye, FiFileText, FiCalendar } from 'react-icons/fi';
+
+interface DeclarationTVA {
+  id: string;
+  periode: string;
+  dateDeclaration: string;
+  montantHT: number;
+  tauxTVA: number;
+  montantTVA: number;
+  statut: 'à déclarer' | 'déclarée' | 'payée';
+  dateEcheance: string;
+  reference?: string;
+}
 
 interface TVAProps {
   // Vous pouvez ajouter des props spécifiques ici
@@ -10,7 +22,74 @@ interface TVAProps {
 const TVA: React.FC<TVAProps> = () => {
   const [periode, setPeriode] = useState('trimestriel');
   const [showFilters, setShowFilters] = useState(false);
-  
+
+  const declarations: DeclarationTVA[] = [
+    {
+      id: 'TVA-2025-T1',
+      periode: '1er trimestre 2025',
+      dateDeclaration: '2025-04-15',
+      montantHT: 24850.00,
+      tauxTVA: 20,
+      montantTVA: 4970.00,
+      statut: 'payée',
+      dateEcheance: '2025-04-30',
+      reference: 'REF-25-04-123'
+    },
+    {
+      id: 'TVA-2025-T2',
+      periode: '2ème trimestre 2025',
+      dateDeclaration: '2025-07-12',
+      montantHT: 31200.00,
+      tauxTVA: 20,
+      montantTVA: 6240.00,
+      statut: 'déclarée',
+      dateEcheance: '2025-07-31'
+    },
+    {
+      id: 'TVA-2025-T3',
+      periode: '3ème trimestre 2025',
+      dateDeclaration: '',
+      montantHT: 28750.00,
+      tauxTVA: 20,
+      montantTVA: 5750.00,
+      statut: 'à déclarer',
+      dateEcheance: '2025-10-31'
+    },
+    {
+      id: 'TVA-2024-T4',
+      periode: '4ème trimestre 2024',
+      dateDeclaration: '2025-01-14',
+      montantHT: 22300.00,
+      tauxTVA: 20,
+      montantTVA: 4460.00,
+      statut: 'payée',
+      dateEcheance: '2025-01-31',
+      reference: 'REF-25-01-089'
+    },
+    {
+      id: 'TVA-2024-T3',
+      periode: '3ème trimestre 2024',
+      dateDeclaration: '2024-10-12',
+      montantHT: 19800.00,
+      tauxTVA: 20,
+      montantTVA: 3960.00,
+      statut: 'payée',
+      dateEcheance: '2024-10-31',
+      reference: 'REF-24-10-254'
+    },
+    {
+      id: 'TVA-2024-T2',
+      periode: '2ème trimestre 2024',
+      dateDeclaration: '2024-07-15',
+      montantHT: 26400.00,
+      tauxTVA: 20,
+      montantTVA: 5280.00,
+      statut: 'payée',
+      dateEcheance: '2024-07-31',
+      reference: 'REF-24-07-178'
+    }
+  ];
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-6">
@@ -93,20 +172,46 @@ const TVA: React.FC<TVAProps> = () => {
       )}
       
       {/* Cartes de résumé */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-          <p className="text-sm text-gray-500">TVA collectée</p>
-          <p className="text-2xl font-bold text-blue-600">0,00 €</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
+          <h3 className="text-sm font-medium text-gray-500">TVA du trimestre en cours</h3>
+          <p className="text-2xl font-bold text-gray-800">
+            {declarations
+              .find(d => d.statut === 'à déclarer')?.montantTVA.toLocaleString('fr-FR') || '0'} €
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            À déclarer avant le {declarations
+              .find(d => d.statut === 'à déclarer')?.dateEcheance
+              ? new Date(declarations.find(d => d.statut === 'à déclarer')!.dateEcheance).toLocaleDateString('fr-FR')
+              : '--/--/----'}
+          </p>
         </div>
         
-        <div className="bg-green-50 rounded-lg p-4 border border-green-100">
-          <p className="text-sm text-gray-500">TVA déductible</p>
-          <p className="text-2xl font-bold text-green-600">0,00 €</p>
+        <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
+          <h3 className="text-sm font-medium text-gray-500">TVA payée (année en cours)</h3>
+          <p className="text-2xl font-bold text-gray-800">
+            {declarations
+              .filter(d => d.statut === 'payée' && d.dateDeclaration.startsWith('2025'))
+              .reduce((sum, d) => sum + d.montantTVA, 0)
+              .toLocaleString('fr-FR')} €
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Sur {declarations
+              .filter(d => d.statut === 'payée' && d.dateDeclaration.startsWith('2025'))
+              .reduce((sum, d) => sum + d.montantHT, 0)
+              .toLocaleString('fr-FR')} € de CA HT
+          </p>
         </div>
         
-        <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
-          <p className="text-sm text-gray-500">TVA à payer</p>
-          <p className="text-2xl font-bold text-purple-600">0,00 €</p>
+        <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-yellow-500">
+          <h3 className="text-sm font-medium text-gray-500">Prochaine échéance</h3>
+          <p className="text-2xl font-bold text-gray-800">
+            {declarations
+              .find(d => d.statut === 'à déclarer')?.dateEcheance
+              ? new Date(declarations.find(d => d.statut === 'à déclarer')!.dateEcheance).toLocaleDateString('fr-FR')
+              : '--/--/----'}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">Déclaration trimestrielle</p>
         </div>
       </div>
       
@@ -186,6 +291,116 @@ const TVA: React.FC<TVAProps> = () => {
         </div>
       </div>
       
+      {/* Tableau des déclarations */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Période</th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date de déclaration</th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant HT</th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TVA</th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Échéance</th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {declarations.length > 0 ? (
+              declarations.map((declaration) => (
+                <tr key={declaration.id} className="hover:bg-gray-50">
+                  <td className="py-3 px-4 text-sm font-medium text-gray-900">{declaration.periode}</td>
+                  <td className="py-3 px-4 text-sm text-gray-500">
+                    {declaration.dateDeclaration 
+                      ? new Date(declaration.dateDeclaration).toLocaleDateString('fr-FR') 
+                      : '-'}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-500">{declaration.montantHT.toLocaleString('fr-FR')} €</td>
+                  <td className="py-3 px-4 text-sm font-medium text-gray-900">{declaration.montantTVA.toLocaleString('fr-FR')} €</td>
+                  <td className="py-3 px-4 text-sm">
+                    <span 
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        declaration.statut === 'payée' ? 'bg-green-100 text-green-800' : 
+                        declaration.statut === 'déclarée' ? 'bg-blue-100 text-blue-800' : 
+                        'bg-yellow-100 text-yellow-800'
+                      }`}
+                    >
+                      {declaration.statut}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-500">
+                    {new Date(declaration.dateEcheance).toLocaleDateString('fr-FR')}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-500">
+                    <div className="flex space-x-2">
+                      <button className="text-blue-600 hover:text-blue-800" title="Voir détails">
+                        <FiEye className="w-4 h-4" />
+                      </button>
+                      {declaration.statut === 'à déclarer' && (
+                        <button className="text-green-600 hover:text-green-800" title="Déclarer">
+                          <FiFileText className="w-4 h-4" />
+                        </button>
+                      )}
+                      {declaration.statut !== 'à déclarer' && (
+                        <button className="text-gray-600 hover:text-gray-800" title="Imprimer">
+                          <FiPrinter className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button className="text-blue-600 hover:text-blue-800" title="Télécharger">
+                        <FiDownload className="w-4 h-4" />
+                      </button>
+                    </div>
+                    {declaration.reference && (
+                      <div className="mt-1 text-xs text-gray-500">
+                        Réf: {declaration.reference}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={7} className="py-4 text-center text-gray-500">
+                  Aucune déclaration enregistrée
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Graphique ou informations supplémentaires */}
+      <div className="mt-6 bg-gray-50 p-4 rounded-lg">
+        <h3 className="text-sm font-medium text-gray-700 mb-2">Informations sur la TVA</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <p className="text-xs text-gray-500">Total TVA année en cours</p>
+            <p className="text-lg font-semibold text-gray-800">
+              {declarations
+                .filter(d => d.dateDeclaration.startsWith('2025') || (d.statut === 'à déclarer' && d.id.includes('2025')))
+                .reduce((sum, d) => sum + d.montantTVA, 0)
+                .toLocaleString('fr-FR')} €
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Total TVA année précédente</p>
+            <p className="text-lg font-semibold text-gray-800">
+              {declarations
+                .filter(d => d.dateDeclaration.startsWith('2024') || (d.id.includes('2024')))
+                .reduce((sum, d) => sum + d.montantTVA, 0)
+                .toLocaleString('fr-FR')} €
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Taux de TVA appliqué</p>
+            <p className="text-lg font-semibold text-gray-800">{declarations[0]?.tauxTVA}%</p>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500">
+          Les déclarations de TVA doivent être effectuées trimestriellement. Assurez-vous de respecter les délais pour éviter des pénalités.
+        </p>
+      </div>
+      
       {/* Récapitulatif et actions */}
       <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
         <div className="flex justify-between items-center mb-4">
@@ -230,6 +445,22 @@ const TVA: React.FC<TVAProps> = () => {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+      
+      {/* Pagination */}
+      <div className="mt-4 flex items-center justify-between">
+        <div className="text-sm text-gray-500">
+          Affichage de {declarations.length} déclarations
+        </div>
+        
+        <div className="flex space-x-1">
+          <button className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>
+            Précédent
+          </button>
+          <button className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>
+            Suivant
+          </button>
         </div>
       </div>
     </div>

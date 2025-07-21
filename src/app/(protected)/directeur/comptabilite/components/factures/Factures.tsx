@@ -3,6 +3,19 @@
 import React, { useState } from 'react';
 import { FiPlus, FiFilter, FiDownload, FiEye, FiEdit, FiTrash2 } from 'react-icons/fi';
 
+interface Facture {
+  id: string;
+  numero: string;
+  date: string;
+  client: string;
+  montantHT: number;
+  tauxTVA: number;
+  montantTVA: number;
+  montantTTC: number;
+  statut: 'payée' | 'en attente' | 'en retard' | 'annulée';
+  echeance: string;
+}
+
 interface FacturesProps {
   // Vous pouvez ajouter des props spécifiques ici
 }
@@ -11,7 +24,104 @@ const Factures: React.FC<FacturesProps> = () => {
   const [showFilters, setShowFilters] = useState(false);
   
   // Données fictives pour l'exemple
-  const factures = [];
+  const factures: Facture[] = [
+    {
+      id: 'f001',
+      numero: 'F-2025-001',
+      date: '2025-01-15',
+      client: 'Martin Dupont',
+      montantHT: 750.00,
+      tauxTVA: 20,
+      montantTVA: 150.00,
+      montantTTC: 900.00,
+      statut: 'payée',
+      echeance: '2025-02-15'
+    },
+    {
+      id: 'f002',
+      numero: 'F-2025-002',
+      date: '2025-01-20',
+      client: 'Sophie Lefebvre',
+      montantHT: 1250.00,
+      tauxTVA: 20,
+      montantTVA: 250.00,
+      montantTTC: 1500.00,
+      statut: 'payée',
+      echeance: '2025-02-20'
+    },
+    {
+      id: 'f003',
+      numero: 'F-2025-003',
+      date: '2025-02-05',
+      client: 'Thomas Bernard',
+      montantHT: 833.33,
+      tauxTVA: 20,
+      montantTVA: 166.67,
+      montantTTC: 1000.00,
+      statut: 'en attente',
+      echeance: '2025-03-05'
+    },
+    {
+      id: 'f004',
+      numero: 'F-2025-004',
+      date: '2025-02-12',
+      client: 'Julie Moreau',
+      montantHT: 625.00,
+      tauxTVA: 20,
+      montantTVA: 125.00,
+      montantTTC: 750.00,
+      statut: 'en attente',
+      echeance: '2025-03-12'
+    },
+    {
+      id: 'f005',
+      numero: 'F-2025-005',
+      date: '2025-01-05',
+      client: 'Lucas Petit',
+      montantHT: 416.67,
+      tauxTVA: 20,
+      montantTVA: 83.33,
+      montantTTC: 500.00,
+      statut: 'en retard',
+      echeance: '2025-02-05'
+    },
+    {
+      id: 'f006',
+      numero: 'F-2025-006',
+      date: '2025-01-10',
+      client: 'Emma Dubois',
+      montantHT: 1666.67,
+      tauxTVA: 20,
+      montantTVA: 333.33,
+      montantTTC: 2000.00,
+      statut: 'annulée',
+      echeance: '2025-02-10'
+    },
+    {
+      id: 'f007',
+      numero: 'F-2025-007',
+      date: '2025-02-18',
+      client: 'Antoine Richard',
+      montantHT: 2083.33,
+      tauxTVA: 20,
+      montantTVA: 416.67,
+      montantTTC: 2500.00,
+      statut: 'payée',
+      echeance: '2025-03-18'
+    },
+    {
+      id: 'f008',
+      numero: 'F-2025-008',
+      date: '2025-02-22',
+      client: 'Clara Simon',
+      montantHT: 1041.67,
+      tauxTVA: 20,
+      montantTVA: 208.33,
+      montantTTC: 1250.00,
+      statut: 'en attente',
+      echeance: '2025-03-22'
+    }
+  ];
   
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
@@ -128,8 +238,38 @@ const Factures: React.FC<FacturesProps> = () => {
           <tbody className="divide-y divide-gray-200">
             {factures.length > 0 ? (
               factures.map((facture, index) => (
-                <tr key={index}>
-                  {/* Données de factures */}
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="py-3 px-4 text-sm text-gray-500">{facture.numero}</td>
+                  <td className="py-3 px-4 text-sm text-gray-500">{new Date(facture.date).toLocaleDateString('fr-FR')}</td>
+                  <td className="py-3 px-4 text-sm text-gray-500">{facture.client}</td>
+                  <td className="py-3 px-4 text-sm text-gray-500">{facture.montantHT.toLocaleString('fr-FR')} €</td>
+                  <td className="py-3 px-4 text-sm text-gray-500">{facture.montantTVA.toLocaleString('fr-FR')} €</td>
+                  <td className="py-3 px-4 text-sm text-gray-500">{facture.montantTTC.toLocaleString('fr-FR')} €</td>
+                  <td className="py-3 px-4 text-sm">
+                    <span className={
+                      `px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        facture.statut === 'payée' ? 'bg-green-100 text-green-800' : 
+                        facture.statut === 'en attente' ? 'bg-yellow-100 text-yellow-800' : 
+                        facture.statut === 'en retard' ? 'bg-red-100 text-red-800' : 
+                        'bg-gray-100 text-gray-800'
+                      }`
+                    }>
+                      {facture.statut.charAt(0).toUpperCase() + facture.statut.slice(1)}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-500">
+                    <div className="flex space-x-2">
+                      <button className="text-blue-600 hover:text-blue-800" title="Voir">
+                        <FiEye className="w-4 h-4" />
+                      </button>
+                      <button className="text-green-600 hover:text-green-800" title="Éditer">
+                        <FiEdit className="w-4 h-4" />
+                      </button>
+                      <button className="text-red-600 hover:text-red-800" title="Supprimer">
+                        <FiTrash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))
             ) : (
@@ -146,14 +286,14 @@ const Factures: React.FC<FacturesProps> = () => {
       {/* Pagination */}
       <div className="mt-4 flex items-center justify-between">
         <div className="text-sm text-gray-500">
-          Affichage de 0 factures
+          Affichage de {factures.length} factures
         </div>
         
         <div className="flex space-x-1">
-          <button className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>
+          <button className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled={factures.length === 0}>
             Précédent
           </button>
-          <button className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>
+          <button className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled={factures.length === 0}>
             Suivant
           </button>
         </div>

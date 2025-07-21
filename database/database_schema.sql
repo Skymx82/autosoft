@@ -220,55 +220,17 @@ CREATE TABLE planning (
   id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
 );
 
--- Table Paiement
-CREATE TABLE paiement (
-  id_paiement SERIAL PRIMARY KEY,
-  id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE CASCADE,
-  paiement_du_jour DECIMAL(10, 2),
-  reste_a_payer DECIMAL(10, 2),
-  type_paiement VARCHAR(50),
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
-);
-
--- Table Comptabilité
-CREATE TABLE comptabilite (
+CREATE TABLE transactions (
   id_transaction SERIAL PRIMARY KEY,
-  id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE SET NULL,
-  type_transaction VARCHAR(50) NOT NULL,
-  montant DECIMAL(10, 2) NOT NULL,
-  date_transaction DATE DEFAULT CURRENT_DATE,
-  justificatif VARCHAR(255),
-  categorie_depense VARCHAR(100),
-  tva_associee DECIMAL(5, 2),
+  date_transaction DATE NOT NULL,
+  description_transaction VARCHAR(255),
+  categorie_transaction VARCHAR(50),
+  montant_transaction DECIMAL(10, 2) NOT NULL,
+  type_transaction TEXT NOT NULL CHECK (type_transaction IN ('recette', 'depense')),
   id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
   id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
-);
-
--- Table Contrats
-CREATE TABLE contrats (
-  id_contrat SERIAL PRIMARY KEY,
-  id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE CASCADE,
-  date_creation DATE DEFAULT CURRENT_DATE,
-  signature_electronique BOOLEAN DEFAULT FALSE,
-  fichier_contrat VARCHAR(255),
-  etat_contrat VARCHAR(50),
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
-);
-
--- Table Devis
-CREATE TABLE devis (
-  id_devis SERIAL PRIMARY KEY,
-  id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE CASCADE,
-  date_devis DATE DEFAULT CURRENT_DATE,
-  tarif_heure DECIMAL(10, 2),
-  tva DECIMAL(5, 2),
-  montant_total DECIMAL(10, 2),
-  etat_devis VARCHAR(50),
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
-);
+)
+  
 
 -- Table Statistique
 CREATE TABLE statistique (

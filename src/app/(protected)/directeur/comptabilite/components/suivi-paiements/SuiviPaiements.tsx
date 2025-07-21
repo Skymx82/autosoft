@@ -1,7 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FiFilter, FiDownload, FiEye, FiAlertCircle, FiCheckCircle, FiClock } from 'react-icons/fi';
+import { FiFilter, FiDownload, FiMail, FiEye, FiEdit, FiCheck, FiAlertTriangle } from 'react-icons/fi';
+
+interface Paiement {
+  id: string;
+  eleve: string;
+  formation: string;
+  montant: number;
+  datePaiement: string;
+  dateEcheance: string;
+  modePaiement: string;
+  statut: 'payé' | 'en retard' | 'à venir' | 'annulé';
+  commentaire?: string;
+}
 
 interface SuiviPaiementsProps {
   // Vous pouvez ajouter des props spécifiques ici
@@ -11,7 +23,70 @@ const SuiviPaiements: React.FC<SuiviPaiementsProps> = () => {
   const [showFilters, setShowFilters] = useState(false);
   
   // Données fictives pour l'exemple
-  const paiements = [];
+  const paiements: Paiement[] = [
+    {
+      id: 'P-001',
+      eleve: 'Martin Sophie',
+      formation: 'Permis B - Forfait 20h',
+      montant: 1200.00,
+      datePaiement: '2025-07-05',
+      dateEcheance: '2025-07-05',
+      modePaiement: 'Carte bancaire',
+      statut: 'payé'
+    },
+    {
+      id: 'P-002',
+      eleve: 'Dubois Thomas',
+      formation: 'Permis B - Accéléré',
+      montant: 800.00,
+      datePaiement: '2025-07-10',
+      dateEcheance: '2025-07-10',
+      modePaiement: 'Virement',
+      statut: 'payé'
+    },
+    {
+      id: 'P-003',
+      eleve: 'Leroy Julie',
+      formation: 'Code de la route',
+      montant: 250.00,
+      datePaiement: '',
+      dateEcheance: '2025-07-15',
+      modePaiement: 'Chèque',
+      statut: 'en retard',
+      commentaire: 'Relance effectuée le 18/07/2025'
+    },
+    {
+      id: 'P-004',
+      eleve: 'Moreau Lucas',
+      formation: 'Permis B - Complet',
+      montant: 600.00,
+      datePaiement: '',
+      dateEcheance: '2025-07-30',
+      modePaiement: 'Espèces',
+      statut: 'à venir'
+    },
+    {
+      id: 'P-005',
+      eleve: 'Petit Emma',
+      formation: 'Heures supplémentaires',
+      montant: 225.00,
+      datePaiement: '2025-07-12',
+      dateEcheance: '2025-07-15',
+      modePaiement: 'Carte bancaire',
+      statut: 'payé'
+    },
+    {
+      id: 'P-006',
+      eleve: 'Garcia Hugo',
+      formation: 'Permis B - Forfait 20h',
+      montant: 400.00,
+      datePaiement: '',
+      dateEcheance: '2025-07-01',
+      modePaiement: 'Virement',
+      statut: 'annulé',
+      commentaire: 'Formation annulée par l\'élève'
+    }
+  ];
   
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
@@ -36,42 +111,42 @@ const SuiviPaiements: React.FC<SuiviPaiementsProps> = () => {
         </div>
       </div>
       
-      {/* Cartes de résumé */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-green-50 rounded-lg p-4 border border-green-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Paiements à jour</p>
-              <p className="text-2xl font-bold text-green-600">0</p>
-            </div>
-            <div className="bg-green-100 p-3 rounded-full">
-              <FiCheckCircle className="text-green-500 w-6 h-6" />
-            </div>
-          </div>
+      {/* Cartes de statut */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500">
+          <h3 className="text-sm font-medium text-gray-500">Paiements reçus</h3>
+          <p className="text-2xl font-bold text-gray-800">{paiements
+            .filter(p => p.statut === 'payé')
+            .reduce((sum, p) => sum + p.montant, 0)
+            .toLocaleString('fr-FR')} €</p>
+          <p className="text-xs text-gray-500 mt-1">{paiements.filter(p => p.statut === 'payé').length} paiements</p>
         </div>
         
-        <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Paiements à venir</p>
-              <p className="text-2xl font-bold text-yellow-600">0</p>
-            </div>
-            <div className="bg-yellow-100 p-3 rounded-full">
-              <FiClock className="text-yellow-500 w-6 h-6" />
-            </div>
-          </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-yellow-500">
+          <h3 className="text-sm font-medium text-gray-500">En attente</h3>
+          <p className="text-2xl font-bold text-gray-800">{paiements
+            .filter(p => p.statut === 'à venir')
+            .reduce((sum, p) => sum + p.montant, 0)
+            .toLocaleString('fr-FR')} €</p>
+          <p className="text-xs text-gray-500 mt-1">{paiements.filter(p => p.statut === 'à venir').length} paiements</p>
         </div>
         
-        <div className="bg-red-50 rounded-lg p-4 border border-red-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Paiements en retard</p>
-              <p className="text-2xl font-bold text-red-600">0</p>
-            </div>
-            <div className="bg-red-100 p-3 rounded-full">
-              <FiAlertCircle className="text-red-500 w-6 h-6" />
-            </div>
-          </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-red-500">
+          <h3 className="text-sm font-medium text-gray-500">En retard</h3>
+          <p className="text-2xl font-bold text-gray-800">{paiements
+            .filter(p => p.statut === 'en retard')
+            .reduce((sum, p) => sum + p.montant, 0)
+            .toLocaleString('fr-FR')} €</p>
+          <p className="text-xs text-gray-500 mt-1">{paiements.filter(p => p.statut === 'en retard').length} paiements</p>
+        </div>
+        
+        <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
+          <h3 className="text-sm font-medium text-gray-500">Total à percevoir</h3>
+          <p className="text-2xl font-bold text-gray-800">{paiements
+            .filter(p => p.statut === 'en retard' || p.statut === 'à venir')
+            .reduce((sum, p) => sum + p.montant, 0)
+            .toLocaleString('fr-FR')} €</p>
+          <p className="text-xs text-gray-500 mt-1">Ce mois-ci</p>
         </div>
       </div>
       
@@ -142,8 +217,9 @@ const SuiviPaiements: React.FC<SuiviPaiementsProps> = () => {
             <tr>
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Élève</th>
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Formation</th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Échéance</th>
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date de paiement</th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date d'échéance</th>
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mode</th>
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -151,15 +227,60 @@ const SuiviPaiements: React.FC<SuiviPaiementsProps> = () => {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {paiements.length > 0 ? (
-              paiements.map((paiement, index) => (
-                <tr key={index}>
-                  {/* Données de paiements */}
+              paiements.map((paiement) => (
+                <tr key={paiement.id} className="hover:bg-gray-50">
+                  <td className="py-3 px-4 text-sm text-gray-500">{paiement.eleve}</td>
+                  <td className="py-3 px-4 text-sm text-gray-500">{paiement.formation}</td>
+                  <td className="py-3 px-4 text-sm font-medium text-gray-700">{paiement.montant.toLocaleString('fr-FR')} €</td>
+                  <td className="py-3 px-4 text-sm text-gray-500">
+                    {paiement.datePaiement ? new Date(paiement.datePaiement).toLocaleDateString('fr-FR') : '-'}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-500">{new Date(paiement.dateEcheance).toLocaleDateString('fr-FR')}</td>
+                  <td className="py-3 px-4 text-sm text-gray-500">{paiement.modePaiement}</td>
+                  <td className="py-3 px-4 text-sm">
+                    <span 
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        paiement.statut === 'payé' ? 'bg-green-100 text-green-800' : 
+                        paiement.statut === 'à venir' ? 'bg-yellow-100 text-yellow-800' : 
+                        paiement.statut === 'en retard' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {paiement.statut}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-500">
+                    <div className="flex space-x-2">
+                      <button className="text-blue-600 hover:text-blue-800" title="Voir détails">
+                        <FiEye className="w-4 h-4" />
+                      </button>
+                      {paiement.statut === 'en retard' && (
+                        <button className="text-orange-600 hover:text-orange-800" title="Envoyer rappel">
+                          <FiMail className="w-4 h-4" />
+                        </button>
+                      )}
+                      {(paiement.statut === 'en retard' || paiement.statut === 'à venir') && (
+                        <button className="text-green-600 hover:text-green-800" title="Marquer comme payé">
+                          <FiCheck className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button className="text-blue-600 hover:text-blue-800" title="Modifier">
+                        <FiEdit className="w-4 h-4" />
+                      </button>
+                    </div>
+                    {paiement.commentaire && (
+                      <div className="mt-1 flex items-center text-xs text-amber-600">
+                        <FiAlertTriangle className="w-3 h-3 mr-1" />
+                        <span title={paiement.commentaire}>Note</span>
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="py-4 text-center text-gray-500">
-                  Aucun paiement à afficher
+                <td colSpan={8} className="py-4 text-center text-gray-500">
+                  Aucun paiement enregistré
                 </td>
               </tr>
             )}
@@ -170,7 +291,7 @@ const SuiviPaiements: React.FC<SuiviPaiementsProps> = () => {
       {/* Pagination */}
       <div className="mt-4 flex items-center justify-between">
         <div className="text-sm text-gray-500">
-          Affichage de 0 paiements
+          Affichage de {paiements.length} paiements
         </div>
         
         <div className="flex space-x-1">
@@ -180,25 +301,6 @@ const SuiviPaiements: React.FC<SuiviPaiementsProps> = () => {
           <button className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>
             Suivant
           </button>
-        </div>
-      </div>
-      
-      {/* Résumé financier */}
-      <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-medium text-gray-700 mb-4">Résumé financier</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-500">Total des paiements à recevoir</p>
-            <p className="text-xl font-bold text-gray-800">0,00 €</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-500">Total des paiements reçus</p>
-            <p className="text-xl font-bold text-gray-800">0,00 €</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-500">Total des paiements en retard</p>
-            <p className="text-xl font-bold text-gray-800">0,00 €</p>
-          </div>
         </div>
       </div>
     </div>
