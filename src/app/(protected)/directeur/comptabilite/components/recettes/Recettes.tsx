@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { FiPlus, FiFilter, FiDownload, FiEye, FiEdit, FiTrash2 } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { FiPlus, FiFilter, FiDownload, FiEye, FiEdit, FiTrash2, FiLoader } from 'react-icons/fi';
+import { FaSpinner } from 'react-icons/fa';
 
 interface Recette {
   id: string;
@@ -16,81 +17,164 @@ interface Recette {
 }
 
 interface RecettesProps {
-  // Vous pouvez ajouter des props spécifiques ici
+  id_ecole?: string;
+  id_bureau?: string;
 }
 
-const Recettes: React.FC<RecettesProps> = () => {
+const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: propIdBureau }) => {
   const [showFilters, setShowFilters] = useState(false);
-  
-  // Données fictives pour l'exemple
-  const recettes: Recette[] = [
-    {
-      id: 'REC-001',
-      date: '2025-07-02',
-      categorie: 'Forfait code',
-      description: 'Forfait code de la route',
-      montant: 250.00,
-      tva: 50.00,
-      client: 'Martin Sophie',
-      modePaiement: 'Carte bancaire',
-      statut: 'encaissé'
-    },
-    {
-      id: 'REC-002',
-      date: '2025-07-05',
-      categorie: 'Forfait conduite',
-      description: 'Forfait 20h de conduite',
-      montant: 800.00,
-      tva: 160.00,
-      client: 'Dubois Thomas',
-      modePaiement: 'Virement',
-      statut: 'encaissé'
-    },
-    {
-      id: 'REC-003',
-      date: '2025-07-08',
-      categorie: 'Heures supplémentaires',
-      description: '5 heures supplémentaires',
-      montant: 225.00,
-      tva: 45.00,
-      client: 'Leroy Julie',
-      modePaiement: 'Chèque',
-      statut: 'en attente'
-    },
-    {
-      id: 'REC-004',
-      date: '2025-07-12',
-      categorie: 'Forfait complet',
-      description: 'Permis B complet',
-      montant: 1200.00,
-      tva: 240.00,
-      client: 'Moreau Lucas',
-      modePaiement: 'Espèces',
-      statut: 'encaissé'
-    },
-    {
-      id: 'REC-005',
-      date: '2025-07-15',
-      categorie: 'Examen pratique',
-      description: 'Présentation à l\'examen',
-      montant: 70.00,
-      tva: 14.00,
-      client: 'Petit Emma',
-      modePaiement: 'Carte bancaire',
-      statut: 'encaissé'
-    },
-    {
-      id: 'REC-006',
-      date: '2025-07-18',
-      categorie: 'Forfait accéléré',
-      description: 'Stage intensif permis B',
-      montant: 1500.00,
-      tva: 300.00,
-      client: 'Garcia Hugo',
-      modePaiement: 'Virement',
-      statut: 'en attente'
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [recettes, setRecettes] = useState<Recette[]>([]);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    filtres: {
+      categorie: null,
+      client: null,
+      statut: null,
+      dateDebut: null,
+      dateFin: null
     }
-  ];
+  });
+  const [statistiques, setStatistiques] = useState({
+    totalHT: 0,
+    totalTVA: 0,
+    totalTTC: 0
+  });
+  
+  // État pour les filtres
+  const [filtres, setFiltres] = useState({
+    categorie: '',
+    client: '',
+    statut: '',
+    dateDebut: '',
+    dateFin: ''
+  });
+  
+  // Fonction pour charger les recettes
+  const fetchRecettes = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Récupérer les informations utilisateur depuis le localStorage ou les props
+      let id_ecole = propIdEcole;
+      let id_bureau = propIdBureau;
+      
+      if (!id_ecole || !id_bureau) {
+        try {
+          const userData = localStorage.getItem('autosoft_user');
+          if (userData) {
+            const user = JSON.parse(userData);
+            id_ecole = id_ecole || user.id_ecole;
+            id_bureau = id_bureau || user.id_bureau;
+          }
+        } catch (err) {
+          console.error('Erreur lors de la récupération des informations utilisateur:', err);
+        }
+      }
+      
+      // Valeurs par défaut si toujours undefined
+      id_ecole = id_ecole || '1';
+      id_bureau = id_bureau || '0';
+      
+      // Construire l'URL avec les paramètres
+      let url = `/directeur/comptabilite/components/recettes/api?id_ecole=${id_ecole}`;
+      
+      // Toujours inclure id_bureau dans l'URL
+      url += `&id_bureau=${id_bureau}`;
+      
+      // Ajouter les paramètres de pagination
+      url += `&page=${pagination.page}&limit=${pagination.limit}`;
+      
+      // Ajouter les filtres s'ils sont définis
+      if (filtres.categorie) url += `&categorie=${encodeURIComponent(filtres.categorie)}`;
+      if (filtres.client) url += `&client=${encodeURIComponent(filtres.client)}`;
+      if (filtres.statut) url += `&statut=${encodeURIComponent(filtres.statut)}`;
+      if (filtres.dateDebut) url += `&dateDebut=${encodeURIComponent(filtres.dateDebut)}`;
+      if (filtres.dateFin) url += `&dateFin=${encodeURIComponent(filtres.dateFin)}`;
+      
+      console.log(`Fetching recettes data from: ${url}`);
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      setRecettes(data.recettes);
+      setPagination(data.pagination);
+      setStatistiques(data.statistiques);
+      
+    } catch (err) {
+      console.error('Erreur lors de la récupération des recettes:', err);
+      setError('Impossible de charger les recettes. Veuillez réessayer.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Charger les recettes au chargement du composant et lorsque les filtres changent
+  useEffect(() => {
+    fetchRecettes();
+  }, [propIdEcole, propIdBureau, pagination.page, pagination.limit]);
+  
+  // Fonction pour appliquer les filtres
+  const appliquerFiltres = () => {
+    setPagination(prev => ({ ...prev, page: 1 })); // Revenir à la première page
+    // fetchRecettes sera appelé via le useEffect quand pagination.page change
+  };
+  
+  // Fonction pour réinitialiser les filtres
+  const reinitialiserFiltres = () => {
+    setFiltres({
+      categorie: '',
+      client: '',
+      statut: '',
+      dateDebut: '',
+      dateFin: ''
+    });
+    setPagination(prev => ({ ...prev, page: 1 }));
+    // fetchRecettes sera appelé via le useEffect quand pagination.page change
+  };
+  
+  // Fonction pour changer de page
+  const changerPage = (nouvellePage: number) => {
+    if (nouvellePage > 0 && nouvellePage <= pagination.totalPages) {
+      setPagination(prev => ({ ...prev, page: nouvellePage }));
+      // fetchRecettes sera appelé via le useEffect quand pagination.page change
+    }
+  };
+  
+  // Afficher un indicateur de chargement
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center h-64">
+        <FiLoader className="animate-spin text-blue-500 w-8 h-8 mb-4" />
+        <p className="text-gray-500">Chargement des recettes...</p>
+      </div>
+    );
+  }
+  
+  // Afficher un message d'erreur
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center h-64">
+        <div className="text-red-500 mb-4">⚠️</div>
+        <p className="text-red-500">{error}</p>
+        <button 
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          onClick={() => fetchRecettes()}
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
   
   return (
     <div className="bg-white rounded-lg shadow-md p-6">

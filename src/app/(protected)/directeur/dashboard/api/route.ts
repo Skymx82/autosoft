@@ -112,27 +112,30 @@ export async function GET(request: Request) {
     
     // Requête pour le chiffre d'affaires du mois en cours
     let currentCAQuery = supabase
-      .from('comptabilite')
-      .select('montant')
+      .from('transactions')
+      .select('montant_transaction')
       .gte('date_transaction', currentMonthStart)
       .lt('date_transaction', currentMonthEnd)
-      .eq('id_ecole', id_ecole);
+      .eq('id_ecole', id_ecole)
+      .eq('type_transaction', 'recette');
     
     // Requête pour le chiffre d'affaires du mois précédent
     let lastMonthCAQuery = supabase
-      .from('comptabilite')
-      .select('montant')
+      .from('transactions')
+      .select('montant_transaction')
       .gte('date_transaction', lastMonthStart)
       .lt('date_transaction', lastMonthEnd)
-      .eq('id_ecole', id_ecole);
+      .eq('id_ecole', id_ecole)
+      .eq('type_transaction', 'recette');
     
     // Requête pour le chiffre d'affaires de l'année en cours (pour le graphique)
     let yearlyCAQuery = supabase
-      .from('comptabilite')
-      .select('date_transaction, montant')
+      .from('transactions')
+      .select('date_transaction, montant_transaction')
       .gte('date_transaction', `${now.getFullYear()}-01-01`)
       .lte('date_transaction', `${now.getFullYear()}-12-31`)
-      .eq('id_ecole', id_ecole);
+      .eq('id_ecole', id_ecole)
+      .eq('type_transaction', 'recette');
     
     // Filtrer par bureau si ce n'est pas "Tout" (id_bureau = 0)
     if (id_bureau !== '0') {
@@ -241,14 +244,14 @@ export async function GET(request: Request) {
     // Calculer le total du chiffre d'affaires pour le mois en cours
     if (currentCAData && currentCAData.length > 0) {
       totalCACurrentMonth = currentCAData.reduce((total, transaction) => {
-        return total + parseFloat(transaction.montant);
+        return total + parseFloat(transaction.montant_transaction);
       }, 0);
     }
     
     // Calculer le total du chiffre d'affaires pour le mois précédent
     if (lastMonthCAData && lastMonthCAData.length > 0) {
       totalCALastMonth = lastMonthCAData.reduce((total, transaction) => {
-        return total + parseFloat(transaction.montant);
+        return total + parseFloat(transaction.montant_transaction);
       }, 0);
     }
     
@@ -298,10 +301,10 @@ export async function GET(request: Request) {
     const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
     
     if (yearlyCAData && yearlyCAData.length > 0) {
-      yearlyCAData.forEach((transaction: { date_transaction: string; montant: string }) => {
+      yearlyCAData.forEach((transaction: { date_transaction: string; montant_transaction: string }) => {
         const date = new Date(transaction.date_transaction);
         const month = date.getMonth(); // 0-11
-        monthlyRevenue[month] += parseFloat(transaction.montant);
+        monthlyRevenue[month] += parseFloat(transaction.montant_transaction);
       });
     }
     

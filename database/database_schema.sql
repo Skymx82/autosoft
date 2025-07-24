@@ -246,6 +246,21 @@ CREATE TABLE depense (
   id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
 )
 
+CREATE TABLE recette (
+  id_recette SERIAL PRIMARY KEY,
+  date_recette DATE NOT NULL,
+  description_recette VARCHAR(255),
+  categorie_recette VARCHAR(50),
+  montant_recette DECIMAL(10, 2) NOT NULL,
+  tva_recette DECIMAL(10, 2) NOT NULL,
+  client_recette INTEGER REFERENCES eleves(id_eleve) ON DELETE SET NULL,
+  mode_paiement_recette VARCHAR(50),
+  statut_recette TEXT NOT NULL CHECK (statut_recette IN ('encaissé', 'en attente', 'annulé')),
+  id_transaction INTEGER REFERENCES transactions(id_transaction) ON DELETE SET NULL,
+  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
+  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+)
+
 -- Table Statistique
 CREATE TABLE statistique (
   id_stat SERIAL PRIMARY KEY,
