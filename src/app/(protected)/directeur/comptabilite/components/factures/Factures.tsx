@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { FiPlus, FiFilter, FiDownload, FiEye, FiEdit, FiTrash2 } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { FiPlus, FiFilter, FiDownload, FiEye, FiEdit, FiTrash2, FiLoader } from 'react-icons/fi';
 
 interface Facture {
   id: string;
@@ -20,108 +20,92 @@ interface FacturesProps {
   // Vous pouvez ajouter des props spécifiques ici
 }
 
+// Interface pour les données de l'API
+interface ApiFacture {
+  id_facture: string;
+  date_facture: string;
+  numero_facture: string;
+  montant_facture: number;
+  tva_facture: number;
+  mode_paiement_facture: string;
+  statut_facture: 'payée' | 'en attente' | 'en retard' | 'annulée';
+  echeance_facture: string;
+  eleves: {
+    nom: string;
+    prenom: string;
+  };
+}
+
 const Factures: React.FC<FacturesProps> = () => {
   const [showFilters, setShowFilters] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [apiData, setApiData] = useState<ApiFacture[]>([]);
+  const [page, setPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [statut, setStatut] = useState<string>('tous');
+  const [periode, setPeriode] = useState<string>('mois');
   
-  // Données fictives pour l'exemple
-  const factures: Facture[] = [
-    {
-      id: 'f001',
-      numero: 'F-2025-001',
-      date: '2025-01-15',
-      client: 'Martin Dupont',
-      montantHT: 750.00,
-      tauxTVA: 20,
-      montantTVA: 150.00,
-      montantTTC: 900.00,
-      statut: 'payée',
-      echeance: '2025-02-15'
-    },
-    {
-      id: 'f002',
-      numero: 'F-2025-002',
-      date: '2025-01-20',
-      client: 'Sophie Lefebvre',
-      montantHT: 1250.00,
-      tauxTVA: 20,
-      montantTVA: 250.00,
-      montantTTC: 1500.00,
-      statut: 'payée',
-      echeance: '2025-02-20'
-    },
-    {
-      id: 'f003',
-      numero: 'F-2025-003',
-      date: '2025-02-05',
-      client: 'Thomas Bernard',
-      montantHT: 833.33,
-      tauxTVA: 20,
-      montantTVA: 166.67,
-      montantTTC: 1000.00,
-      statut: 'en attente',
-      echeance: '2025-03-05'
-    },
-    {
-      id: 'f004',
-      numero: 'F-2025-004',
-      date: '2025-02-12',
-      client: 'Julie Moreau',
-      montantHT: 625.00,
-      tauxTVA: 20,
-      montantTVA: 125.00,
-      montantTTC: 750.00,
-      statut: 'en attente',
-      echeance: '2025-03-12'
-    },
-    {
-      id: 'f005',
-      numero: 'F-2025-005',
-      date: '2025-01-05',
-      client: 'Lucas Petit',
-      montantHT: 416.67,
-      tauxTVA: 20,
-      montantTVA: 83.33,
-      montantTTC: 500.00,
-      statut: 'en retard',
-      echeance: '2025-02-05'
-    },
-    {
-      id: 'f006',
-      numero: 'F-2025-006',
-      date: '2025-01-10',
-      client: 'Emma Dubois',
-      montantHT: 1666.67,
-      tauxTVA: 20,
-      montantTVA: 333.33,
-      montantTTC: 2000.00,
-      statut: 'annulée',
-      echeance: '2025-02-10'
-    },
-    {
-      id: 'f007',
-      numero: 'F-2025-007',
-      date: '2025-02-18',
-      client: 'Antoine Richard',
-      montantHT: 2083.33,
-      tauxTVA: 20,
-      montantTVA: 416.67,
-      montantTTC: 2500.00,
-      statut: 'payée',
-      echeance: '2025-03-18'
-    },
-    {
-      id: 'f008',
-      numero: 'F-2025-008',
-      date: '2025-02-22',
-      client: 'Clara Simon',
-      montantHT: 1041.67,
-      tauxTVA: 20,
-      montantTVA: 208.33,
-      montantTTC: 1250.00,
-      statut: 'en attente',
-      echeance: '2025-03-22'
-    }
-  ];
+  // Fonction pour récupérer les données depuis l'API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Récupérer les informations utilisateur depuis le localStorage
+        let id_ecole = '1'; // Valeur par défaut
+        let id_bureau = '0'; // 0 = Tous les bureaux
+        
+        try {
+          const userData = localStorage.getItem('autosoft_user');
+          if (userData) {
+            const user = JSON.parse(userData);
+            id_ecole = user.id_ecole || id_ecole;
+            id_bureau = user.id_bureau || id_bureau;
+          }
+        } catch (err) {
+          console.error('Erreur lors de la récupération des informations utilisateur:', err);
+        }
+        
+        // Construire l'URL avec les paramètres
+        const url = `/directeur/comptabilite/components/factures/api?id_ecole=${id_ecole}&id_bureau=${id_bureau}&statut=${statut}&periode=${periode}&page=${page}&limit=10`;
+        
+        console.log(`Fetching factures data from: ${url}`);
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`Erreur lors de la récupération des données: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setApiData(data.factures);
+        setTotalPages(data.pagination.totalPages);
+        
+      } catch (error) {
+        console.error('Erreur lors de la récupération des factures:', error);
+        setError(error instanceof Error ? error.message : 'Erreur inconnue');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [page, statut, periode]);
+  
+  // Convertir les données de l'API au format attendu par le composant
+  const factures: Facture[] = apiData.map(item => ({
+    id: item.id_facture,
+    numero: item.numero_facture || `F-${item.id_facture}`,
+    date: item.date_facture,
+    client: `${item.eleves.prenom} ${item.eleves.nom}`,
+    montantHT: parseFloat((item.montant_facture - item.tva_facture).toFixed(2)),
+    tauxTVA: parseFloat(((item.tva_facture / (item.montant_facture - item.tva_facture)) * 100).toFixed(0)),
+    montantTVA: parseFloat(item.tva_facture.toFixed(2)),
+    montantTTC: parseFloat(item.montant_facture.toFixed(2)),
+    statut: item.statut_facture,
+    echeance: item.echeance_facture
+  })) 
   
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
@@ -159,29 +143,32 @@ const Factures: React.FC<FacturesProps> = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Statut</label>
-              <select className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Tous les statuts</option>
-                <option value="payee">Payée</option>
-                <option value="en_attente">En attente</option>
-                <option value="retard">En retard</option>
-                <option value="annulee">Annulée</option>
+              <select 
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={statut}
+                onChange={(e) => setStatut(e.target.value)}
+              >
+                <option value="tous">Tous les statuts</option>
+                <option value="payée">Payée</option>
+                <option value="en attente">En attente</option>
+                <option value="en retard">En retard</option>
+                <option value="annulée">Annulée</option>
               </select>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
-              <input 
-                type="date" 
+              <label className="block text-sm font-medium text-gray-700 mb-1">Période</label>
+              <select 
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date de fin</label>
-              <input 
-                type="date" 
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+                value={periode}
+                onChange={(e) => setPeriode(e.target.value)}
+              >
+                <option value="jour">Aujourd'hui</option>
+                <option value="semaine">Cette semaine</option>
+                <option value="mois">Ce mois</option>
+                <option value="trimestre">Ce trimestre</option>
+                <option value="annee">Cette année</option>
+              </select>
             </div>
             
             <div>
@@ -212,9 +199,23 @@ const Factures: React.FC<FacturesProps> = () => {
             </div>
           </div>
           
-          <div className="mt-4 flex justify-end">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none">
-              Appliquer les filtres
+          <div className="mt-4 flex justify-end space-x-2">
+            <button 
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none"
+              onClick={() => {
+                setStatut('tous');
+                setPeriode('mois');
+                setPage(1);
+              }}
+            >
+              Réinitialiser
+            </button>
+            <button 
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none"
+              onClick={() => setPage(1)} // Réinitialiser la page lors de l'application des filtres
+              disabled={loading}
+            >
+              {loading ? 'Chargement...' : 'Appliquer les filtres'}
             </button>
           </div>
         </div>
@@ -283,6 +284,22 @@ const Factures: React.FC<FacturesProps> = () => {
         </table>
       </div>
       
+      {/* État de chargement */}
+      {loading && (
+        <div className="flex justify-center items-center py-4">
+          <FiLoader className="animate-spin h-6 w-6 text-blue-500" />
+          <span className="ml-2 text-gray-600">Chargement des factures...</span>
+        </div>
+      )}
+      
+      {/* Message d'erreur */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mt-4">
+          <p>Erreur: {error}</p>
+          <p className="text-sm">Veuillez réessayer ou contacter le support technique.</p>
+        </div>
+      )}
+      
       {/* Pagination */}
       <div className="mt-4 flex items-center justify-between">
         <div className="text-sm text-gray-500">
@@ -290,10 +307,21 @@ const Factures: React.FC<FacturesProps> = () => {
         </div>
         
         <div className="flex space-x-1">
-          <button className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled={factures.length === 0}>
+          <button 
+            className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50" 
+            disabled={page === 1 || loading}
+            onClick={() => setPage(page - 1)}
+          >
             Précédent
           </button>
-          <button className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled={factures.length === 0}>
+          <span className="px-3 py-1 text-gray-600">
+            Page {page} sur {totalPages}
+          </span>
+          <button 
+            className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50" 
+            disabled={page >= totalPages || loading}
+            onClick={() => setPage(page + 1)}
+          >
             Suivant
           </button>
         </div>

@@ -261,6 +261,21 @@ CREATE TABLE recette (
   id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
 )
 
+CREATE TABLE facture (
+  id_facture SERIAL PRIMARY KEY,
+  date_facture DATE NOT NULL,
+  numero_facture VARCHAR(255),
+  id_client INTEGER REFERENCES eleves(id_eleve) ON DELETE SET NULL,
+  montant_facture DECIMAL(10, 2) NOT NULL,
+  tva_facture DECIMAL(10, 2) NOT NULL,
+  mode_paiement_facture VARCHAR(50),
+  statut_facture TEXT NOT NULL CHECK (statut_facture IN ('payée', 'en attente', 'en retard', 'annulée')),
+  echeance_facture DATE NOT NULL,
+  id_transaction INTEGER REFERENCES transactions(id_transaction) ON DELETE SET NULL,
+  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
+  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+)
+
 -- Table Statistique
 CREATE TABLE statistique (
   id_stat SERIAL PRIMARY KEY,
