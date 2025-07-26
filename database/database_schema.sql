@@ -398,51 +398,34 @@ CREATE TABLE vehicule (
   id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
 );
 
--- Table pour le suivi du kilométrage des véhicules
-CREATE TABLE kilometrage_vehicule (
-  id_kilometrage SERIAL PRIMARY KEY,
-  id_vehicule INTEGER REFERENCES vehicule(id_vehicule) ON DELETE CASCADE,
-  date_releve DATE NOT NULL,
-  kilometrage INTEGER NOT NULL,
-  id_moniteur INTEGER REFERENCES enseignants(id_moniteur) ON DELETE SET NULL,
-  notes TEXT,
+CREATE TABLE devis (
+  id_devis SERIAL PRIMARY KEY,
+  numero_devis VARCHAR(50) NOT NULL,
+  date_devis DATE NOT NULL,
+  id_client INTEGER REFERENCES eleves(id_eleve) ON DELETE SET NULL,
+  montant_devis DECIMAL(10, 2) NOT NULL,
+  tva_devis DECIMAL(10, 2) NOT NULL,
+  mode_paiement_devis VARCHAR(50),
+  statut_devis TEXT NOT NULL CHECK (statut_devis IN ('en attente', 'accepté', 'refusé', 'expiré')),
+  date_expiration DATE NOT NULL,
   id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
   id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
 );
 
--- Table pour les entretiens des véhicules
-CREATE TABLE entretien_vehicule (
-  id_entretien SERIAL PRIMARY KEY,
-  id_vehicule INTEGER REFERENCES vehicule(id_vehicule) ON DELETE CASCADE,
-  date_entretien DATE NOT NULL,
-  type_entretien VARCHAR(50) NOT NULL, -- Révision, Réparation, Contrôle technique, etc.
-  description TEXT,
-  kilometrage INTEGER,
-  cout DECIMAL(10, 2),
-  prestataire VARCHAR(100),
-  facture_reference VARCHAR(50),
-  prochaine_echeance_km INTEGER,
-  prochaine_echeance_date DATE,
-  pieces_changees TEXT,
+CREATE TABLE contrats (
+  id_contrat SERIAL PRIMARY KEY,
+  numero_contrat VARCHAR(50) NOT NULL,
+  date_debut DATE NOT NULL,
+  date_fin DATE NOT NULL,
+  id_client INTEGER REFERENCES eleves(id_eleve) ON DELETE SET NULL,
+  montant_contrat DECIMAL(10, 2) NOT NULL,
+  tva_contrat DECIMAL(10, 2) NOT NULL,
+  mode_paiement_contrat VARCHAR(50),
+  statut_contrat TEXT NOT NULL CHECK (statut_contrat IN ('actif', 'terminé', 'résilié')),
   id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
   id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
 );
 
--- Table pour les dépenses liées aux véhicules (carburant, péages, etc.)
-CREATE TABLE depense_vehicule (
-  id_depense SERIAL PRIMARY KEY,
-  id_vehicule INTEGER REFERENCES vehicule(id_vehicule) ON DELETE CASCADE,
-  date_depense DATE NOT NULL,
-  type_depense VARCHAR(50) NOT NULL, -- Carburant, Péage, Parking, etc.
-  montant DECIMAL(10, 2) NOT NULL,
-  quantite DECIMAL(10, 2), -- Pour le carburant en litres
-  kilometrage INTEGER,
-  lieu VARCHAR(100),
-  id_moniteur INTEGER REFERENCES enseignants(id_moniteur) ON DELETE SET NULL,
-  notes TEXT,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
-);
 
 -- Commentaire de fin
 -- Schéma de base de données terminé
