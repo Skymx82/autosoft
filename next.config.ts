@@ -9,10 +9,10 @@ const nextConfig: NextConfig = {
     // Ignorer les erreurs de typage est dangereux et ne devrait être fait que temporairement
     ignoreBuildErrors: true,
   },
-  
   // Autres configurations
   reactStrictMode: true,
-  swcMinify: true,
+  // Retirer swcMinify qui cause un avertissement
+  // swcMinify: true,
 };
 
 export default nextConfig;

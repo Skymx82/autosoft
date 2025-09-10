@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiFilter, FiDownload, FiEye, FiEdit, FiTrash2, FiLoader } from 'react-icons/fi';
 import { FaSpinner } from 'react-icons/fa';
+import { BiBuildings } from 'react-icons/bi';
+import { AjouterRecette } from './components/ajoutrecette';
+import { DetailRecette } from './components/DetailRecette';
 
 interface Recette {
   id: string;
@@ -23,6 +26,10 @@ interface RecettesProps {
 
 const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: propIdBureau }) => {
   const [showFilters, setShowFilters] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showBureauWarning, setShowBureauWarning] = useState(false);
+  const [recetteToEdit, setRecetteToEdit] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [recettes, setRecettes] = useState<Recette[]>([]);
@@ -199,6 +206,20 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
           
           <button 
             className="p-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 focus:outline-none flex items-center"
+            onClick={() => {
+              // Vérifier si un bureau est sélectionné
+              const userDataStr = localStorage.getItem('autosoft_user');
+              const userData = userDataStr ? JSON.parse(userDataStr) : null;
+              const id_bureau = userData?.id_bureau || propIdBureau || '0';
+              
+              if (id_bureau === '0') {
+                // Afficher le modal d'avertissement
+                setShowBureauWarning(true);
+              } else {
+                // Ouvrir le modal d'ajout de recette
+                setShowAddModal(true);
+              }
+            }}
           >
             <FiPlus className="w-5 h-5 mr-1" />
             <span>Ajouter</span>
@@ -288,7 +309,13 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-500">
                     <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-800">
+                      <button 
+                        className="text-blue-600 hover:text-blue-800"
+                        onClick={() => {
+                          setRecetteToEdit(recette.id);
+                          setShowEditModal(true);
+                        }}
+                      >
                         <FiEdit className="w-4 h-4" />
                       </button>
                       <button className="text-red-600 hover:text-red-800">
@@ -324,6 +351,123 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
           </button>
         </div>
       </div>
+      
+      {/* Modal d'avertissement pour sélection de bureau */}
+      {showBureauWarning && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-transparent z-50 flex items-center justify-center p-4 overflow-hidden">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 text-yellow-500">
+                <FiFilter className="w-12 h-12" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Sélection de bureau requise</h3>
+              <p className="text-gray-600 mb-6">
+                Veuillez sélectionner un bureau avant d'ajouter une recette. 
+                Pour changer de bureau, cliquez sur l'icône <BiBuildings className="inline h-5 w-5" /> dans la barre de navigation.
+              </p>
+              <button
+                onClick={() => setShowBureauWarning(false)}
+                className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Compris
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de modification de recette */}
+      <DetailRecette
+        showModal={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        recetteId={recetteToEdit || ''}
+        id_ecole={propIdEcole}
+        id_bureau={propIdBureau}
+        onUpdate={fetchRecettes}
+      />
+      
+      {/* Modal d'ajout de recette */}
+      <AjouterRecette
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={async (nouvelleRecette) => {
+          try {
+            setLoading(true);
+            
+            // Récupérer les informations utilisateur
+            let id_ecole = propIdEcole;
+            let id_bureau = propIdBureau;
+            
+            if (!id_ecole || !id_bureau) {
+              try {
+                const userData = localStorage.getItem('autosoft_user');
+                if (userData) {
+                  const user = JSON.parse(userData);
+                  id_ecole = id_ecole || user.id_ecole;
+                  id_bureau = id_bureau || user.id_bureau;
+                }
+              } catch (err) {
+                console.error('Erreur lors de la récupération des informations utilisateur:', err);
+              }
+            }
+            
+            // Valeurs par défaut si toujours undefined
+            id_ecole = id_ecole || '1';
+            id_bureau = id_bureau || '0';
+            
+            // Créer un FormData pour l'envoi des données (compatible avec l'upload de fichier)
+            const formData = new FormData();
+            
+            // Ajouter les champs de base
+            formData.append('id_ecole', id_ecole);
+            formData.append('id_bureau', id_bureau);
+            formData.append('date', nouvelleRecette.date);
+            formData.append('categorie', nouvelleRecette.categorie);
+            formData.append('description', nouvelleRecette.description);
+            formData.append('montant', nouvelleRecette.montant.toString());
+            formData.append('tva', nouvelleRecette.tva.toString());
+            formData.append('client', nouvelleRecette.client || '');
+            formData.append('modePaiement', nouvelleRecette.modePaiement);
+            formData.append('statut', nouvelleRecette.statut);
+            
+            // Désactivé temporairement pour débogage
+            // Ajouter le fichier justificatif s'il existe
+            // if (nouvelleRecette.justificatif) {
+            //   formData.append('justificatif', nouvelleRecette.justificatif);
+            // }
+            
+            // Appel API pour enregistrer la nouvelle recette
+            const response = await fetch(`/directeur/comptabilite/components/recettes/components/ajoutrecette/api`, {
+              method: 'POST',
+              body: formData, // Pas besoin de spécifier Content-Type, il sera automatiquement défini
+            });
+            
+            if (!response.ok) {
+              // Récupérer les détails de l'erreur
+              const errorData = await response.json();
+              
+              if (response.status === 400 && errorData.error) {
+                // Erreur spécifique retournée par l'API
+                throw new Error(errorData.error);
+              } else {
+                // Erreur générique
+                throw new Error(`Erreur HTTP: ${response.status}`);
+              }
+            }
+            
+            // Recharger les recettes après l'ajout
+            await fetchRecettes();
+            
+          } catch (err) {
+            console.error('Erreur lors de l\'ajout de la recette:', err);
+            setError('Impossible d\'ajouter la recette. Veuillez réessayer.');
+          } finally {
+            setLoading(false);
+          }
+        }}
+        id_ecole={propIdEcole}
+        id_bureau={propIdBureau}
+      />
     </div>
   );
 };

@@ -16,33 +16,46 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    
+    console.log('Début du processus de connexion');
+    console.log('Environnement:', process.env.NODE_ENV);
+    console.log('URL Supabase:', process.env.NEXT_PUBLIC_SUPABASE_URL);
 
     try {
       // 1. Authentification avec Supabase
+      console.log('Tentative d\'authentification avec email:', email);
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
+      console.log('Réponse d\'authentification:', authData ? 'Succès' : 'Échec', authError ? `Erreur: ${authError.message}` : 'Pas d\'erreur');
+      
       // S'assurer que la session est persistante (crée un cookie)
+      console.log('Tentative de création de session persistante');
       await supabase.auth.setSession({
         access_token: authData.session?.access_token || '',
         refresh_token: authData.session?.refresh_token || ''
       });
+      console.log('Session persistante créée');
 
       if (authError) {
+        console.error('Erreur d\'authentification détectée:', authError);
         throw authError;
       }
 
       if (!authData.user) {
+        console.error('Aucun utilisateur dans la réponse d\'authentification');
         throw new Error('Aucun utilisateur trouvé');
       }
 
       // 2. Récupération de l'UUID de l'utilisateur
       const userId = authData.user.id;
       console.log('UUID de l\'utilisateur:', userId);
+      console.log('Email de l\'utilisateur:', authData.user.email);
 
       // 3. Récupération des informations de l'utilisateur depuis la table utilisateur
+      console.log('Récupération des données utilisateur avec id:', userId);
       const { data: userData, error: userError } = await supabase
         .from('utilisateur')
         .select('*')
@@ -51,34 +64,49 @@ export default function Login() {
 
       if (userError) {
         console.error('Erreur lors de la récupération des données utilisateur:', userError);
+        console.error('Détails de l\'erreur:', JSON.stringify(userError));
         throw new Error('Impossible de récupérer les informations de l\'utilisateur');
       }
 
       if (!userData) {
+        console.error('Aucune donnée utilisateur trouvée pour l\'id:', userId);
         throw new Error('Aucune information utilisateur trouvée');
       }
 
       console.log('Données utilisateur:', userData);
+      console.log('Rôle:', userData.role);
+      console.log('ID école:', userData.id_ecole);
+      console.log('ID bureau:', userData.id_bureau);
 
       // 4. Stockage des informations utilisateur dans le localStorage pour y accéder facilement
-      localStorage.setItem('autosoft_user', JSON.stringify({
+      console.log('Stockage des informations utilisateur dans localStorage');
+      const userDataToStore = {
         id: userId,
         email: authData.user.email,
         role: userData.role,
         id_ecole: userData.id_ecole,
         id_bureau: userData.id_bureau
-      }));
+      };
+      
+      console.log('Données à stocker:', userDataToStore);
+      localStorage.setItem('autosoft_user', JSON.stringify(userDataToStore));
+      console.log('Données stockées dans localStorage');
 
       // Note: Nous avons déjà créé le cookie d'authentification avec setSession plus haut
 
       // 6. Redirection vers le tableau de bord approprié en fonction du rôle
       const dashboardRoute = getDashboardRouteByRole(userData.role);
+      console.log('Redirection vers:', dashboardRoute);
       router.push(dashboardRoute);
       router.refresh();
     } catch (error: any) {
       console.error('Erreur de connexion:', error);
+      console.error('Type d\'erreur:', typeof error);
+      console.error('Message d\'erreur:', error.message);
+      console.error('Stack trace:', error.stack);
       setError(error.message || 'Une erreur est survenue lors de la connexion');
     } finally {
+      console.log('Fin du processus de connexion');
       setLoading(false);
     }
   };
