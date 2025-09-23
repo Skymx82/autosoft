@@ -1,431 +1,516 @@
--- Base de données pour logiciel AutoSoft
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
 
--- Suppression des tables existantes si elles existent
-DROP TABLE IF EXISTS competences_eleve CASCADE;
-DROP TABLE IF EXISTS suivi_conduite_accompagnee CASCADE;
-DROP TABLE IF EXISTS certifications CASCADE;
-DROP TABLE IF EXISTS examen_resultats CASCADE;
-DROP TABLE IF EXISTS accueil CASCADE;
-DROP TABLE IF EXISTS notifications CASCADE;
-DROP TABLE IF EXISTS utilisateur CASCADE;
-DROP TABLE IF EXISTS statistique CASCADE;
-DROP TABLE IF EXISTS devis CASCADE;
-DROP TABLE IF EXISTS contrats CASCADE;
-DROP TABLE IF EXISTS comptabilite CASCADE;
-DROP TABLE IF EXISTS paiement CASCADE;
-DROP TABLE IF EXISTS planning CASCADE;
-DROP TABLE IF EXISTS notation CASCADE;
-DROP TABLE IF EXISTS formation CASCADE;
-DROP TABLE IF EXISTS documents CASCADE;
-DROP TABLE IF EXISTS disponibilite CASCADE;
-DROP TABLE IF EXISTS representant_legal CASCADE;
-DROP TABLE IF EXISTS eleves CASCADE;
-DROP TABLE IF EXISTS enseignants CASCADE;
-DROP TABLE IF EXISTS permis CASCADE;
-DROP TABLE IF EXISTS forfait CASCADE;
-DROP TABLE IF EXISTS bureau CASCADE;
-DROP TABLE IF EXISTS auto_ecole CASCADE;
-
-
--- Table AutoEcole
-CREATE TABLE auto_ecole (
-  id_ecole SERIAL PRIMARY KEY,
-  id_bureau INTEGER,
-  nom VARCHAR(255) NOT NULL,
-  adresse TEXT NOT NULL,
-  siret VARCHAR(14),
-  num_agrement VARCHAR(50),
-  logo VARCHAR(255),
-  presentation TEXT,
-  coordonnees_bancaires TEXT,
-  reseaux_sociaux JSONB
+CREATE TABLE public.auto_ecole (
+  id_ecole integer NOT NULL DEFAULT nextval('auto_ecole_id_ecole_seq'::regclass),
+  id_bureau integer,
+  nom character varying NOT NULL,
+  adresse text NOT NULL,
+  siret character varying,
+  num_agrement character varying,
+  logo character varying,
+  presentation text,
+  coordonnees_bancaires text,
+  reseaux_sociaux jsonb,
+  CONSTRAINT auto_ecole_pkey PRIMARY KEY (id_ecole),
+  CONSTRAINT fk_auto_ecole_bureau FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau)
 );
-
--- Table Bureau
-CREATE TABLE bureau (
-  id_bureau SERIAL PRIMARY KEY,
-  nom VARCHAR(255) NOT NULL,
-  adresse TEXT NOT NULL,
-  telephone VARCHAR(20),
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.bureau (
+  id_bureau integer NOT NULL DEFAULT nextval('bureau_id_bureau_seq'::regclass),
+  nom character varying NOT NULL,
+  adresse text NOT NULL,
+  telephone character varying,
+  id_ecole integer,
+  CONSTRAINT bureau_pkey PRIMARY KEY (id_bureau),
+  CONSTRAINT bureau_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole)
 );
-
--- Ajout de la contrainte de clé étrangère pour auto_ecole vers bureau
-ALTER TABLE auto_ecole ADD CONSTRAINT fk_auto_ecole_bureau FOREIGN KEY (id_bureau) REFERENCES bureau(id_bureau) ON DELETE SET NULL;
-
--- Table Forfait améliorée
-CREATE TABLE forfait (
-  id_forfait SERIAL PRIMARY KEY,
-  nom VARCHAR(100) NOT NULL,
-  description TEXT,
-  type_permis VARCHAR(10) NOT NULL,
-  tarif_base DECIMAL(10,2) NOT NULL,
-  nb_heures_incluses INTEGER NOT NULL,
-  prix_heure_supp DECIMAL(10,2) NOT NULL, -- Prix d'une heure supplémentaire
-  prix_presentation_examen DECIMAL(10,2), -- Prix de présentation à l'examen
-  duree_validite_jours INTEGER, -- Durée de validité du forfait en jours
-  frais_inscription DECIMAL(10,2), -- Frais d'inscription séparés
-  paiement_fractionnable BOOLEAN, -- Possibilité de payer en plusieurs fois
-  nb_max_echeances INTEGER, -- Nombre maximum d'échéances pour le paiement
-  actif BOOLEAN DEFAULT true, -- Forfait actif ou archivé
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.certifications (
+  id_certification integer NOT NULL DEFAULT nextval('certifications_id_certification_seq'::regclass),
+  id_ecole integer,
+  id_bureau integer,
+  type_certification character varying,
+  date_obtention date,
+  date_expiration date,
+  fichier_justificatif character varying,
+  CONSTRAINT certifications_pkey PRIMARY KEY (id_certification),
+  CONSTRAINT certifications_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT certifications_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole)
 );
-
--- Table Permis
-CREATE TABLE permis (
-  id_permis SERIAL PRIMARY KEY,
-  id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE CASCADE,
-  num_permis VARCHAR(50),
-  type_permis VARCHAR(10) NOT NULL,
-  date_permis DATE,
-  type_categorie VARCHAR(50),
-  pays VARCHAR(100),
-  dep VARCHAR(50),
-  prefecture VARCHAR(100),
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.competences_eleve (
+  id_competence integer NOT NULL DEFAULT nextval('competences_eleve_id_competence_seq'::regclass),
+  id_eleve integer,
+  c1_maitriser integer DEFAULT 0,
+  c2_apprehender integer DEFAULT 0,
+  c3_circuler integer DEFAULT 0,
+  c4_pratiquer integer DEFAULT 0,
+  date_evaluation date DEFAULT CURRENT_DATE,
+  commentaire text,
+  id_moniteur integer,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT competences_eleve_pkey PRIMARY KEY (id_competence),
+  CONSTRAINT competences_eleve_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT competences_eleve_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT competences_eleve_id_eleve_fkey FOREIGN KEY (id_eleve) REFERENCES public.eleves(id_eleve),
+  CONSTRAINT competences_eleve_id_moniteur_fkey FOREIGN KEY (id_moniteur) REFERENCES public.enseignants(id_moniteur)
 );
-
--- Table Enseignants (Moniteurs)
-CREATE TABLE enseignants (
-  id_moniteur SERIAL PRIMARY KEY,
-  nom VARCHAR(100) NOT NULL,
-  prenom VARCHAR(100) NOT NULL,
-  email VARCHAR(255),
-  tel VARCHAR(20),
-  num_enseignant VARCHAR(50),
-  date_delivrance_num DATE,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
-  id_utilisateur INTEGER REFERENCES utilisateur(id_utilisateur) ON DELETE CASCADE
+CREATE TABLE public.contrats (
+  id_contrat integer NOT NULL DEFAULT nextval('contrats_id_contrat_seq'::regclass),
+  numero_contrat character varying NOT NULL,
+  date_debut date NOT NULL,
+  date_fin date NOT NULL,
+  id_client integer,
+  montant_contrat numeric NOT NULL,
+  tva_contrat numeric NOT NULL,
+  mode_paiement_contrat character varying,
+  statut_contrat text NOT NULL CHECK (statut_contrat = ANY (ARRAY['actif'::text, 'terminé'::text, 'résilié'::text])),
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT contrats_pkey PRIMARY KEY (id_contrat),
+  CONSTRAINT contrats_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT contrats_id_client_fkey FOREIGN KEY (id_client) REFERENCES public.eleves(id_eleve),
+  CONSTRAINT contrats_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole)
 );
-
--- Table Elèves
-CREATE TABLE eleves (
-  id_eleve SERIAL PRIMARY KEY,
-  nom VARCHAR(100) NOT NULL,
-  nom_deux VARCHAR(100),
-  nom_trois VARCHAR(100),
-  prenom VARCHAR(100) NOT NULL,
-  prenom_deux VARCHAR(100),
-  prenom_trois VARCHAR(100),
-  mail VARCHAR(255),
-  tel VARCHAR(20),
-  categorie VARCHAR(10),
-  neph VARCHAR(50),
-  genre VARCHAR(10),
-  naiss DATE,
-  pays_naiss VARCHAR(100),
-  dep_naiss VARCHAR(50),
-  ville_naiss VARCHAR(100),
-  code BOOLEAN DEFAULT FALSE,
-  interesse_code BOOLEAN DEFAULT FALSE,
-  profession VARCHAR(100),
-  type_financeur VARCHAR(100),
-  adresse TEXT,
-  code_postal VARCHAR(10),
-  ville VARCHAR(100),
-  pays VARCHAR(100),
-  service_national BOOLEAN DEFAULT FALSE,
-  journee_defense BOOLEAN DEFAULT FALSE,
-  date_inscription DATE DEFAULT CURRENT_DATE,
-  statut_dossier VARCHAR(50),
-  id_forfait INTEGER REFERENCES forfait(id_forfait) ON DELETE SET NULL,
-  id_moniteur INTEGER REFERENCES enseignants(id_moniteur) ON DELETE SET NULL,
-  id_doc INTEGER,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.depense (
+  id_depense integer NOT NULL DEFAULT nextval('depense_id_depense_seq'::regclass),
+  date_depense date NOT NULL,
+  description_depense character varying,
+  categorie_depense character varying,
+  montant_depense numeric NOT NULL,
+  tva_depense numeric NOT NULL,
+  fournisseur_depense character varying,
+  mode_paiement_depense character varying,
+  statut_depense character varying DEFAULT 'payé'::character varying,
+  id_transaction integer,
+  id_bureau integer,
+  id_ecole integer,
+  justificatif_url text,
+  CONSTRAINT depense_pkey PRIMARY KEY (id_depense),
+  CONSTRAINT depense_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT depense_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT depense_id_transaction_fkey FOREIGN KEY (id_transaction) REFERENCES public.transactions(id_transaction)
 );
-
--- Table Représentant légal
-CREATE TABLE representant_legal (
-  id_representant SERIAL PRIMARY KEY,
-  id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE CASCADE,
-  nom_rep VARCHAR(100) NOT NULL,
-  nom_rep_deux VARCHAR(100),
-  prenom_rep VARCHAR(100) NOT NULL,
-  prenom_rep_deux VARCHAR(100),
-  date_naiss DATE,
-  genre VARCHAR(10),
-  tel_rep VARCHAR(20),
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.depense_vehicule (
+  id_depense integer NOT NULL DEFAULT nextval('depense_vehicule_id_depense_seq'::regclass),
+  id_vehicule integer,
+  date_depense date NOT NULL,
+  type_depense character varying NOT NULL,
+  montant numeric NOT NULL,
+  quantite numeric,
+  kilometrage integer,
+  lieu character varying,
+  id_moniteur integer,
+  notes text,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT depense_vehicule_pkey PRIMARY KEY (id_depense),
+  CONSTRAINT depense_vehicule_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT depense_vehicule_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT depense_vehicule_id_moniteur_fkey FOREIGN KEY (id_moniteur) REFERENCES public.enseignants(id_moniteur)
 );
-
--- Table Disponibilité
-CREATE TABLE disponibilite (
-  id_dispo SERIAL PRIMARY KEY,
-  id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE CASCADE,
-  lundi VARCHAR(50),
-  mardi VARCHAR(50),
-  mercredi VARCHAR(50),
-  jeudi VARCHAR(50),
-  vendredi VARCHAR(50),
-  samedi VARCHAR(50),
-  dimanche VARCHAR(50),
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.devis (
+  id_devis integer NOT NULL DEFAULT nextval('devis_id_devis_seq'::regclass),
+  numero_devis character varying NOT NULL,
+  date_devis date NOT NULL,
+  id_client integer,
+  montant_devis numeric NOT NULL,
+  tva_devis numeric NOT NULL,
+  mode_paiement_devis character varying,
+  statut_devis text NOT NULL CHECK (statut_devis = ANY (ARRAY['en attente'::text, 'accepté'::text, 'refusé'::text, 'expiré'::text])),
+  date_expiration date NOT NULL,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT devis_pkey PRIMARY KEY (id_devis),
+  CONSTRAINT devis_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT devis_id_client_fkey FOREIGN KEY (id_client) REFERENCES public.eleves(id_eleve),
+  CONSTRAINT devis_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole)
 );
-
--- Table Documents
-CREATE TABLE documents (
-  id_doc SERIAL PRIMARY KEY,
-  id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE CASCADE,
-  type_doc VARCHAR(100),
-  etat VARCHAR(50),
-  lien_fichier VARCHAR(255),
-  date_depot TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.disponibilite (
+  id_dispo integer NOT NULL DEFAULT nextval('disponibilite_id_dispo_seq'::regclass),
+  id_eleve integer,
+  lundi character varying,
+  mardi character varying,
+  mercredi character varying,
+  jeudi character varying,
+  vendredi character varying,
+  samedi character varying,
+  dimanche character varying,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT disponibilite_pkey PRIMARY KEY (id_dispo),
+  CONSTRAINT disponibilite_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT disponibilite_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT disponibilite_id_eleve_fkey FOREIGN KEY (id_eleve) REFERENCES public.eleves(id_eleve)
 );
-
--- Ajout de la contrainte de clé étrangère pour eleves vers documents
-ALTER TABLE eleves ADD CONSTRAINT fk_eleves_documents FOREIGN KEY (id_doc) REFERENCES documents(id_doc) ON DELETE SET NULL;
-
--- Table Formation
-CREATE TABLE formation (
-  id_formation SERIAL PRIMARY KEY,
-  id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE CASCADE,
-  pourcentage_formation INTEGER DEFAULT 0,
-  statut_contrat VARCHAR(50),
-  date_debut_formation DATE,
-  date_fin_formation_estimee DATE,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.documents (
+  id_doc integer NOT NULL DEFAULT nextval('documents_id_doc_seq'::regclass),
+  id_eleve integer,
+  type_doc character varying,
+  etat character varying,
+  lien_fichier character varying,
+  date_depot timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT documents_pkey PRIMARY KEY (id_doc),
+  CONSTRAINT documents_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT documents_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT documents_id_eleve_fkey FOREIGN KEY (id_eleve) REFERENCES public.eleves(id_eleve)
 );
-
--- Table Notation
-CREATE TABLE notation (
-  id_notation_eleve SERIAL PRIMARY KEY,
-  notation_heure INTEGER CHECK (notation_heure BETWEEN 1 AND 10),
-  sensation VARCHAR(100),
-  id_moniteur INTEGER REFERENCES enseignants(id_moniteur) ON DELETE SET NULL,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.eleves (
+  id_eleve integer NOT NULL DEFAULT nextval('eleves_id_eleve_seq'::regclass),
+  nom character varying NOT NULL,
+  nom_deux character varying,
+  nom_trois character varying,
+  prenom character varying NOT NULL,
+  prenom_deux character varying,
+  prenom_trois character varying,
+  mail character varying,
+  tel character varying,
+  categorie character varying,
+  neph character varying,
+  genre character varying,
+  naiss date,
+  pays_naiss character varying,
+  dep_naiss character varying,
+  ville_naiss character varying,
+  code boolean DEFAULT false,
+  interesse_code boolean DEFAULT false,
+  profession character varying,
+  type_financeur character varying,
+  id_permis integer,
+  adresse text,
+  code_postal character varying,
+  ville character varying,
+  pays character varying,
+  service_national boolean DEFAULT false,
+  journee_defense boolean DEFAULT false,
+  date_inscription date DEFAULT CURRENT_DATE,
+  statut_dossier character varying,
+  id_forfait integer,
+  id_moniteur integer,
+  id_doc integer,
+  id_bureau integer,
+  id_ecole integer,
+  date_archivage date,
+  CONSTRAINT eleves_pkey PRIMARY KEY (id_eleve),
+  CONSTRAINT eleves_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT eleves_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT eleves_id_forfait_fkey FOREIGN KEY (id_forfait) REFERENCES public.forfait(id_forfait),
+  CONSTRAINT eleves_id_moniteur_fkey FOREIGN KEY (id_moniteur) REFERENCES public.enseignants(id_moniteur),
+  CONSTRAINT eleves_id_permis_fkey FOREIGN KEY (id_permis) REFERENCES public.permis(id_permis),
+  CONSTRAINT fk_eleves_documents FOREIGN KEY (id_doc) REFERENCES public.documents(id_doc)
 );
-
--- Table Planning
-CREATE TABLE planning (
-  id_planning SERIAL PRIMARY KEY,
-  date DATE NOT NULL,
-  heure_debut TIME NOT NULL,
-  heure_fin TIME NOT NULL,
-  type_lecon VARCHAR(50),
-  id_moniteur INTEGER REFERENCES enseignants(id_moniteur) ON DELETE CASCADE,
-  id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE CASCADE,
-  id_vehicule INTEGER REFERENCES vehicule(id_vehicule) ON DELETE SET NULL,
-  statut_lecon VARCHAR(50) DEFAULT 'Prévue',
-  commentaire VARCHAR(255),
-  id_notation_eleve INTEGER REFERENCES notation(id_notation_eleve) ON DELETE SET NULL,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.enseignants (
+  id_moniteur integer NOT NULL DEFAULT nextval('enseignants_id_moniteur_seq'::regclass),
+  nom character varying NOT NULL,
+  prenom character varying NOT NULL,
+  email character varying,
+  tel character varying,
+  num_enseignant character varying,
+  date_delivrance_num date,
+  id_ecole integer,
+  id_bureau integer,
+  id_utilisateur text,
+  CONSTRAINT enseignants_pkey PRIMARY KEY (id_moniteur),
+  CONSTRAINT enseignants_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT enseignants_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT enseignants_id_utilisateur_fkey FOREIGN KEY (id_utilisateur) REFERENCES public.utilisateur(id_utilisateur)
 );
-
-CREATE TABLE transactions (
-  id_transaction SERIAL PRIMARY KEY,
-  date_transaction DATE NOT NULL,
-  description_transaction VARCHAR(255),
-  categorie_transaction VARCHAR(50),
-  montant_transaction DECIMAL(10, 2) NOT NULL,
-  type_transaction TEXT NOT NULL CHECK (type_transaction IN ('recette', 'depense')),
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
-)
-  
-CREATE TABLE depense (
-  id_depense SERIAL PRIMARY KEY,
-  date_depense DATE NOT NULL,
-  description_depense VARCHAR(255),
-  categorie_depense VARCHAR(50),
-  montant_depense DECIMAL(10, 2) NOT NULL,
-  tva_depense DECIMAL(10, 2) NOT NULL,
-  fournisseur_depense VARCHAR(100),
-  mode_paiement_depense VARCHAR(50),
-  statut_depense VARCHAR(50) DEFAULT 'payé',
-  id_transaction INTEGER REFERENCES transactions(id_transaction) ON DELETE SET NULL,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
-)
-
-CREATE TABLE recette (
-  id_recette SERIAL PRIMARY KEY,
-  date_recette DATE NOT NULL,
-  description_recette VARCHAR(255),
-  categorie_recette VARCHAR(50),
-  montant_recette DECIMAL(10, 2) NOT NULL,
-  tva_recette DECIMAL(10, 2) NOT NULL,
-  client_recette INTEGER REFERENCES eleves(id_eleve) ON DELETE SET NULL,
-  mode_paiement_recette VARCHAR(50),
-  statut_recette TEXT NOT NULL CHECK (statut_recette IN ('encaissé', 'en attente', 'annulé')),
-  id_transaction INTEGER REFERENCES transactions(id_transaction) ON DELETE SET NULL,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
-)
-
-CREATE TABLE facture (
-  id_facture SERIAL PRIMARY KEY,
-  date_facture DATE NOT NULL,
-  numero_facture VARCHAR(255),
-  id_client INTEGER REFERENCES eleves(id_eleve) ON DELETE SET NULL,
-  montant_facture DECIMAL(10, 2) NOT NULL,
-  tva_facture DECIMAL(10, 2) NOT NULL,
-  mode_paiement_facture VARCHAR(50),
-  statut_facture TEXT NOT NULL CHECK (statut_facture IN ('payée', 'en attente', 'en retard', 'annulée')),
-  echeance_facture DATE NOT NULL,
-  id_transaction INTEGER REFERENCES transactions(id_transaction) ON DELETE SET NULL,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
-)
-
--- Table Statistique
-CREATE TABLE statistique (
-  id_stat SERIAL PRIMARY KEY,
-  id_moniteur INTEGER REFERENCES enseignants(id_moniteur) ON DELETE SET NULL,
-  periode VARCHAR(50),
-  type VARCHAR(50),
-  valeur VARCHAR(50),
-  lieu VARCHAR(100),
-  nb_eleve_forme INTEGER,
-  nb_heures_real INTEGER,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.entretien_vehicule (
+  id_entretien integer NOT NULL DEFAULT nextval('entretien_vehicule_id_entretien_seq'::regclass),
+  id_vehicule integer,
+  date_entretien date NOT NULL,
+  type_entretien character varying NOT NULL,
+  description text,
+  kilometrage integer,
+  cout numeric,
+  prestataire character varying,
+  facture_reference character varying,
+  prochaine_echeance_km integer,
+  prochaine_echeance_date date,
+  pieces_changees text,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT entretien_vehicule_pkey PRIMARY KEY (id_entretien),
+  CONSTRAINT entretien_vehicule_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT entretien_vehicule_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole)
 );
-
--- Table Utilisateur
-CREATE TABLE utilisateur (
-  id_utilisateur TEXT PRIMARY KEY, -- Utilise TEXT pour stocker les UUIDs de Supabase Auth
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER NOT NULL REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE,
-  email TEXT NOT NULL UNIQUE,
-  password TEXT,
-  role TEXT NOT NULL CHECK (role IN ('admin', 'directeur', 'moniteur', 'secretaire', 'comptable')),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE public.examen_resultats (
+  id_resultat integer NOT NULL DEFAULT nextval('examen_resultats_id_resultat_seq'::regclass),
+  id_eleve integer,
+  type_examen character varying,
+  date_examen date,
+  resultat character varying,
+  nb_tentative integer DEFAULT 1,
+  commentaire text,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT examen_resultats_pkey PRIMARY KEY (id_resultat),
+  CONSTRAINT examen_resultats_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT examen_resultats_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT examen_resultats_id_eleve_fkey FOREIGN KEY (id_eleve) REFERENCES public.eleves(id_eleve)
 );
-
-
--- Table Notifications
-CREATE TABLE notifications (
-  code_notif SERIAL PRIMARY KEY,
-  type_notif VARCHAR(50),
-  message_notif TEXT,
-  date_notif TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  id_destinataire INTEGER,
-  lu BOOLEAN DEFAULT FALSE,
-  priorite VARCHAR(10),
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.facture (
+  id_facture integer NOT NULL DEFAULT nextval('facture_id_facture_seq'::regclass),
+  date_facture date NOT NULL,
+  numero_facture character varying,
+  id_client integer,
+  montant_facture numeric NOT NULL,
+  tva_facture numeric NOT NULL,
+  mode_paiement_facture character varying,
+  statut_facture text NOT NULL CHECK (statut_facture = ANY (ARRAY['payée'::text, 'en attente'::text, 'en retard'::text, 'annulée'::text])),
+  echeance_facture date NOT NULL,
+  id_transaction integer,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT facture_pkey PRIMARY KEY (id_facture),
+  CONSTRAINT facture_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT facture_id_client_fkey FOREIGN KEY (id_client) REFERENCES public.eleves(id_eleve),
+  CONSTRAINT facture_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT facture_id_transaction_fkey FOREIGN KEY (id_transaction) REFERENCES public.transactions(id_transaction)
 );
-
--- NOUVELLES TABLES
-
--- Table CompetencesEleve pour le suivi des 4 compétences
-CREATE TABLE competences_eleve (
-  id_competence SERIAL PRIMARY KEY,
-  id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE CASCADE,
-  c1_maitriser INTEGER DEFAULT 0,
-  c2_apprehender INTEGER DEFAULT 0,
-  c3_circuler INTEGER DEFAULT 0,
-  c4_pratiquer INTEGER DEFAULT 0,
-  date_evaluation DATE DEFAULT CURRENT_DATE,
-  commentaire TEXT,
-  id_moniteur INTEGER REFERENCES enseignants(id_moniteur) ON DELETE SET NULL,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.forfait (
+  id_forfait integer NOT NULL DEFAULT nextval('forfait_id_forfait_seq'::regclass),
+  nom character varying NOT NULL,
+  description text,
+  type_permis character varying NOT NULL,
+  tarif_base numeric NOT NULL,
+  nb_heures_incluses integer NOT NULL,
+  id_ecole integer,
+  prix_heure_supp numeric NOT NULL DEFAULT 0,
+  prix_presentation_examen numeric,
+  duree_validite_jours integer,
+  frais_inscription numeric DEFAULT 0,
+  paiement_fractionnable boolean DEFAULT false,
+  nb_max_echeances integer DEFAULT 1,
+  actif boolean DEFAULT true,
+  CONSTRAINT forfait_pkey PRIMARY KEY (id_forfait),
+  CONSTRAINT forfait_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole)
 );
-
--- Table SuiviConduiteAccompagnee pour le suivi des trajets en conduite accompagnée
-CREATE TABLE suivi_conduite_accompagnee (
-  id_suivi SERIAL PRIMARY KEY,
-  id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE CASCADE,
-  date_trajet DATE,
-  km_parcourus INTEGER,
-  duree_minutes INTEGER,
-  commentaire TEXT,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.formation (
+  id_formation integer NOT NULL DEFAULT nextval('formation_id_formation_seq'::regclass),
+  id_eleve integer,
+  pourcentage_formation integer DEFAULT 0,
+  statut_contrat character varying,
+  date_debut_formation date,
+  date_fin_formation_estimee date,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT formation_pkey PRIMARY KEY (id_formation),
+  CONSTRAINT formation_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT formation_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT formation_id_eleve_fkey FOREIGN KEY (id_eleve) REFERENCES public.eleves(id_eleve)
 );
-
--- Table Certifications pour les labels et certifications de l'auto-école
-CREATE TABLE certifications (
-  id_certification SERIAL PRIMARY KEY,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  type_certification VARCHAR(100),
-  date_obtention DATE,
-  date_expiration DATE,
-  fichier_justificatif VARCHAR(255)
+CREATE TABLE public.kilometrage_vehicule (
+  id_kilometrage integer NOT NULL DEFAULT nextval('kilometrage_vehicule_id_kilometrage_seq'::regclass),
+  id_vehicule integer,
+  date_releve date NOT NULL,
+  kilometrage integer NOT NULL,
+  id_moniteur integer,
+  notes text,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT kilometrage_vehicule_pkey PRIMARY KEY (id_kilometrage),
+  CONSTRAINT kilometrage_vehicule_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT kilometrage_vehicule_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT kilometrage_vehicule_id_moniteur_fkey FOREIGN KEY (id_moniteur) REFERENCES public.enseignants(id_moniteur)
 );
-
--- Table ExamenResultats pour un meilleur suivi des résultats d'examens
-CREATE TABLE examen_resultats (
-  id_resultat SERIAL PRIMARY KEY,
-  id_eleve INTEGER REFERENCES eleves(id_eleve) ON DELETE CASCADE,
-  type_examen VARCHAR(50),
-  date_examen DATE,
-  resultat VARCHAR(20),
-  nb_tentative INTEGER DEFAULT 1,
-  commentaire TEXT,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.notation (
+  id_notation_eleve integer NOT NULL DEFAULT nextval('notation_id_notation_eleve_seq'::regclass),
+  notation_heure integer CHECK (notation_heure >= 1 AND notation_heure <= 10),
+  sensation character varying,
+  id_moniteur integer,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT notation_pkey PRIMARY KEY (id_notation_eleve),
+  CONSTRAINT notation_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT notation_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT notation_id_moniteur_fkey FOREIGN KEY (id_moniteur) REFERENCES public.enseignants(id_moniteur)
 );
-
--- Table Véhicule pour la gestion du parc automobile
-CREATE TABLE vehicule (
-  id_vehicule SERIAL PRIMARY KEY,
-  immatriculation VARCHAR(20) NOT NULL,
-  marque VARCHAR(50) NOT NULL,
-  modele VARCHAR(50) NOT NULL,
-  annee INTEGER,
-  type_vehicule VARCHAR(50) NOT NULL, -- Auto, Moto, Poids lourd, etc.
-  categorie_permis VARCHAR(10) NOT NULL, -- B, A, C, etc.
-  boite_vitesse VARCHAR(20), -- Manuelle, Automatique
-  carburant VARCHAR(20), -- Essence, Diesel, Électrique, Hybride
-  date_mise_en_service DATE,
-  kilometrage_actuel INTEGER DEFAULT 0,
-  dernier_controle_technique DATE,
-  prochain_controle_technique DATE,
-  dernier_entretien DATE,
-  prochain_entretien_km INTEGER,
-  prochain_entretien_date DATE,
-  assurance_numero_contrat VARCHAR(50),
-  assurance_date_expiration DATE,
-  cout_acquisition DECIMAL(10, 2),
-  cout_entretien_total DECIMAL(10, 2) DEFAULT 0,
-  cout_carburant_total DECIMAL(10, 2) DEFAULT 0,
-  consommation_moyenne DECIMAL(5, 2), -- L/100km
-  statut VARCHAR(20) DEFAULT 'Actif', -- Actif, En maintenance, Hors service, Vendu
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.notifications (
+  code_notif integer NOT NULL DEFAULT nextval('notifications_code_notif_seq'::regclass),
+  type_notif character varying,
+  message_notif text,
+  date_notif timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  id_destinataire integer,
+  lu boolean DEFAULT false,
+  priorite character varying,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT notifications_pkey PRIMARY KEY (code_notif),
+  CONSTRAINT notifications_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT notifications_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole)
 );
-
-CREATE TABLE devis (
-  id_devis SERIAL PRIMARY KEY,
-  numero_devis VARCHAR(50) NOT NULL,
-  date_devis DATE NOT NULL,
-  id_client INTEGER REFERENCES eleves(id_eleve) ON DELETE SET NULL,
-  montant_devis DECIMAL(10, 2) NOT NULL,
-  tva_devis DECIMAL(10, 2) NOT NULL,
-  mode_paiement_devis VARCHAR(50),
-  statut_devis TEXT NOT NULL CHECK (statut_devis IN ('en attente', 'accepté', 'refusé', 'expiré')),
-  date_expiration DATE NOT NULL,
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.permis (
+  id_permis integer NOT NULL DEFAULT nextval('permis_id_permis_seq'::regclass),
+  num_permis character varying,
+  type_permis character varying NOT NULL,
+  date_permis date,
+  type_categorie character varying,
+  pays character varying,
+  dep character varying,
+  prefecture character varying,
+  id_ecole integer,
+  CONSTRAINT permis_pkey PRIMARY KEY (id_permis),
+  CONSTRAINT permis_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole)
 );
-
-CREATE TABLE contrats (
-  id_contrat SERIAL PRIMARY KEY,
-  numero_contrat VARCHAR(50) NOT NULL,
-  date_debut DATE NOT NULL,
-  date_fin DATE NOT NULL,
-  id_client INTEGER REFERENCES eleves(id_eleve) ON DELETE SET NULL,
-  montant_contrat DECIMAL(10, 2) NOT NULL,
-  tva_contrat DECIMAL(10, 2) NOT NULL,
-  mode_paiement_contrat VARCHAR(50),
-  statut_contrat TEXT NOT NULL CHECK (statut_contrat IN ('actif', 'terminé', 'résilié')),
-  id_bureau INTEGER REFERENCES bureau(id_bureau) ON DELETE SET NULL,
-  id_ecole INTEGER REFERENCES auto_ecole(id_ecole) ON DELETE CASCADE
+CREATE TABLE public.planning (
+  id_planning integer NOT NULL DEFAULT nextval('planning_id_planning_seq'::regclass),
+  date date NOT NULL,
+  heure_debut time without time zone NOT NULL,
+  heure_fin time without time zone NOT NULL,
+  type_lecon character varying,
+  id_moniteur integer,
+  id_eleve integer,
+  statut_lecon character varying DEFAULT 'Prévue'::character varying,
+  id_notation_eleve integer,
+  id_bureau integer,
+  id_ecole integer,
+  commentaire character varying,
+  id_vehicule integer,
+  CONSTRAINT planning_pkey PRIMARY KEY (id_planning),
+  CONSTRAINT planning_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT planning_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT planning_id_eleve_fkey FOREIGN KEY (id_eleve) REFERENCES public.eleves(id_eleve),
+  CONSTRAINT planning_id_moniteur_fkey FOREIGN KEY (id_moniteur) REFERENCES public.enseignants(id_moniteur),
+  CONSTRAINT planning_id_notation_eleve_fkey FOREIGN KEY (id_notation_eleve) REFERENCES public.notation(id_notation_eleve)
 );
-
-
--- Commentaire de fin
--- Schéma de base de données terminé
+CREATE TABLE public.recette (
+  id_recette integer NOT NULL DEFAULT nextval('recette_id_recette_seq'::regclass),
+  date_recette date NOT NULL,
+  description_recette character varying,
+  categorie_recette character varying,
+  montant_recette numeric NOT NULL,
+  tva_recette numeric NOT NULL,
+  client_recette integer,
+  mode_paiement_recette character varying,
+  statut_recette text NOT NULL CHECK (statut_recette = ANY (ARRAY['encaissé'::text, 'en attente'::text, 'annulé'::text])),
+  id_bureau integer,
+  id_ecole integer,
+  justificatif_url text,
+  CONSTRAINT recette_pkey PRIMARY KEY (id_recette),
+  CONSTRAINT recette_client_recette_fkey FOREIGN KEY (client_recette) REFERENCES public.eleves(id_eleve),
+  CONSTRAINT recette_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT recette_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole)
+);
+CREATE TABLE public.representant_legal (
+  id_representant integer NOT NULL DEFAULT nextval('representant_legal_id_representant_seq'::regclass),
+  id_eleve integer,
+  nom_rep character varying NOT NULL,
+  nom_rep_deux character varying,
+  prenom_rep character varying NOT NULL,
+  prenom_rep_deux character varying,
+  date_naiss date,
+  genre character varying,
+  tel_rep character varying,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT representant_legal_pkey PRIMARY KEY (id_representant),
+  CONSTRAINT representant_legal_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT representant_legal_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT representant_legal_id_eleve_fkey FOREIGN KEY (id_eleve) REFERENCES public.eleves(id_eleve)
+);
+CREATE TABLE public.reservation_vehicule (
+  id_reservation integer NOT NULL DEFAULT nextval('reservation_vehicule_id_reservation_seq'::regclass),
+  id_vehicule integer,
+  date_debut timestamp without time zone NOT NULL,
+  date_fin timestamp without time zone NOT NULL,
+  motif character varying,
+  id_moniteur integer,
+  id_planning integer,
+  statut character varying DEFAULT 'Confirmée'::character varying,
+  notes text,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT reservation_vehicule_pkey PRIMARY KEY (id_reservation),
+  CONSTRAINT reservation_vehicule_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT reservation_vehicule_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT reservation_vehicule_id_moniteur_fkey FOREIGN KEY (id_moniteur) REFERENCES public.enseignants(id_moniteur),
+  CONSTRAINT reservation_vehicule_id_planning_fkey FOREIGN KEY (id_planning) REFERENCES public.planning(id_planning)
+);
+CREATE TABLE public.statistique (
+  id_stat integer NOT NULL DEFAULT nextval('statistique_id_stat_seq'::regclass),
+  id_moniteur integer,
+  periode character varying,
+  type character varying,
+  valeur character varying,
+  lieu character varying,
+  nb_eleve_forme integer,
+  nb_heures_real integer,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT statistique_pkey PRIMARY KEY (id_stat),
+  CONSTRAINT statistique_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT statistique_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT statistique_id_moniteur_fkey FOREIGN KEY (id_moniteur) REFERENCES public.enseignants(id_moniteur)
+);
+CREATE TABLE public.suivi_conduite_accompagnee (
+  id_suivi integer NOT NULL DEFAULT nextval('suivi_conduite_accompagnee_id_suivi_seq'::regclass),
+  id_eleve integer,
+  date_trajet date,
+  km_parcourus integer,
+  duree_minutes integer,
+  commentaire text,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT suivi_conduite_accompagnee_pkey PRIMARY KEY (id_suivi),
+  CONSTRAINT suivi_conduite_accompagnee_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT suivi_conduite_accompagnee_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
+  CONSTRAINT suivi_conduite_accompagnee_id_eleve_fkey FOREIGN KEY (id_eleve) REFERENCES public.eleves(id_eleve)
+);
+CREATE TABLE public.transactions (
+  id_transaction integer NOT NULL DEFAULT nextval('transactions_id_transaction_seq'::regclass),
+  date_transaction date NOT NULL,
+  description_transaction character varying,
+  categorie_transaction character varying,
+  montant_transaction numeric NOT NULL,
+  type_transaction text NOT NULL CHECK (type_transaction = ANY (ARRAY['recette'::text, 'depense'::text])),
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT transactions_pkey PRIMARY KEY (id_transaction),
+  CONSTRAINT transactions_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT transactions_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole)
+);
+CREATE TABLE public.utilisateur (
+  id_utilisateur text NOT NULL,
+  id_bureau integer,
+  id_ecole integer NOT NULL,
+  email text NOT NULL UNIQUE,
+  password text,
+  role text NOT NULL CHECK (role = ANY (ARRAY['admin'::text, 'directeur'::text, 'moniteur'::text, 'secretaire'::text, 'comptable'::text, 'autosoft'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT utilisateur_pkey PRIMARY KEY (id_utilisateur),
+  CONSTRAINT utilisateur_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT utilisateur_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole)
+);
+CREATE TABLE public.vehicule (
+  id_vehicule integer NOT NULL DEFAULT nextval('vehicule_id_vehicule_seq'::regclass),
+  immatriculation character varying NOT NULL,
+  marque character varying NOT NULL,
+  modele character varying NOT NULL,
+  annee integer,
+  type_vehicule character varying NOT NULL,
+  categorie_permis character varying NOT NULL,
+  boite_vitesse character varying,
+  carburant character varying,
+  date_mise_en_service date,
+  kilometrage_actuel integer DEFAULT 0,
+  dernier_controle_technique date,
+  prochain_controle_technique date,
+  dernier_entretien date,
+  prochain_entretien_km integer,
+  prochain_entretien_date date,
+  assurance_numero_contrat character varying,
+  assurance_date_expiration date,
+  cout_acquisition numeric,
+  cout_entretien_total numeric DEFAULT 0,
+  cout_carburant_total numeric DEFAULT 0,
+  consommation_moyenne numeric,
+  statut character varying DEFAULT 'Actif'::character varying,
+  id_bureau integer,
+  id_ecole integer,
+  CONSTRAINT vehicule_pkey PRIMARY KEY (id_vehicule),
+  CONSTRAINT vehicule_id_bureau_fkey FOREIGN KEY (id_bureau) REFERENCES public.bureau(id_bureau),
+  CONSTRAINT vehicule_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole)
+);
