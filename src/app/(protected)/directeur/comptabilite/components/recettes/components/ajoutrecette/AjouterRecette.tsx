@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { FiX, FiUpload, FiFile, FiTrash2 } from 'react-icons/fi';
+import EleveSelector from './components/EleveSelector';
 
 interface AjouterRecetteProps {
   isOpen: boolean;
@@ -12,7 +13,7 @@ interface AjouterRecetteProps {
     description: string;
     montant: number;
     tva: number;
-    client: string;
+    client: number | null; // Modifié pour accepter un ID d'élève ou null
     modePaiement: string;
     statut: 'encaissé' | 'en attente';
     justificatif?: File;
@@ -35,10 +36,12 @@ const AjouterRecette: React.FC<AjouterRecetteProps> = ({
     montant: 0,
     tva: 0,
     tauxTVA: 20, // Taux par défaut à 20%
-    client: '',
     modePaiement: 'Carte bancaire',
     statut: 'encaissé' as 'encaissé' | 'en attente'
   });
+  
+  // État pour l'élève sélectionné
+  const [selectedEleveId, setSelectedEleveId] = useState<number | null>(null);
   
   const [justificatif, setJustificatif] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -48,22 +51,40 @@ const AjouterRecette: React.FC<AjouterRecetteProps> = ({
     
     // Pour les champs numériques, convertir en nombre
     if (name === 'montant') {
-      const montant = parseFloat(value) || 0;
-      const tva = (montant * formData.tauxTVA) / 100;
+      // Conserver exactement la valeur saisie sans arrondi
+      let montant: number;
+      
+      // Si la valeur est vide, utiliser 0
+      if (value === '') {
+        montant = 0;
+      } else {
+        // Utiliser parseFloat mais sans arrondi
+        montant = parseFloat(value);
+        
+        // Si la valeur n'est pas un nombre valide, utiliser 0
+        if (isNaN(montant)) {
+          montant = 0;
+        }
+      }
+      
+      // Calculer la TVA avec précision
+      const tva = Math.round((montant * formData.tauxTVA) / 100 * 100) / 100;
       
       setFormData({
         ...formData,
-        montant,
-        tva: parseFloat(tva.toFixed(2))
+        montant, // Montant exact saisi
+        tva      // TVA calculée avec précision
       });
     } else if (name === 'tauxTVA') {
       const tauxTVA = parseFloat(value) || 0;
-      const tva = (formData.montant * tauxTVA) / 100;
+      
+      // Calculer la TVA avec précision
+      const tva = Math.round((formData.montant * tauxTVA) / 100 * 100) / 100;
       
       setFormData({
         ...formData,
         tauxTVA,
-        tva: parseFloat(tva.toFixed(2))
+        tva      // TVA calculée avec précision
       });
     } else {
       setFormData({
@@ -124,6 +145,7 @@ const AjouterRecette: React.FC<AjouterRecetteProps> = ({
     e.preventDefault();
     onSave({
       ...formData,
+      client: selectedEleveId, // Utiliser l'ID de l'élève sélectionné
       justificatif: justificatif || undefined
     });
     onClose();
@@ -227,15 +249,11 @@ const AjouterRecette: React.FC<AjouterRecetteProps> = ({
               </div>
             </div>
 
-            {/* Client */}
-            <div className="col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Client <span className="text-xs text-gray-500">(optionnel)</span></label>
-              <input
-                type="text"
-                name="client"
-                value={formData.client}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {/* Sélecteur d'élève (remplace le champ client) */}
+            <div className="col-span-2">
+              <EleveSelector
+                selectedEleveId={selectedEleveId}
+                onEleveChange={setSelectedEleveId}
               />
             </div>
 

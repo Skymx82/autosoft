@@ -34,18 +34,17 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // Construire la requête pour obtenir les données par catégorie depuis les transactions
+    // Construire la requête pour obtenir les données par catégorie depuis la table recette
     let categoriesQuery = supabase
-      .from('transactions')
+      .from('recette')
       .select(`
-        categorie_transaction,
-        montant_transaction,
-        type_transaction
+        categorie_recette,
+        montant_recette,
+        tva_recette
       `)
       .eq('id_ecole', id_ecole)
-      .eq('type_transaction', 'recette') // Ne prendre en compte que les recettes
-      .gte('date_transaction', `${annee}-01-01`) // Filtrer par année
-      .lte('date_transaction', dateFin); // Limiter à la date de fin calculée
+      .gte('date_recette', `${annee}-01-01`) // Filtrer par année
+      .lte('date_recette', dateFin); // Limiter à la date de fin calculée
     
     // Filtrer par bureau si ce n'est pas "Tout" (id_bureau = 0)
     if (id_bureau !== '0') {
@@ -67,14 +66,11 @@ export async function GET(request: NextRequest) {
     let totalHT = 0;
     
     categoriesData.forEach(item => {
-      // Vérifier que c'est bien une recette
-      if (item.type_transaction !== 'recette') return;
-      
-      // Estimer la répartition HT/TVA (20% de TVA par défaut)
-      const montantTTC = parseFloat(item.montant_transaction);
-      const montantHT = montantTTC / 1.2; // Estimation du montant HT (TVA 20%)
-      const montantTVA = montantTTC - montantHT;
-      const categorie = item.categorie_transaction || 'Non catégorisé';
+      // Récupérer directement les montants HT et TVA de la table recette
+      const montantHT = parseFloat(item.montant_recette);
+      const montantTVA = parseFloat(item.tva_recette);
+      const montantTTC = montantHT + montantTVA;
+      const categorie = item.categorie_recette || 'Non catégorisé';
       
       if (!categoriesMap.has(categorie)) {
         categoriesMap.set(categorie, {
@@ -115,18 +111,17 @@ export async function GET(request: NextRequest) {
     // Trier les catégories par montant HT décroissant
     categories.sort((a, b) => b.montantHT - a.montantHT);
     
-    // Construire la requête pour obtenir les données pour le graphique depuis les transactions
+    // Construire la requête pour obtenir les données pour le graphique depuis la table recette
     let graphiqueQuery = supabase
-      .from('transactions')
+      .from('recette')
       .select(`
-        date_transaction,
-        montant_transaction,
-        type_transaction
+        date_recette,
+        montant_recette,
+        tva_recette
       `)
       .eq('id_ecole', id_ecole)
-      .eq('type_transaction', 'recette')
-      .gte('date_transaction', `${annee}-01-01`)
-      .lte('date_transaction', dateFin); // Utiliser la même date de fin
+      .gte('date_recette', `${annee}-01-01`)
+      .lte('date_recette', dateFin); // Utiliser la même date de fin
     
     if (id_bureau !== '0') {
       graphiqueQuery = graphiqueQuery.eq('id_bureau', id_bureau);
@@ -150,14 +145,8 @@ export async function GET(request: NextRequest) {
       categories,
       statistiques: {
         totalHT: parseFloat(totalHT.toFixed(2)),
-        totalTVA: parseFloat(categoriesData.reduce((sum, item) => {
-          // Estimer la TVA à partir du montant TTC (20% par défaut)
-          const montantTTC = parseFloat(item.montant_transaction);
-          const montantHT = montantTTC / 1.2;
-          const montantTVA = montantTTC - montantHT;
-          return sum + montantTVA;
-        }, 0).toFixed(2)),
-        totalTTC: parseFloat(categoriesData.reduce((sum, item) => sum + parseFloat(item.montant_transaction), 0).toFixed(2))
+        totalTVA: parseFloat(categoriesData.reduce((sum, item) => sum + parseFloat(item.tva_recette), 0).toFixed(2)),
+        totalTTC: parseFloat(categoriesData.reduce((sum, item) => sum + parseFloat(item.montant_recette) + parseFloat(item.tva_recette), 0).toFixed(2))
       },
       graphique: donneesGraphique
     });
@@ -201,12 +190,11 @@ function processGraphiqueData(data: any[], periode: string, annee: number): any[
   
   // Agréger les données selon la période
   data.forEach(item => {
-    // Vérifier que c'est bien une recette
-    if (item.type_transaction !== 'recette') return;
-    
-    const date = new Date(item.date_transaction);
+    const date = new Date(item.date_recette);
     const mois = date.getMonth();
-    const montantTTC = parseFloat(item.montant_transaction);
+    const montantHT = parseFloat(item.montant_recette);
+    const montantTVA = parseFloat(item.tva_recette);
+    const montantTTC = montantHT + montantTVA;
     
     if (periode === 'mensuel') {
       aggregatedData[moisFrancais[mois]] += montantTTC;

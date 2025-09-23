@@ -117,6 +117,8 @@ const ChiffreAffaires: React.FC<ChiffreAffairesProps> = ({ id_ecole: propIdEcole
       setDonneesGraphique(data.graphique);
       setStatistiques(data.statistiques);
       
+      // Pas besoin de récupérer les transactions récentes
+      
       setLoading(false);
     } catch (err) {
       console.error('Erreur lors de la récupération du chiffre d\'affaires:', err);

@@ -426,7 +426,8 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
             formData.append('description', nouvelleRecette.description);
             formData.append('montant', nouvelleRecette.montant.toString());
             formData.append('tva', nouvelleRecette.tva.toString());
-            formData.append('client', nouvelleRecette.client || '');
+            // Convertir l'ID de l'élève en chaîne ou utiliser une chaîne vide si null
+            formData.append('client', nouvelleRecette.client !== null ? nouvelleRecette.client.toString() : '');
             formData.append('modePaiement', nouvelleRecette.modePaiement);
             formData.append('statut', nouvelleRecette.statut);
             
@@ -446,13 +447,20 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
               // Récupérer les détails de l'erreur
               const errorData = await response.json();
               
-              if (response.status === 400 && errorData.error) {
-                // Erreur spécifique retournée par l'API
-                throw new Error(errorData.error);
-              } else {
-                // Erreur générique
-                throw new Error(`Erreur HTTP: ${response.status}`);
+              if (response.status === 400) {
+                if (errorData.error === 'bureau_required') {
+                  // Afficher le modal d'avertissement pour sélectionner un bureau
+                  setShowBureauWarning(true);
+                  setLoading(false);
+                  return; // Arrêter l'exécution ici
+                } else if (errorData.error || errorData.message) {
+                  // Autre erreur spécifique retournée par l'API
+                  throw new Error(errorData.message || errorData.error);
+                }
               }
+              
+              // Erreur générique
+              throw new Error(`Erreur HTTP: ${response.status}`);
             }
             
             // Recharger les recettes après l'ajout

@@ -42,7 +42,7 @@ export default function DirectorLayout({ children }: DirectorLayoutProps) {
     { name: 'Planning', href: '/directeur/planning', icon: <FiCalendar className="w-5 h-5" /> },
     { name: 'Élèves', href: '/directeur/eleves', icon: <FiUsers className="w-5 h-5" /> },
     { name: 'Comptabilité', href: '/directeur/comptabilite', icon: <FiDollarSign className="w-5 h-5" /> },
-    { name: 'Statistiques', href: '/directeur/statistiques', icon: <FiBarChart2 className="w-5 h-5" /> },
+    { name: 'Statistiques', href: '/directeur/statistique', icon: <FiBarChart2 className="w-5 h-5" /> },
     { name: 'Mon auto-école', href: '/directeur/mon-auto-ecole', icon: <FiSettings className="w-5 h-5" /> },
   ];
 
