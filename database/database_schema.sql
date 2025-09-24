@@ -373,7 +373,8 @@ CREATE TABLE public.planning (
   CONSTRAINT planning_id_ecole_fkey FOREIGN KEY (id_ecole) REFERENCES public.auto_ecole(id_ecole),
   CONSTRAINT planning_id_eleve_fkey FOREIGN KEY (id_eleve) REFERENCES public.eleves(id_eleve),
   CONSTRAINT planning_id_moniteur_fkey FOREIGN KEY (id_moniteur) REFERENCES public.enseignants(id_moniteur),
-  CONSTRAINT planning_id_notation_eleve_fkey FOREIGN KEY (id_notation_eleve) REFERENCES public.notation(id_notation_eleve)
+  CONSTRAINT planning_id_notation_eleve_fkey FOREIGN KEY (id_notation_eleve) REFERENCES public.notation(id_notation_eleve),
+  CONSTRAINT planning_id_vehicule_fkey FOREIGN KEY (id_vehicule) REFERENCES public.vehicule(id_vehicule)
 );
 CREATE TABLE public.recette (
   id_recette integer NOT NULL DEFAULT nextval('recette_id_recette_seq'::regclass),

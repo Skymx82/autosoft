@@ -255,6 +255,16 @@ export default function AutoEcoleModal({ isOpen, onClose, onSave, autoEcole, isL
     }
   };
 
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+    } else {
+      setIsVisible(false);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -263,17 +273,19 @@ export default function AutoEcoleModal({ isOpen, onClose, onSave, autoEcole, isL
         className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="fixed inset-0 transition-opacity" aria-hidden="true" onClick={onClose}>
-          <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-        </div>
+        <div 
+          className={`fixed inset-0 backdrop-blur-sm bg-black/30 transition-opacity duration-300 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0'}`} 
+          aria-hidden="true" 
+          onClick={onClose}
+        ></div>
 
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
         <div 
-          className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full relative z-[101]"
+          className={`inline-block align-bottom bg-white/95 rounded-lg text-left overflow-hidden shadow-xl transform transition-all duration-300 border border-gray-200 sm:my-8 sm:align-middle sm:max-w-lg sm:w-full relative z-[101] ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+          <div className="bg-white/95 backdrop-filter px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <div className="flex justify-between items-center pb-4 mb-4 border-b">
               <h3 className="text-lg font-medium text-gray-900">
                 {autoEcole ? 'Modifier une auto-école' : 'Ajouter une auto-école'}

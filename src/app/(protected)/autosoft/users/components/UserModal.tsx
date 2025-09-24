@@ -61,7 +61,7 @@ export default function UserModal({ isOpen, onClose, onSave, user, isLoading }: 
     // Charger la liste des auto-écoles
     const fetchAutoEcoles = async () => {
       try {
-        const response = await fetch('/autosoft/dashboard/api/auto-ecoles');
+        const response = await fetch('/autosoft/auto-ecole/api/auto-ecoles');
         if (!response.ok) {
           throw new Error(`Erreur HTTP: ${response.status}`);
         }

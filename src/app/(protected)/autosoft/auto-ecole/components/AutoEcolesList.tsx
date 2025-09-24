@@ -31,9 +31,10 @@ interface AutoEcolesListProps {
   searchTerm: string;
   filterStatus: string;
   onEdit: (autoEcole: AutoEcole) => void;
+  onManageUsers: (autoEcoleId: number, autoEcoleName: string) => void;
 }
 
-export default function AutoEcolesList({ searchTerm, filterStatus, onEdit }: AutoEcolesListProps) {
+export default function AutoEcolesList({ searchTerm, filterStatus, onEdit, onManageUsers }: AutoEcolesListProps) {
   const [autoEcoles, setAutoEcoles] = useState<AutoEcole[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +68,7 @@ export default function AutoEcolesList({ searchTerm, filterStatus, onEdit }: Aut
       setLoading(true);
       try {
         // Construire l'URL avec les paramètres de recherche et de filtre
-        let url = '/autosoft/dashboard/api/auto-ecoles';
+        let url = '/autosoft/auto-ecole/api/auto-ecoles';
         const params = new URLSearchParams();
         
         if (searchTerm) {
@@ -150,7 +151,7 @@ export default function AutoEcolesList({ searchTerm, filterStatus, onEdit }: Aut
     
     setLoading(true);
     try {
-      const response = await fetch(`/autosoft/dashboard/api/auto-ecoles/${id}`, {
+      const response = await fetch(`/autosoft/auto-ecole/api/auto-ecoles/${id}`, {
         method: 'DELETE',
       });
       
@@ -328,7 +329,10 @@ export default function AutoEcolesList({ searchTerm, filterStatus, onEdit }: Aut
                           Voir détails
                         </button>
                         <button
-                          onClick={() => console.log('Gérer utilisateurs:', autoEcole.id)}
+                          onClick={() => {
+                            setOpenDropdown(null);
+                            onManageUsers(autoEcole.id, autoEcole.nom);
+                          }}
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                           role="menuitem"
                         >

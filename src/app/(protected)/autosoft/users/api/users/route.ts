@@ -81,6 +81,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search')?.toLowerCase() || '';
     const role = searchParams.get('role') || '';
+    const idAutoEcole = searchParams.get('id_auto_ecole');
     
     // Construire la requête Supabase
     let query = supabase.from('utilisateur').select('*');
@@ -88,6 +89,11 @@ export async function GET(request: Request) {
     // Filtrer par rôle si spécifié
     if (role && role !== 'all') {
       query = query.eq('role', role);
+    }
+    
+    // Filtrer par auto-école si spécifié
+    if (idAutoEcole) {
+      query = query.eq('id_ecole', parseInt(idAutoEcole));
     }
     
     // Exécuter la requête
