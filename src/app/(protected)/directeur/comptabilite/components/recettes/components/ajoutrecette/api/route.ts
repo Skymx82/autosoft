@@ -93,9 +93,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Désactivé temporairement pour débogage
     // Récupérer le fichier justificatif s'il existe
-    // const justificatif = formData.get('justificatif') as File | null;
+    const justificatif = formData.get('justificatif') as File | null;
     let justificatif_url = '';
 
     // Vérifier si id_bureau est valide (différent de '0')
@@ -141,7 +140,6 @@ export async function POST(request: NextRequest) {
           mode_paiement_recette: modePaiement,
           statut_recette: statut,
           justificatif_url: justificatif_url
-          // La colonne id_transaction a été supprimée
         }
       ])
       .select('id_recette')
@@ -154,12 +152,64 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+    
+    // Si un justificatif a été fourni et que la recette a été créée avec succès
+    if (justificatif && data && data.id_recette) {
+      try {
+        // Déterminer l'extension du fichier
+        const fileExtension = justificatif.name.split('.').pop() || '';
+        
+        // Créer le chemin de stockage dans Supabase
+        const storagePath = `${id_ecole}/recette/${data.id_recette}.${fileExtension}`;
+        
+        // Convertir le fichier en ArrayBuffer pour l'upload
+        const fileBuffer = await justificatif.arrayBuffer();
+        
+        // Upload du fichier dans Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase
+          .storage
+          .from('documents') // Nom du bucket correct
+          .upload(storagePath, fileBuffer, {
+            contentType: justificatif.type,
+            upsert: true // Remplacer si le fichier existe déjà
+          });
+        
+        if (uploadError) {
+          console.error('Erreur lors de l\'upload du justificatif:', uploadError);
+          // Continuer malgré l'erreur d'upload, la recette est déjà créée
+        } else {
+          // Construire l'URL publique du fichier
+          const { data: publicUrlData } = supabase
+            .storage
+            .from('documents') // Même nom de bucket que ci-dessus
+            .getPublicUrl(storagePath);
+          
+          // Mettre à jour l'URL du justificatif dans la recette
+          if (publicUrlData) {
+            justificatif_url = publicUrlData.publicUrl;
+            
+            const { error: updateError } = await supabase
+              .from('recette')
+              .update({ justificatif_url: justificatif_url })
+              .eq('id_recette', data.id_recette);
+            
+            if (updateError) {
+              console.error('Erreur lors de la mise à jour de l\'URL du justificatif:', updateError);
+            }
+          }
+        }
+      } catch (uploadError) {
+        console.error('Erreur lors du traitement du justificatif:', uploadError);
+        // Continuer malgré l'erreur, la recette est déjà créée
+      }
+    }
 
     // Retourner la réponse avec l'ID de la recette créée
     return NextResponse.json({
       success: true,
       message: 'Recette ajoutée avec succès',
-      id_recette: data.id_recette
+      id_recette: data.id_recette,
+      justificatif_url: justificatif_url || null
     });
 
   } catch (error) {

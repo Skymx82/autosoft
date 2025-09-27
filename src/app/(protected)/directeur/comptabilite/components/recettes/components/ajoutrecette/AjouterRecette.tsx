@@ -143,11 +143,16 @@ const AjouterRecette: React.FC<AjouterRecetteProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
+    
+    // Créer un objet avec toutes les données nécessaires
+    const recetteData = {
       ...formData,
       client: selectedEleveId, // Utiliser l'ID de l'élève sélectionné
       justificatif: justificatif || undefined
-    });
+    };
+    
+    // Appeler la fonction onSave avec les données
+    onSave(recetteData);
     onClose();
   };
 

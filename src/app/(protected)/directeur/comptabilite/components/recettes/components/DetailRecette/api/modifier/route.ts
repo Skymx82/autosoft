@@ -77,19 +77,71 @@ export async function PUT(request: NextRequest) {
     
     // Note: Nous ne mettons plus à jour la table transactions car la table recette n'a plus de colonne id_transaction
 
+    // Récupérer le fichier justificatif s'il existe
+    const justificatif = formData.get('justificatif') as File | null;
+    let justificatif_url = '';
+    
+    // Si un justificatif a été fourni, l'uploader dans Supabase Storage
+    if (justificatif) {
+      try {
+        // Déterminer l'extension du fichier
+        const fileExtension = justificatif.name.split('.').pop() || '';
+        
+        // Créer le chemin de stockage dans Supabase
+        const storagePath = `${id_ecole}/recette/${id_recette}.${fileExtension}`;
+        
+        // Convertir le fichier en ArrayBuffer pour l'upload
+        const fileBuffer = await justificatif.arrayBuffer();
+        
+        // Upload du fichier dans Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase
+          .storage
+          .from('documents') // Nom du bucket correct
+          .upload(storagePath, fileBuffer, {
+            contentType: justificatif.type,
+            upsert: true // Remplacer si le fichier existe déjà
+          });
+        
+        if (uploadError) {
+          console.error('Erreur lors de l\'upload du justificatif:', uploadError);
+        } else {
+          // Construire l'URL publique du fichier
+          const { data: publicUrlData } = supabase
+            .storage
+            .from('documents') // Même nom de bucket que ci-dessus
+            .getPublicUrl(storagePath);
+          
+          // Mettre à jour l'URL du justificatif
+          if (publicUrlData) {
+            justificatif_url = publicUrlData.publicUrl;
+          }
+        }
+      } catch (uploadError) {
+        console.error('Erreur lors du traitement du justificatif:', uploadError);
+      }
+    }
+
+    // Préparer l'objet de mise à jour
+    const updateData: any = {
+      date_recette: date,
+      categorie_recette: categorie,
+      description_recette: description,
+      montant_recette: montant,
+      tva_recette: tva,
+      client_recette: client,
+      mode_paiement_recette: modePaiement,
+      statut_recette: statut
+    };
+    
+    // Ajouter l'URL du justificatif si un nouveau fichier a été uploadé
+    if (justificatif_url) {
+      updateData.justificatif_url = justificatif_url;
+    }
+    
     // Mettre à jour la recette
     const { data, error } = await supabase
       .from('recette')
-      .update({
-        date_recette: date,
-        categorie_recette: categorie,
-        description_recette: description,
-        montant_recette: montant,
-        tva_recette: tva,
-        client_recette: client,
-        mode_paiement_recette: modePaiement,
-        statut_recette: statut
-      })
+      .update(updateData)
       .eq('id_recette', id_recette)
       .eq('id_ecole', id_ecole)
       .select('id_recette')
@@ -107,7 +159,8 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Recette mise à jour avec succès',
-      id_recette: data.id_recette
+      id_recette: data.id_recette,
+      justificatif_url: justificatif_url || null
     });
 
   } catch (error) {

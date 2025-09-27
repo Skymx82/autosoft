@@ -528,11 +528,10 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
             formData.append('modePaiement', nouvelleRecette.modePaiement);
             formData.append('statut', nouvelleRecette.statut);
             
-            // Désactivé temporairement pour débogage
             // Ajouter le fichier justificatif s'il existe
-            // if (nouvelleRecette.justificatif) {
-            //   formData.append('justificatif', nouvelleRecette.justificatif);
-            // }
+            if (nouvelleRecette.justificatif) {
+              formData.append('justificatif', nouvelleRecette.justificatif);
+            }
             
             // Appel API pour enregistrer la nouvelle recette
             const response = await fetch(`/directeur/comptabilite/components/recettes/components/ajoutrecette/api`, {

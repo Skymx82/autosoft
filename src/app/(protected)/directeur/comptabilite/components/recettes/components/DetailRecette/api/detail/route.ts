@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
         tva_recette,
         client_recette,
         mode_paiement_recette,
-        statut_recette
+        statut_recette,
+        justificatif_url
       `)
       .eq('id_recette', id_recette)
       .eq('id_ecole', id_ecole)
@@ -70,7 +71,8 @@ export async function GET(request: NextRequest) {
       tva: recetteData.tva_recette,
       client: recetteData.client_recette,
       modePaiement: recetteData.mode_paiement_recette,
-      statut: recetteData.statut_recette
+      statut: recetteData.statut_recette,
+      justificatif_url: recetteData.justificatif_url || null
     };
 
     // Retourner les données
