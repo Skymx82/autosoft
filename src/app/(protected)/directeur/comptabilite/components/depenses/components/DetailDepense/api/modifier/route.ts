@@ -51,6 +51,10 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
+    
+    // Récupérer le fichier justificatif s'il existe
+    const justificatif = formData.get('justificatif') as File | null;
+    let justificatif_url = '';
 
     // Récupérer l'ID de la transaction associée à la dépense
     const { data: depenseData, error: depenseError } = await supabase
@@ -76,6 +80,48 @@ export async function PUT(request: NextRequest) {
     }
 
     const id_transaction = depenseData.id_transaction;
+    
+    // Si un justificatif a été fourni, l'uploader dans Supabase Storage
+    if (justificatif) {
+      try {
+        // Déterminer l'extension du fichier
+        const fileExtension = justificatif.name.split('.').pop() || '';
+        
+        // Créer le chemin de stockage dans Supabase
+        const storagePath = `${id_ecole}/depense/${id_transaction}.${fileExtension}`;
+        
+        // Convertir le fichier en ArrayBuffer pour l'upload
+        const fileBuffer = await justificatif.arrayBuffer();
+        
+        // Upload du fichier dans Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase
+          .storage
+          .from('documents') // Nom du bucket
+          .upload(storagePath, fileBuffer, {
+            contentType: justificatif.type,
+            upsert: true // Remplacer si le fichier existe déjà
+          });
+        
+        if (uploadError) {
+          console.error('Erreur lors de l\'upload du justificatif:', uploadError);
+          // Continuer malgré l'erreur d'upload, la dépense est déjà créée
+        } else {
+          // Construire l'URL publique du fichier
+          const { data: publicUrlData } = supabase
+            .storage
+            .from('documents') // Même nom de bucket que ci-dessus
+            .getPublicUrl(storagePath);
+          
+          // Mettre à jour l'URL du justificatif
+          if (publicUrlData) {
+            justificatif_url = publicUrlData.publicUrl;
+          }
+        }
+      } catch (uploadError) {
+        console.error('Erreur lors du traitement du justificatif:', uploadError);
+        // Continuer malgré l'erreur, la dépense sera mise à jour sans justificatif
+      }
+    }
 
     // Mettre à jour la transaction
     const { error: transactionError } = await supabase
@@ -97,19 +143,27 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Préparer l'objet de mise à jour
+    const updateData: any = {
+      date_depense: date,
+      categorie_depense: categorie,
+      description_depense: description,
+      montant_depense: montant,
+      tva_depense: tva,
+      fournisseur_depense: fournisseur,
+      mode_paiement_depense: modePaiement,
+      statut_depense: statut
+    };
+    
+    // Ajouter l'URL du justificatif si un nouveau fichier a été uploadé
+    if (justificatif_url) {
+      updateData.justificatif_url = justificatif_url;
+    }
+    
     // Mettre à jour la dépense
     const { data, error } = await supabase
       .from('depense')
-      .update({
-        date_depense: date,
-        categorie_depense: categorie,
-        description_depense: description,
-        montant_depense: montant,
-        tva_depense: tva,
-        fournisseur_depense: fournisseur,
-        mode_paiement_depense: modePaiement,
-        statut_depense: statut
-      })
+      .update(updateData)
       .eq('id_depense', id_depense)
       .eq('id_ecole', id_ecole)
       .select('id_depense')
@@ -127,7 +181,8 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Dépense mise à jour avec succès',
-      id_depense: data.id_depense
+      id_depense: data.id_depense,
+      justificatif_url: justificatif_url || null
     });
 
   } catch (error) {

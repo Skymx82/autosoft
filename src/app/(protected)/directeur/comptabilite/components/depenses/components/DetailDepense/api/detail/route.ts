@@ -40,7 +40,8 @@ export async function GET(request: NextRequest) {
         fournisseur_depense,
         mode_paiement_depense,
         statut_depense,
-        id_transaction
+        id_transaction,
+        justificatif_url
       `)
       .eq('id_depense', id_depense)
       .eq('id_ecole', id_ecole)
@@ -72,7 +73,8 @@ export async function GET(request: NextRequest) {
       fournisseur: depenseData.fournisseur_depense,
       modePaiement: depenseData.mode_paiement_depense,
       statut: depenseData.statut_depense,
-      id_transaction: depenseData.id_transaction
+      id_transaction: depenseData.id_transaction,
+      justificatif_url: depenseData.justificatif_url || null
     };
 
     // Retourner les données

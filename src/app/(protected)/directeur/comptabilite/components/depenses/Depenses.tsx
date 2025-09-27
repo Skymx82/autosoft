@@ -539,11 +539,10 @@ const Depenses: React.FC<DepensesProps> = ({ id_ecole: propIdEcole, id_bureau: p
             formData.append('modePaiement', nouvelleDépense.modePaiement);
             formData.append('statut', nouvelleDépense.statut);
             
-            // Désactivé temporairement pour débogage
             // Ajouter le fichier justificatif s'il existe
-            // if (nouvelleDépense.justificatif) {
-            //   formData.append('justificatif', nouvelleDépense.justificatif);
-            // }
+            if (nouvelleDépense.justificatif) {
+              formData.append('justificatif', nouvelleDépense.justificatif);
+            }
             
             // Appel API pour enregistrer la nouvelle dépense
             const response = await fetch(`/directeur/comptabilite/components/depenses/components/ajoutdepense/api`, {

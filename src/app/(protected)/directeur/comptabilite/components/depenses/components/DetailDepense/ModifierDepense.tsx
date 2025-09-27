@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiX, FiUpload, FiFile, FiTrash2, FiSave } from 'react-icons/fi';
+import { FiX, FiUpload, FiFile, FiTrash2, FiSave, FiEye, FiEdit } from 'react-icons/fi';
 
 interface Depense {
   id: string;
@@ -502,9 +502,27 @@ export default function ModifierDepense({
                         <FiFile className="w-6 h-6 text-blue-500 mr-2" />
                         <span className="text-sm font-medium">Justificatif existant</span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Déposez un nouveau fichier pour remplacer l'existant
-                      </p>
+                      <div className="flex space-x-2 mt-2">
+                        <a 
+                          href={depense.justificatif_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 flex items-center"
+                        >
+                          <FiEye className="mr-1" /> Visualiser
+                        </a>
+                        <button
+                          type="button"
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            document.getElementById('file-upload-edit')?.click();
+                          }}
+                          className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded hover:bg-gray-300 flex items-center"
+                        >
+                          <FiEdit className="mr-1" /> Remplacer
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <>

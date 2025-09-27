@@ -44,15 +44,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Désactivé temporairement pour débogage
     // Récupérer le fichier justificatif s'il existe
-    // const justificatif = formData.get('justificatif') as File | null;
+    const justificatif = formData.get('justificatif') as File | null;
     let justificatif_url = '';
 
     // Vérifier si id_bureau est valide (différent de '0')
     if (id_bureau === '0') {
       return NextResponse.json(
-        { error: 'Veuillez sélectionner un bureau valide avant d’ajouter une dépense.' },
+        { error: 'Veuillez sélectionner un bureau valide avant d\'ajouter une dépense.' },
         { status: 400 }
       );
     }
@@ -84,6 +83,48 @@ export async function POST(request: NextRequest) {
 
     // Récupérer l'ID de la transaction créée
     const id_transaction = transactionData.id_transaction;
+    
+    // Si un justificatif a été fourni, l'uploader dans Supabase Storage
+    if (justificatif) {
+      try {
+        // Déterminer l'extension du fichier
+        const fileExtension = justificatif.name.split('.').pop() || '';
+        
+        // Créer le chemin de stockage dans Supabase
+        const storagePath = `${id_ecole}/depense/${id_transaction}.${fileExtension}`;
+        
+        // Convertir le fichier en ArrayBuffer pour l'upload
+        const fileBuffer = await justificatif.arrayBuffer();
+        
+        // Upload du fichier dans Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase
+          .storage
+          .from('documents') // Nom du bucket
+          .upload(storagePath, fileBuffer, {
+            contentType: justificatif.type,
+            upsert: true // Remplacer si le fichier existe déjà
+          });
+        
+        if (uploadError) {
+          console.error('Erreur lors de l\'upload du justificatif:', uploadError);
+          // Continuer malgré l'erreur d'upload, la dépense est déjà créée
+        } else {
+          // Construire l'URL publique du fichier
+          const { data: publicUrlData } = supabase
+            .storage
+            .from('documents') // Même nom de bucket que ci-dessus
+            .getPublicUrl(storagePath);
+          
+          // Mettre à jour l'URL du justificatif
+          if (publicUrlData) {
+            justificatif_url = publicUrlData.publicUrl;
+          }
+        }
+      } catch (uploadError) {
+        console.error('Erreur lors du traitement du justificatif:', uploadError);
+        // Continuer malgré l'erreur, la dépense sera créée sans justificatif
+      }
+    }
 
     // Insérer la dépense dans la base de données avec la référence à la transaction
     const { data, error } = await supabase
@@ -119,7 +160,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Dépense ajoutée avec succès',
-      id_depense: data.id_depense
+      id_depense: data.id_depense,
+      justificatif_url: justificatif_url || null
     });
 
   } catch (error) {
