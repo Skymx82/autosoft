@@ -29,7 +29,10 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showBureauWarning, setShowBureauWarning] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [recetteToEdit, setRecetteToEdit] = useState<string | null>(null);
+  const [recetteToDelete, setRecetteToDelete] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [recettes, setRecettes] = useState<Recette[]>([]);
@@ -149,6 +152,52 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
     // fetchRecettes sera appelé via le useEffect quand pagination.page change
   };
   
+  // Fonction pour supprimer une recette
+  const handleDeleteRecette = async () => {
+    if (!recetteToDelete) return;
+    
+    try {
+      setDeleteLoading(true);
+      
+      // Récupérer les informations de l'utilisateur pour l'id_ecole et l'id_bureau
+      const userDataStr = localStorage.getItem('autosoft_user');
+      if (!userDataStr) {
+        throw new Error("Informations utilisateur non disponibles");
+      }
+      
+      const userData = JSON.parse(userDataStr);
+      const id_ecole_user = userData.id_ecole || propIdEcole;
+      const id_bureau_user = userData.id_bureau || propIdBureau;
+      
+      if (!id_ecole_user) {
+        throw new Error("ID de l'auto-école non disponible");
+      }
+      
+      // Appel à l'API pour supprimer la recette
+      const response = await fetch(`/directeur/comptabilite/components/recettes/api/supprimer?id_recette=${recetteToDelete}&id_ecole=${id_ecole_user}&id_bureau=${id_bureau_user}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || `Erreur HTTP: ${response.status}`);
+      }
+      
+      // Mettre à jour la liste des recettes après la suppression
+      setRecettes(prevRecettes => prevRecettes.filter(recette => recette.id !== recetteToDelete));
+      
+      // Fermer le modal de confirmation
+      setShowDeleteConfirm(false);
+      setRecetteToDelete(null);
+      
+    } catch (err) {
+      console.error('Erreur lors de la suppression de la recette:', err);
+      setError(err instanceof Error ? err.message : 'Erreur lors de la suppression de la recette');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   // Fonction pour changer de page
   const changerPage = (nouvellePage: number) => {
     if (nouvellePage > 0 && nouvellePage <= pagination.totalPages) {
@@ -318,7 +367,13 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
                       >
                         <FiEdit className="w-4 h-4" />
                       </button>
-                      <button className="text-red-600 hover:text-red-800">
+                      <button 
+                        className="text-red-600 hover:text-red-800"
+                        onClick={() => {
+                          setRecetteToDelete(recette.id);
+                          setShowDeleteConfirm(true);
+                        }}
+                      >
                         <FiTrash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -386,6 +441,48 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
         onUpdate={fetchRecettes}
       />
       
+      {/* Modal de confirmation de suppression */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-transparent z-50 flex items-center justify-center p-4 overflow-hidden">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 text-red-500">
+                <FiTrash2 className="w-12 h-12" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Confirmer la suppression</h3>
+              <p className="text-gray-600 mb-6">
+                Êtes-vous sûr de vouloir supprimer cette recette ? Cette action est irréversible.
+              </p>
+              <div className="flex w-full space-x-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setRecetteToDelete(null);
+                  }}
+                  className="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleDeleteRecette}
+                  disabled={deleteLoading}
+                  className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-red-300 disabled:cursor-not-allowed"
+                >
+                  {deleteLoading ? (
+                    <span className="flex items-center justify-center">
+                      <FaSpinner className="animate-spin mr-2" />
+                      Suppression...
+                    </span>
+                  ) : (
+                    'Supprimer'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal d'ajout de recette */}
       <AjouterRecette
         isOpen={showAddModal}

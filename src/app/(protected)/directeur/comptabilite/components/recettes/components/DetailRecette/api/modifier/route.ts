@@ -52,18 +52,18 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Récupérer l'ID de la transaction associée à la recette
+    // Vérifier si la recette existe
     const { data: recetteData, error: recetteError } = await supabase
       .from('recette')
-      .select('id_transaction')
+      .select('id_recette')
       .eq('id_recette', id_recette)
       .eq('id_ecole', id_ecole)
       .single();
 
     if (recetteError) {
-      console.error('Erreur lors de la récupération de la recette:', recetteError);
+      console.error('Erreur lors de la vérification de la recette:', recetteError);
       return NextResponse.json(
-        { error: 'Erreur lors de la récupération de la recette' },
+        { error: 'Erreur lors de la vérification de la recette' },
         { status: 500 }
       );
     }
@@ -74,28 +74,8 @@ export async function PUT(request: NextRequest) {
         { status: 404 }
       );
     }
-
-    const id_transaction = recetteData.id_transaction;
-
-    // Mettre à jour la transaction
-    const { error: transactionError } = await supabase
-      .from('transactions')
-      .update({
-        date_transaction: date,
-        description_transaction: description,
-        categorie_transaction: categorie,
-        montant_transaction: montant + tva // Montant total TTC
-      })
-      .eq('id_transaction', id_transaction)
-      .eq('id_ecole', id_ecole);
-
-    if (transactionError) {
-      console.error('Erreur lors de la mise à jour de la transaction:', transactionError);
-      return NextResponse.json(
-        { error: 'Erreur lors de la mise à jour de la transaction' },
-        { status: 500 }
-      );
-    }
+    
+    // Note: Nous ne mettons plus à jour la table transactions car la table recette n'a plus de colonne id_transaction
 
     // Mettre à jour la recette
     const { data, error } = await supabase

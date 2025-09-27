@@ -4,9 +4,9 @@ import { supabase } from '@/lib/supabase';
 // Utiliser export const dynamic pour forcer le mode dynamique
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+export async function DELETE(request: NextRequest) {
   try {
-    // Récupérer les paramètres de la requête
+    // Extraire les paramètres de la requête
     const searchParams = request.nextUrl.searchParams;
     const id_recette = searchParams.get('id_recette');
     const id_ecole = searchParams.get('id_ecole');
@@ -27,28 +27,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Récupérer les détails de la recette
+    // Vérifier si la recette existe avant de la supprimer
     const { data: recetteData, error: recetteError } = await supabase
       .from('recette')
-      .select(`
-        id_recette,
-        date_recette,
-        categorie_recette,
-        description_recette,
-        montant_recette,
-        tva_recette,
-        client_recette,
-        mode_paiement_recette,
-        statut_recette
-      `)
+      .select('id_recette')
       .eq('id_recette', id_recette)
       .eq('id_ecole', id_ecole)
       .single();
 
     if (recetteError) {
-      console.error('Erreur lors de la récupération de la recette:', recetteError);
+      console.error('Erreur lors de la vérification de la recette:', recetteError);
       return NextResponse.json(
-        { error: 'Erreur lors de la récupération de la recette' },
+        { error: 'Erreur lors de la vérification de la recette' },
         { status: 500 }
       );
     }
@@ -60,23 +50,27 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Transformer les données pour correspondre au format attendu par le frontend
-    const recette = {
-      id: recetteData.id_recette,
-      date: recetteData.date_recette,
-      categorie: recetteData.categorie_recette,
-      description: recetteData.description_recette,
-      montant: recetteData.montant_recette,
-      tva: recetteData.tva_recette,
-      client: recetteData.client_recette,
-      modePaiement: recetteData.mode_paiement_recette,
-      statut: recetteData.statut_recette
-    };
+    // Supprimer la recette
+    const { error: deleteError } = await supabase
+      .from('recette')
+      .delete()
+      .eq('id_recette', id_recette)
+      .eq('id_ecole', id_ecole);
 
-    // Retourner les données
+    if (deleteError) {
+      console.error('Erreur lors de la suppression de la recette:', deleteError);
+      return NextResponse.json(
+        { error: 'Erreur lors de la suppression de la recette' },
+        { status: 500 }
+      );
+    }
+
+    // Note: Nous ne supprimons plus les transactions associées car la table recette n'a plus de colonne id_transaction
+
+    // Retourner la réponse de succès
     return NextResponse.json({
       success: true,
-      recette
+      message: 'Recette supprimée avec succès'
     });
 
   } catch (error) {
