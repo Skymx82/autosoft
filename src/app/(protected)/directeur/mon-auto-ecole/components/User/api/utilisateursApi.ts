@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { v4 as uuidv4 } from 'uuid';
 
 // Types
 export interface Utilisateur {
@@ -9,15 +8,15 @@ export interface Utilisateur {
   email: string;
   password: string;
   role: string;
+  nom?: string;
+  prenom?: string;
+  actif?: boolean;
   created_at?: string;
   updated_at?: string;
 }
 
 // Type pour l'affichage avec les champs virtuels
 export interface UtilisateurAffichage extends Utilisateur {
-  nom?: string;
-  prenom?: string;
-  actif?: boolean;
   bureau?: {
     nom: string;
     id_bureau: number;
@@ -65,9 +64,9 @@ export const convertToUtilisateurAffichage = (utilisateurs: any[]): UtilisateurA
     const { prenom, nom } = extractNameFromEmail(utilisateur.email);
     return {
       ...utilisateur,
-      prenom,
-      nom,
-      actif: true, // Par défaut, tous les utilisateurs sont considérés comme actifs
+      prenom: utilisateur.prenom || prenom,
+      nom: utilisateur.nom || nom,
+      actif: utilisateur.actif !== undefined ? utilisateur.actif : true, // Par défaut, tous les utilisateurs sont considérés comme actifs
       // Conserver les informations du bureau si elles existent
       bureau: utilisateur.bureau || undefined
     };
@@ -146,9 +145,9 @@ export const addUtilisateur = async (utilisateur: Omit<Utilisateur, 'id_utilisat
     const { prenom, nom } = extractNameFromEmail(data.email);
     return {
       ...data,
-      prenom,
-      nom,
-      actif: true
+      prenom: data.prenom || prenom,
+      nom: data.nom || nom,
+      actif: data.actif !== undefined ? data.actif : true
     };
   } catch (error) {
     console.error('Erreur lors de l\'ajout de l\'utilisateur:', error);
@@ -191,9 +190,9 @@ export const updateUtilisateur = async (utilisateur: Partial<Utilisateur> & { id
     const { prenom, nom } = extractNameFromEmail(data.email);
     return {
       ...data,
-      prenom,
-      nom,
-      actif: true
+      prenom: data.prenom || prenom,
+      nom: data.nom || nom,
+      actif: data.actif !== undefined ? data.actif : true
     };
   } catch (error) {
     console.error('Erreur lors de la mise à jour de l\'utilisateur:', error);

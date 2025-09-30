@@ -6,7 +6,7 @@ import DirectorLayout from '@/components/layout/DirectorLayout';
 import AutoEcoleInfoGenerales from '@/app/(protected)/directeur/mon-auto-ecole/components/InfoGenerales';
 import AutoEcoleBureaux from '@/app/(protected)/directeur/mon-auto-ecole/components/Bureaux';
 import AutoEcoleForfaits from '@/app/(protected)/directeur/mon-auto-ecole/components/Forfaits';
-import AutoEcolePersonnel from '@/app/(protected)/directeur/mon-auto-ecole/components/Personnel';
+import AutoEcolePersonnel from '@/app/(protected)/directeur/mon-auto-ecole/components/User/Personnel';
 import AutoEcoleParametres from '@/app/(protected)/directeur/mon-auto-ecole/components/Parametres';
 import AutoEcoleVehicules from '@/app/(protected)/directeur/mon-auto-ecole/components/Vehicules';
 

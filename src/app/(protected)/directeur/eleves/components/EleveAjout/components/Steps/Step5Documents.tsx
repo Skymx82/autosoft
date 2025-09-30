@@ -66,9 +66,22 @@ function DocumentUpload({ document, formDocuments, addDocument, updateDocument, 
   // Gérer la sélection de fichier via le bouton
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     
     if (e.target.files && e.target.files[0]) {
       handleFile(e.target.files[0]);
+      
+      // Désactiver temporairement l'input pour éviter les déclenchements multiples
+      if (fileInputRef.current) {
+        fileInputRef.current.disabled = true;
+        
+        // Réactiver après un court délai
+        setTimeout(() => {
+          if (fileInputRef.current) {
+            fileInputRef.current.disabled = false;
+          }
+        }, 500);
+      }
     }
   };
   
@@ -163,7 +176,11 @@ function DocumentUpload({ document, formDocuments, addDocument, updateDocument, 
               ? 'border-blue-500 bg-blue-50'
               : 'border-gray-300 hover:border-blue-400'
           }`}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            fileInputRef.current?.click();
+          }}
         >
           <svg
             className="mx-auto h-12 w-12 text-gray-400"
@@ -183,6 +200,9 @@ function DocumentUpload({ document, formDocuments, addDocument, updateDocument, 
             <label
               htmlFor={document.id}
               className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
+              onClick={(e) => {
+                e.stopPropagation(); // Empêcher la propagation du clic
+              }}
             >
               <span>Télécharger un fichier</span>
               <input
@@ -193,6 +213,7 @@ function DocumentUpload({ document, formDocuments, addDocument, updateDocument, 
                 className="sr-only"
                 accept={document.acceptedTypes}
                 onChange={handleChange}
+                onClick={(e) => e.stopPropagation()} // Empêcher la propagation du clic
               />
             </label>
             <p className="pl-1">ou glisser-déposer</p>

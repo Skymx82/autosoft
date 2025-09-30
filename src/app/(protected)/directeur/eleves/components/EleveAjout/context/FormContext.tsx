@@ -566,13 +566,12 @@ export function FormProvider({ children }: FormProviderProps) {
       
       // Générer un nom de fichier unique
       const fileExt = file.name.split('.').pop();
-      const fileName = `${documentType}_${Date.now()}.${fileExt}`;
       
       // Définir le chemin du fichier
-      // Si l'élève existe, on utilise son ID, sinon on utilise un dossier temporaire
+      // Si l'élève existe, on utilise son ID avec la nouvelle structure, sinon on utilise un dossier temporaire
       const filePath = eleveId 
-        ? `eleves/${eleveId}/${fileName}` 
-        : `temp/${id_bureau}/${Date.now()}/${fileName}`;
+        ? `${id_ecole}/eleves/${eleveId}/${documentType}.${fileExt}` 
+        : `temp/${id_ecole}/${id_bureau}/${Date.now()}/${documentType}.${fileExt}`;
       
       // Upload du fichier vers Supabase Storage
       const { data, error } = await supabase.storage
@@ -664,7 +663,25 @@ export function FormProvider({ children }: FormProviderProps) {
       if (!fileName) throw new Error('Nom de fichier invalide');
       
       // Nouveau chemin de destination
-      const newPath = `eleves/${eleveId}/${fileName}`;
+      // Récupérer l'ID de l'école depuis le state ou localStorage
+      let id_ecole = formState.id_ecole;
+      if (!id_ecole) {
+        try {
+          const userData = localStorage.getItem('autosoft_user');
+          if (userData) {
+            const user = JSON.parse(userData);
+            id_ecole = user.id_ecole;
+          }
+        } catch (err) {
+          console.error('Erreur lors de la récupération des informations utilisateur:', err);
+        }
+      }
+      
+      // Valeur par défaut si toujours undefined
+      id_ecole = id_ecole || '1';
+      
+      // Utiliser le type de document comme partie du nom de fichier
+      const newPath = `${id_ecole}/eleves/${eleveId}/${documentType}.${fileName.split('.').pop()}`;
       
       // Copier le fichier vers le nouveau chemin
       const { data: copyData, error: copyError } = await supabase.storage
