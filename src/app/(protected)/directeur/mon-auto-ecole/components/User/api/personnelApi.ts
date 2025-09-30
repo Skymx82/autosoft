@@ -20,7 +20,10 @@ export interface PersonnelMember {
     actif?: boolean;
   };
   // Champs originaux pour faciliter les opérations CRUD
-  original?: UtilisateurAffichage | Enseignant;
+  original?: UtilisateurAffichage | Enseignant | {
+    enseignant: Enseignant;
+    utilisateur: UtilisateurAffichage;
+  };
 }
 
 /**
@@ -71,15 +74,56 @@ export const convertEnseignantToPersonnel = (enseignant: Enseignant): PersonnelM
 
 /**
  * Combine les utilisateurs et les enseignants en une liste unifiée de membres du personnel
+ * Fusionne les entrées avec la même adresse email pour éviter les doublons
  */
 export const combinePersonnel = (
   utilisateurs: UtilisateurAffichage[],
   enseignants: Enseignant[]
 ): PersonnelMember[] => {
+  // Convertir tous les utilisateurs et enseignants en membres du personnel
   const personnelUtilisateurs = utilisateurs.map(convertUtilisateurToPersonnel);
   const personnelEnseignants = enseignants.map(convertEnseignantToPersonnel);
   
-  return [...personnelUtilisateurs, ...personnelEnseignants];
+  // Créer un Map pour stocker les membres du personnel par email
+  const personnelMap = new Map<string, PersonnelMember>();
+  
+  // Ajouter d'abord les enseignants (priorité aux enseignants)
+  personnelEnseignants.forEach(member => {
+    if (member.email) {
+      personnelMap.set(member.email.toLowerCase(), member);
+    }
+  });
+  
+  // Ajouter les utilisateurs seulement s'ils n'ont pas déjà un enseignant avec le même email
+  personnelUtilisateurs.forEach(member => {
+    const email = member.email.toLowerCase();
+    // Si cet email n'existe pas déjà dans la map, ou si l'utilisateur est un directeur/secrétaire/comptable (pas moniteur)
+    if (!personnelMap.has(email) || member.role !== 'moniteur') {
+      personnelMap.set(email, member);
+    } else {
+      // Si c'est un utilisateur moniteur et qu'il existe déjà un enseignant avec cet email,
+      // on peut enrichir l'enseignant avec des informations de l'utilisateur si nécessaire
+      const existingMember = personnelMap.get(email);
+      if (existingMember && existingMember.type === 'enseignant') {
+        // Ajouter des informations supplémentaires de l'utilisateur si nécessaire
+        existingMember.details = {
+          ...existingMember.details,
+          actif: member.details?.actif
+        };
+        // Conserver les deux objets originaux pour référence
+        const enseignantOriginal = existingMember.original as Enseignant;
+        const utilisateurOriginal = member.original as UtilisateurAffichage;
+        
+        existingMember.original = {
+          enseignant: enseignantOriginal,
+          utilisateur: utilisateurOriginal
+        };
+      }
+    }
+  });
+  
+  // Convertir le Map en tableau
+  return Array.from(personnelMap.values());
 };
 
 /**
