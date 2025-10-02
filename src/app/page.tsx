@@ -185,7 +185,7 @@ export default function Home() {
       {/* Main Content */}
       <main className="flex-grow flex flex-col items-center justify-center p-8 text-center">
         {showPasswordForm ? (
-          <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+          <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-gray-800">
             <h1 className="text-2xl font-bold mb-6 text-center">Définir votre mot de passe</h1>
             
             {error && (

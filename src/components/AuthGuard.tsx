@@ -3,7 +3,7 @@
 import { useEffect, useState, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
-type UserRole = 'admin' | 'directeur' | 'moniteur' | 'secretaire' | 'comptable'| 'autosoft';
+type UserRole = 'admin' | 'directeur' | 'moniteur' | 'secretaire' | 'comptable'| 'autosoft'| 'eleves';
 
 interface AuthGuardProps {
   children: ReactNode;

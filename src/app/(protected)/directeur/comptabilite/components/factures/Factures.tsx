@@ -37,6 +37,8 @@ interface ApiFacture {
 }
 
 const Factures: React.FC<FacturesProps> = () => {
+  // Vérifier si nous sommes en environnement de production
+  const [isProd, setIsProd] = useState<boolean>(false);
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +47,16 @@ const Factures: React.FC<FacturesProps> = () => {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [statut, setStatut] = useState<string>('tous');
   const [periode, setPeriode] = useState<string>('mois');
+  
+  // Détecter l'environnement de production
+  useEffect(() => {
+    // Vérifier si nous sommes en production en fonction de l'URL
+    const hostname = window.location.hostname;
+    setIsProd(hostname.includes('autosoft.fr') || 
+              hostname.includes('autosoft.com') || 
+              hostname === 'autosoft-pi.vercel.app' || 
+              !hostname.includes('localhost'));
+  }, []);
   
   // Fonction pour récupérer les données depuis l'API
   useEffect(() => {
@@ -107,6 +119,43 @@ const Factures: React.FC<FacturesProps> = () => {
     echeance: item.echeance_facture
   })) 
   
+  // Si nous sommes en production, afficher le message "fonctionnalité en développement"
+  if (isProd) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-gray-800">Factures</h2>
+        </div>
+        
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-md shadow-md">
+          <div className="flex items-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-yellow-500 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <h3 className="text-xl font-bold text-yellow-700">Fonctionnalité en développement</h3>
+          </div>
+          
+          <p className="text-yellow-700 mb-4 text-lg">
+            Le module de gestion des factures est actuellement en cours de développement et sera disponible prochainement.  
+          </p>
+          
+          <p className="text-yellow-600">
+            Nous travaillons activement sur cette fonctionnalité pour vous offrir une expérience complète de gestion de la facturation :
+          </p>
+          
+          <ul className="mt-3 list-disc list-inside text-yellow-600 space-y-1 ml-4">
+            <li>Création et gestion des factures</li>
+            <li>Suivi des paiements</li>
+            <li>Génération automatique de factures</li>
+            <li>Exportation au format PDF</li>
+            <li>Envoi par email</li>
+          </ul>
+        </div>
+      </div>
+    );
+  }
+  
+  // Sinon, afficher le composant normal (en développement local)
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-6">
