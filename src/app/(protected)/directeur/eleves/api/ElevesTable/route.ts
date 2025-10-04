@@ -37,9 +37,15 @@ export async function GET(req: NextRequest) {
         statut_dossier,
         date_inscription,
         id_bureau,
+        id_forfait,
         bureau (
           id_bureau,
           nom
+        ),
+        forfait (
+          id_forfait,
+          nom,
+          type_permis
         )
       `)
       .eq('id_ecole', id_ecole);
@@ -62,11 +68,26 @@ export async function GET(req: NextRequest) {
     }
 
     // Transformer les données pour correspondre à l'interface Eleve
-    const formattedEleves = eleves.map(eleve => ({
-      ...eleve
-      // Pas besoin de transformation car la structure est déjà correcte
-      // bureau est déjà présent dans les données retournées
-    }));
+    const formattedEleves = eleves.map(eleve => {
+      // Utiliser uniquement la catégorie de permis du forfait
+      // Si le forfait n'existe pas, on met "Non défini"
+      let categoriePermis = "Non défini";
+      
+      // Vérifier si le forfait existe et contient type_permis
+      if (eleve.forfait && typeof eleve.forfait === 'object') {
+        // Utiliser une assertion de type pour éviter les erreurs TypeScript
+        const forfait = eleve.forfait as { type_permis?: string };
+        if (forfait.type_permis) {
+          categoriePermis = forfait.type_permis;
+        }
+      }
+      
+      return {
+        ...eleve,
+        // Remplacer complètement la catégorie par celle du forfait
+        categorie: categoriePermis
+      };
+    });
 
     // Retourner les élèves
     return NextResponse.json(formattedEleves);

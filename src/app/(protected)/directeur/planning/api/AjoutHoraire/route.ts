@@ -29,7 +29,13 @@ export async function GET(request: Request) {
         tel,
         mail,
         categorie,
-        statut_dossier
+        statut_dossier,
+        id_forfait,
+        forfait (
+          id_forfait,
+          nom,
+          type_permis
+        )
       `)
       .eq('id_ecole', id_ecole_num)
       .eq('statut_dossier', 'Actif') // Filtrer uniquement les élèves avec statut "Actif"
@@ -57,16 +63,31 @@ export async function GET(request: Request) {
     }
     
     // Transformer les données pour correspondre au format attendu par le composant StudentSelector
-    const formattedEleves = eleves.map(eleve => ({
-      id_eleve: eleve.id_eleve,
-      nom: eleve.nom,
-      prenom: eleve.prenom,
-      tel: eleve.tel,
-      email: eleve.mail,
-      licenseCategory: eleve.categorie,
-      remainingHours: 15, // Valeur statique pour les heures restantes
-      progress: 50 // Valeur statique pour la progression (50%)
-    }));
+    const formattedEleves = eleves.map(eleve => {
+      // Utiliser uniquement la catégorie de permis du forfait
+      // Si le forfait n'existe pas, on met "Non défini"
+      let categoriePermis = "Non défini";
+      
+      // Vérifier si le forfait existe et contient type_permis
+      if (eleve.forfait && typeof eleve.forfait === 'object') {
+        // Utiliser une assertion de type pour éviter les erreurs TypeScript
+        const forfait = eleve.forfait as { type_permis?: string };
+        if (forfait.type_permis) {
+          categoriePermis = forfait.type_permis;
+        }
+      }
+      
+      return {
+        id_eleve: eleve.id_eleve,
+        nom: eleve.nom,
+        prenom: eleve.prenom,
+        tel: eleve.tel,
+        email: eleve.mail,
+        licenseCategory: categoriePermis, // Utiliser la catégorie du forfait au lieu de eleve.categorie
+        remainingHours: 15, // Valeur statique pour les heures restantes
+        progress: 50 // Valeur statique pour la progression (50%)
+      };
+    });
     
     return NextResponse.json({ eleves: formattedEleves });
     
