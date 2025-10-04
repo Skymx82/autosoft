@@ -478,7 +478,7 @@ CREATE TABLE public.utilisateur (
   id_ecole integer NOT NULL,
   email text NOT NULL UNIQUE,
   password text,
-  role text NOT NULL CHECK (role = ANY (ARRAY['admin'::text, 'directeur'::text, 'moniteur'::text, 'secretaire'::text, 'comptable'::text, 'autosoft'::text,'eleves'::text])),
+  role text NOT NULL CHECK (role = ANY (ARRAY['admin'::text, 'directeur'::text, 'moniteur'::text, 'secretaire'::text, 'comptable'::text, 'autosoft'::text, 'eleves'::text])),
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT utilisateur_pkey PRIMARY KEY (id_utilisateur),
