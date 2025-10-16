@@ -458,14 +458,39 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
       {/* Pagination */}
       <div className="mt-4 flex items-center justify-between">
         <div className="text-sm text-gray-500">
-          Affichage de {recettes.length} recettes
+          Affichage de {recettes.length} recette(s) sur {pagination.total} - Page {pagination.page} sur {pagination.totalPages}
         </div>
         
-        <div className="flex space-x-1">
-          <button className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>
+        <div className="flex items-center space-x-2">
+          <button 
+            onClick={() => changerPage(pagination.page - 1)}
+            disabled={pagination.page <= 1}
+            className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
             Précédent
           </button>
-          <button className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>
+          
+          <div className="flex space-x-1">
+            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                onClick={() => changerPage(pageNum)}
+                className={`px-3 py-1 border rounded-md transition-colors ${
+                  pageNum === pagination.page
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
+          </div>
+          
+          <button 
+            onClick={() => changerPage(pagination.page + 1)}
+            disabled={pagination.page >= pagination.totalPages}
+            className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
             Suivant
           </button>
         </div>
