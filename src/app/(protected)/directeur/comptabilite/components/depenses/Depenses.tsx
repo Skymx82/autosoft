@@ -7,6 +7,10 @@ import { BiBuildings } from 'react-icons/bi';
 import { AjouterDepense } from './components/ajoutdepense';
 import { ModifierDepense } from './components/DetailDepense';
 
+// Cache pour stocker les données des dépenses
+const CACHE_KEY = 'autosoft_depenses_cache';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes en millisecondes
+
 interface Depense {
   id: string;
   date: string;
@@ -22,6 +26,17 @@ interface Depense {
 interface DepensesProps {
   id_ecole?: string;
   id_bureau?: string;
+}
+
+interface CacheData {
+  depenses: Depense[];
+  pagination: any;
+  statistiques: any;
+  timestamp: number;
+  id_ecole: string;
+  id_bureau: string;
+  filtres: any;
+  page: number;
 }
 
 const Depenses: React.FC<DepensesProps> = ({ id_ecole: propIdEcole, id_bureau: propIdBureau }) => {
@@ -65,7 +80,7 @@ const Depenses: React.FC<DepensesProps> = ({ id_ecole: propIdEcole, id_bureau: p
   });
   
   // Fonction pour charger les dépenses
-  const fetchDepenses = async () => {
+  const fetchDepenses = async (forceRefresh: boolean = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -91,6 +106,41 @@ const Depenses: React.FC<DepensesProps> = ({ id_ecole: propIdEcole, id_bureau: p
       id_ecole = id_ecole || '1';
       id_bureau = id_bureau || '0';
       
+      // Vérifier si des données en cache existent et sont valides (sauf si forceRefresh)
+      if (!forceRefresh) {
+        const cachedDataStr = localStorage.getItem(CACHE_KEY);
+        if (cachedDataStr) {
+          try {
+            const cachedData: CacheData = JSON.parse(cachedDataStr);
+            const now = Date.now();
+            
+            // Vérifier si le cache est valide (même école/bureau/filtres/page et pas expiré)
+            const filtresMatch = JSON.stringify(cachedData.filtres) === JSON.stringify(filtres);
+            const pageMatch = cachedData.page === pagination.page;
+            
+            if (
+              cachedData.id_ecole === id_ecole &&
+              cachedData.id_bureau === id_bureau &&
+              filtresMatch &&
+              pageMatch &&
+              (now - cachedData.timestamp) < CACHE_DURATION
+            ) {
+              console.log('📦 Utilisation des données en cache (dépenses)');
+              setDepenses(cachedData.depenses);
+              setPagination(cachedData.pagination);
+              setStatistiques(cachedData.statistiques);
+              setLoading(false);
+              return; // Sortir de la fonction, pas besoin de fetch
+            } else {
+              console.log('🔄 Cache expiré ou paramètres différents, récupération des nouvelles données');
+            }
+          } catch (err) {
+            console.error('Erreur lors de la lecture du cache:', err);
+            // Continuer avec le fetch normal si erreur de lecture du cache
+          }
+        }
+      }
+      
       // Construire l'URL avec les paramètres
       let url = `/directeur/comptabilite/components/depenses/api?id_ecole=${id_ecole}`;
       
@@ -107,7 +157,7 @@ const Depenses: React.FC<DepensesProps> = ({ id_ecole: propIdEcole, id_bureau: p
       if (filtres.dateDebut) url += `&dateDebut=${encodeURIComponent(filtres.dateDebut)}`;
       if (filtres.dateFin) url += `&dateFin=${encodeURIComponent(filtres.dateFin)}`;
       
-      console.log(`Fetching depenses data from: ${url}`);
+      console.log(`🌐 Fetching depenses data from: ${url}`);
       const response = await fetch(url);
       
       if (!response.ok) {
@@ -119,6 +169,20 @@ const Depenses: React.FC<DepensesProps> = ({ id_ecole: propIdEcole, id_bureau: p
       setDepenses(data.depenses);
       setPagination(data.pagination);
       setStatistiques(data.statistiques);
+      
+      // Sauvegarder les données dans le cache
+      const cacheData: CacheData = {
+        depenses: data.depenses,
+        pagination: data.pagination,
+        statistiques: data.statistiques,
+        timestamp: Date.now(),
+        id_ecole: id_ecole,
+        id_bureau: id_bureau,
+        filtres: filtres,
+        page: pagination.page
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+      console.log('💾 Données sauvegardées en cache (dépenses)');
       
     } catch (err) {
       console.error('Erreur lors de la récupération des dépenses:', err);
@@ -191,8 +255,8 @@ const Depenses: React.FC<DepensesProps> = ({ id_ecole: propIdEcole, id_bureau: p
         throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
       }
       
-      // Mettre à jour la liste des dépenses après la suppression
-      setDepenses(prevDepenses => prevDepenses.filter(depense => depense.id !== depenseToDelete));
+      // Recharger les dépenses après la suppression (forcer le rafraîchissement)
+      await fetchDepenses(true);
       
       // Fermer le modal de confirmation
       setShowDeleteConfirm(false);
@@ -492,7 +556,7 @@ const Depenses: React.FC<DepensesProps> = ({ id_ecole: propIdEcole, id_bureau: p
         depenseId={depenseToEdit || ''}
         id_ecole={propIdEcole}
         id_bureau={propIdBureau}
-        onUpdate={fetchDepenses}
+        onUpdate={() => fetchDepenses(true)}
       />
       
       {/* Modal d'ajout de dépense */}
@@ -563,8 +627,8 @@ const Depenses: React.FC<DepensesProps> = ({ id_ecole: propIdEcole, id_bureau: p
               }
             }
             
-            // Recharger les dépenses après l'ajout
-            await fetchDepenses();
+            // Recharger les dépenses après l'ajout (forcer le rafraîchissement)
+            await fetchDepenses(true);
             
           } catch (err) {
             console.error('Erreur lors de l\'ajout de la dépense:', err);

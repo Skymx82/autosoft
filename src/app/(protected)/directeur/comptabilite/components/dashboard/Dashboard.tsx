@@ -24,6 +24,17 @@ ChartJS.register(
   Legend
 );
 
+// Cache pour stocker les données du dashboard
+const CACHE_KEY = 'autosoft_dashboard_cache';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes en millisecondes
+
+interface CacheData {
+  data: DashboardData;
+  timestamp: number;
+  id_ecole: string;
+  id_bureau: string;
+}
+
 interface Transaction {
   id_transaction: string;
   date_transaction: string;
@@ -44,6 +55,11 @@ interface DashboardData {
     recettes: StatistiqueFinanciere;
     depenses: StatistiqueFinanciere;
     benefices: StatistiqueFinanciere;
+  };
+  historique?: {
+    recettes: number[];
+    depenses: number[];
+    benefices: number[];
   };
 }
 
@@ -68,6 +84,96 @@ const Dashboard: React.FC<DashboardProps> = ({ id_ecole: propIdEcole, id_bureau:
   const [error, setError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [chartData, setChartData] = useState<ChartData | null>(null);
+  
+  // Fonction pour préparer les données du graphique
+  const prepareChartData = (data: DashboardData) => {
+    const derniers6Mois = getDerniers6Mois();
+    
+    // Utiliser les données historiques fournies par l'API
+    if (data.historique) {
+      const recettesData: number[] = data.historique.recettes;
+      const depensesData: number[] = data.historique.depenses;
+      const beneficesData: number[] = data.historique.benefices;
+    
+      setChartData({
+        labels: derniers6Mois,
+        datasets: [
+          {
+            label: 'Recettes',
+            data: recettesData,
+            backgroundColor: 'rgba(34, 197, 94, 0.5)',
+            borderColor: 'rgb(34, 197, 94)',
+            borderWidth: 1
+          },
+          {
+            label: 'Dépenses',
+            data: depensesData,
+            backgroundColor: 'rgba(239, 68, 68, 0.5)',
+            borderColor: 'rgb(239, 68, 68)',
+            borderWidth: 1
+          },
+          {
+            label: 'Bénéfices',
+            data: beneficesData,
+            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+            borderColor: 'rgb(59, 130, 246)',
+            borderWidth: 1
+          }
+        ]
+      });
+    } else {
+      // Fallback si les données historiques ne sont pas disponibles
+      console.warn('Données historiques non disponibles, utilisation de données simulées');
+      
+      const recettesData: number[] = [];
+      const depensesData: number[] = [];
+      
+      // Générer des données simulées basées sur les données actuelles
+      const recetteBase = data.statistiques.recettes.montant;
+      const depenseBase = data.statistiques.depenses.montant;
+      
+      // Variation aléatoire de +/- 20%
+      for (let i = 0; i < 5; i++) {
+        const variation = 0.8 + Math.random() * 0.4; // entre 0.8 et 1.2
+        recettesData.push(Math.round(recetteBase * variation));
+        depensesData.push(Math.round(depenseBase * variation));
+      }
+      
+      // Ajouter les données actuelles à la fin
+      recettesData.push(data.statistiques.recettes.montant);
+      depensesData.push(data.statistiques.depenses.montant);
+      
+      // Calculer les bénéfices
+      const beneficesData: number[] = recettesData.map((recette, index) => recette - depensesData[index]);
+      
+      setChartData({
+        labels: derniers6Mois,
+        datasets: [
+          {
+            label: 'Recettes',
+            data: recettesData,
+            backgroundColor: 'rgba(34, 197, 94, 0.5)',
+            borderColor: 'rgb(34, 197, 94)',
+            borderWidth: 1
+          },
+          {
+            label: 'Dépenses',
+            data: depensesData,
+            backgroundColor: 'rgba(239, 68, 68, 0.5)',
+            borderColor: 'rgb(239, 68, 68)',
+            borderWidth: 1
+          },
+          {
+            label: 'Bénéfices',
+            data: beneficesData,
+            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+            borderColor: 'rgb(59, 130, 246)',
+            borderWidth: 1
+          }
+        ]
+      });
+    }
+  };
   
   // Récupérer les données du tableau de bord
   useEffect(() => {
@@ -97,10 +203,39 @@ const Dashboard: React.FC<DashboardProps> = ({ id_ecole: propIdEcole, id_bureau:
         id_ecole = id_ecole || '1';
         id_bureau = id_bureau || '0';
         
+        // Vérifier si des données en cache existent et sont valides
+        const cachedDataStr = localStorage.getItem(CACHE_KEY);
+        if (cachedDataStr) {
+          try {
+            const cachedData: CacheData = JSON.parse(cachedDataStr);
+            const now = Date.now();
+            
+            // Vérifier si le cache est valide (même école/bureau et pas expiré)
+            if (
+              cachedData.id_ecole === id_ecole &&
+              cachedData.id_bureau === id_bureau &&
+              (now - cachedData.timestamp) < CACHE_DURATION
+            ) {
+              console.log('📦 Utilisation des données en cache');
+              setDashboardData(cachedData.data);
+              setLoading(false);
+              
+              // Préparer les données du graphique depuis le cache
+              prepareChartData(cachedData.data);
+              return; // Sortir de la fonction, pas besoin de fetch
+            } else {
+              console.log('🔄 Cache expiré ou différent bureau/école, récupération des nouvelles données');
+            }
+          } catch (err) {
+            console.error('Erreur lors de la lecture du cache:', err);
+            // Continuer avec le fetch normal si erreur de lecture du cache
+          }
+        }
+        
         // Construire l'URL avec les paramètres
         const url = `/directeur/comptabilite/components/dashboard/api?id_ecole=${id_ecole}&id_bureau=${id_bureau}`;
         
-        console.log(`Fetching dashboard data from: ${url}`);
+        console.log(`🌐 Fetching dashboard data from: ${url}`);
         const response = await fetch(url);
         
         if (!response.ok) {
@@ -110,96 +245,18 @@ const Dashboard: React.FC<DashboardProps> = ({ id_ecole: propIdEcole, id_bureau:
         const data = await response.json();
         setDashboardData(data);
         
-        // Préparer les données pour le graphique
-        const derniers6Mois = getDerniers6Mois();
+        // Sauvegarder les données dans le cache
+        const cacheData: CacheData = {
+          data: data,
+          timestamp: Date.now(),
+          id_ecole: id_ecole,
+          id_bureau: id_bureau
+        };
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        console.log('💾 Données sauvegardées en cache');
         
-        // Utiliser les données historiques fournies par l'API
-        if (data.historique) {
-          
-          
-          // Utiliser directement les données historiques de l'API
-          const recettesData: number[] = data.historique.recettes;
-          const depensesData: number[] = data.historique.depenses;
-          const beneficesData: number[] = data.historique.benefices;
-        
-          setChartData({
-            labels: derniers6Mois,
-            datasets: [
-              {
-                label: 'Recettes',
-                data: recettesData,
-                backgroundColor: 'rgba(34, 197, 94, 0.5)',
-                borderColor: 'rgb(34, 197, 94)',
-                borderWidth: 1
-              },
-              {
-                label: 'Dépenses',
-                data: depensesData,
-                backgroundColor: 'rgba(239, 68, 68, 0.5)',
-                borderColor: 'rgb(239, 68, 68)',
-                borderWidth: 1
-              },
-              {
-                label: 'Bénéfices',
-                data: beneficesData,
-                backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                borderColor: 'rgb(59, 130, 246)',
-                borderWidth: 1
-              }
-            ]
-          });
-        } else {
-          // Fallback si les données historiques ne sont pas disponibles
-          console.warn('Données historiques non disponibles, utilisation de données simulées');
-          
-          const recettesData: number[] = [];
-          const depensesData: number[] = [];
-          
-          // Générer des données simulées basées sur les données actuelles
-          const recetteBase = data.statistiques.recettes.montant;
-          const depenseBase = data.statistiques.depenses.montant;
-          
-          // Variation aléatoire de +/- 20%
-          for (let i = 0; i < 5; i++) {
-            const variation = 0.8 + Math.random() * 0.4; // entre 0.8 et 1.2
-            recettesData.push(Math.round(recetteBase * variation));
-            depensesData.push(Math.round(depenseBase * variation));
-          }
-          
-          // Ajouter les données actuelles à la fin
-          recettesData.push(data.statistiques.recettes.montant);
-          depensesData.push(data.statistiques.depenses.montant);
-          
-          // Calculer les bénéfices
-          const beneficesData: number[] = recettesData.map((recette, index) => recette - depensesData[index]);
-          
-          setChartData({
-            labels: derniers6Mois,
-            datasets: [
-              {
-                label: 'Recettes',
-                data: recettesData,
-                backgroundColor: 'rgba(34, 197, 94, 0.5)',
-                borderColor: 'rgb(34, 197, 94)',
-                borderWidth: 1
-              },
-              {
-                label: 'Dépenses',
-                data: depensesData,
-                backgroundColor: 'rgba(239, 68, 68, 0.5)',
-                borderColor: 'rgb(239, 68, 68)',
-                borderWidth: 1
-              },
-              {
-                label: 'Bénéfices',
-                data: beneficesData,
-                backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                borderColor: 'rgb(59, 130, 246)',
-                borderWidth: 1
-              }
-            ]
-          });
-        }
+        // Préparer les données du graphique
+        prepareChartData(data);
       } catch (err) {
         console.error('Erreur lors de la récupération des données du tableau de bord:', err);
         setError('Impossible de charger les données du tableau de bord');

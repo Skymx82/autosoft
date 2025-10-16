@@ -7,6 +7,10 @@ import { BiBuildings } from 'react-icons/bi';
 import { AjouterRecette } from './components/ajoutrecette';
 import { DetailRecette } from './components/DetailRecette';
 
+// Cache pour stocker les données des recettes
+const CACHE_KEY = 'autosoft_recettes_cache';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes en millisecondes
+
 interface Recette {
   id: string;
   date: string;
@@ -22,6 +26,17 @@ interface Recette {
 interface RecettesProps {
   id_ecole?: string;
   id_bureau?: string;
+}
+
+interface CacheData {
+  recettes: Recette[];
+  pagination: any;
+  statistiques: any;
+  timestamp: number;
+  id_ecole: string;
+  id_bureau: string;
+  filtres: any;
+  page: number;
 }
 
 const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: propIdBureau }) => {
@@ -65,7 +80,7 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
   });
   
   // Fonction pour charger les recettes
-  const fetchRecettes = async () => {
+  const fetchRecettes = async (forceRefresh: boolean = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -91,6 +106,41 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
       id_ecole = id_ecole || '1';
       id_bureau = id_bureau || '0';
       
+      // Vérifier si des données en cache existent et sont valides (sauf si forceRefresh)
+      if (!forceRefresh) {
+        const cachedDataStr = localStorage.getItem(CACHE_KEY);
+        if (cachedDataStr) {
+          try {
+            const cachedData: CacheData = JSON.parse(cachedDataStr);
+            const now = Date.now();
+            
+            // Vérifier si le cache est valide (même école/bureau/filtres/page et pas expiré)
+            const filtresMatch = JSON.stringify(cachedData.filtres) === JSON.stringify(filtres);
+            const pageMatch = cachedData.page === pagination.page;
+            
+            if (
+              cachedData.id_ecole === id_ecole &&
+              cachedData.id_bureau === id_bureau &&
+              filtresMatch &&
+              pageMatch &&
+              (now - cachedData.timestamp) < CACHE_DURATION
+            ) {
+              console.log('📦 Utilisation des données en cache (recettes)');
+              setRecettes(cachedData.recettes);
+              setPagination(cachedData.pagination);
+              setStatistiques(cachedData.statistiques);
+              setLoading(false);
+              return; // Sortir de la fonction, pas besoin de fetch
+            } else {
+              console.log('🔄 Cache expiré ou paramètres différents, récupération des nouvelles données');
+            }
+          } catch (err) {
+            console.error('Erreur lors de la lecture du cache:', err);
+            // Continuer avec le fetch normal si erreur de lecture du cache
+          }
+        }
+      }
+      
       // Construire l'URL avec les paramètres
       let url = `/directeur/comptabilite/components/recettes/api?id_ecole=${id_ecole}`;
       
@@ -107,7 +157,7 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
       if (filtres.dateDebut) url += `&dateDebut=${encodeURIComponent(filtres.dateDebut)}`;
       if (filtres.dateFin) url += `&dateFin=${encodeURIComponent(filtres.dateFin)}`;
       
-      console.log(`Fetching recettes data from: ${url}`);
+      console.log(`🌐 Fetching recettes data from: ${url}`);
       const response = await fetch(url);
       
       if (!response.ok) {
@@ -119,6 +169,20 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
       setRecettes(data.recettes);
       setPagination(data.pagination);
       setStatistiques(data.statistiques);
+      
+      // Sauvegarder les données dans le cache
+      const cacheData: CacheData = {
+        recettes: data.recettes,
+        pagination: data.pagination,
+        statistiques: data.statistiques,
+        timestamp: Date.now(),
+        id_ecole: id_ecole,
+        id_bureau: id_bureau,
+        filtres: filtres,
+        page: pagination.page
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+      console.log('💾 Données sauvegardées en cache (recettes)');
       
     } catch (err) {
       console.error('Erreur lors de la récupération des recettes:', err);
@@ -183,8 +247,8 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
         throw new Error(errorData.message || errorData.error || `Erreur HTTP: ${response.status}`);
       }
       
-      // Mettre à jour la liste des recettes après la suppression
-      setRecettes(prevRecettes => prevRecettes.filter(recette => recette.id !== recetteToDelete));
+      // Recharger les recettes après la suppression (forcer le rafraîchissement)
+      await fetchRecettes(true);
       
       // Fermer le modal de confirmation
       setShowDeleteConfirm(false);
@@ -559,8 +623,8 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
               throw new Error(`Erreur HTTP: ${response.status}`);
             }
             
-            // Recharger les recettes après l'ajout
-            await fetchRecettes();
+            // Recharger les recettes après l'ajout (forcer le rafraîchissement)
+            await fetchRecettes(true);
             
           } catch (err) {
             console.error('Erreur lors de l\'ajout de la recette:', err);

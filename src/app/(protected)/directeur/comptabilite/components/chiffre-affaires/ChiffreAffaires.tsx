@@ -24,6 +24,10 @@ ChartJS.register(
   Legend
 );
 
+// Cache pour stocker les données du chiffre d'affaires
+const CACHE_KEY = 'autosoft_chiffre_affaires_cache';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes en millisecondes
+
 interface CategorieCA {
   nom: string;
   montantHT: number;
@@ -42,6 +46,17 @@ interface DonneeGraphique {
 interface ChiffreAffairesProps {
   id_ecole?: string;
   id_bureau?: string;
+}
+
+interface CacheData {
+  categories: CategorieCA[];
+  graphique: DonneeGraphique[];
+  statistiques: any;
+  timestamp: number;
+  id_ecole: string;
+  id_bureau: string;
+  periode: string;
+  annee: number;
 }
 
 const ChiffreAffaires: React.FC<ChiffreAffairesProps> = ({ id_ecole: propIdEcole, id_bureau: propIdBureau }) => {
@@ -82,7 +97,7 @@ const ChiffreAffaires: React.FC<ChiffreAffairesProps> = ({ id_ecole: propIdEcole
   };
   
   // Fonction pour récupérer les données du chiffre d'affaires
-  const fetchChiffreAffaires = async () => {
+  const fetchChiffreAffaires = async (forceRefresh: boolean = false) => {
     setLoading(true);
     setError(null);
     
@@ -96,10 +111,42 @@ const ChiffreAffaires: React.FC<ChiffreAffairesProps> = ({ id_ecole: propIdEcole
         return;
       }
       
+      // Vérifier si des données en cache existent et sont valides (sauf si forceRefresh)
+      if (!forceRefresh) {
+        const cachedDataStr = localStorage.getItem(CACHE_KEY);
+        if (cachedDataStr) {
+          try {
+            const cachedData: CacheData = JSON.parse(cachedDataStr);
+            const now = Date.now();
+            
+            // Vérifier si le cache est valide (même école/bureau/période/année et pas expiré)
+            if (
+              cachedData.id_ecole === id_ecole &&
+              cachedData.id_bureau === id_bureau &&
+              cachedData.periode === periode &&
+              cachedData.annee === anneeSelectionnee &&
+              (now - cachedData.timestamp) < CACHE_DURATION
+            ) {
+              console.log('📦 Utilisation des données en cache (chiffre d\'affaires)');
+              setCategoriesCA(cachedData.categories);
+              setDonneesGraphique(cachedData.graphique);
+              setStatistiques(cachedData.statistiques);
+              setLoading(false);
+              return; // Sortir de la fonction, pas besoin de fetch
+            } else {
+              console.log('🔄 Cache expiré ou paramètres différents, récupération des nouvelles données');
+            }
+          } catch (err) {
+            console.error('Erreur lors de la lecture du cache:', err);
+            // Continuer avec le fetch normal si erreur de lecture du cache
+          }
+        }
+      }
+      
       // Construire l'URL avec les paramètres
       const url = `/directeur/comptabilite/components/chiffre-affaires/api?id_ecole=${id_ecole}&id_bureau=${id_bureau}&periode=${periode}&annee=${anneeSelectionnee}`;
       
-      console.log(`Fetching chiffre d'affaires data from: ${url}`);
+      console.log(`🌐 Fetching chiffre d'affaires data from: ${url}`);
       
       const response = await fetch(url);
       
@@ -117,7 +164,19 @@ const ChiffreAffaires: React.FC<ChiffreAffairesProps> = ({ id_ecole: propIdEcole
       setDonneesGraphique(data.graphique);
       setStatistiques(data.statistiques);
       
-      // Pas besoin de récupérer les transactions récentes
+      // Sauvegarder les données dans le cache
+      const cacheData: CacheData = {
+        categories: data.categories,
+        graphique: data.graphique,
+        statistiques: data.statistiques,
+        timestamp: Date.now(),
+        id_ecole: id_ecole,
+        id_bureau: id_bureau,
+        periode: periode,
+        annee: anneeSelectionnee
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+      console.log('💾 Données sauvegardées en cache (chiffre d\'affaires)');
       
       setLoading(false);
     } catch (err) {
@@ -151,7 +210,7 @@ const ChiffreAffaires: React.FC<ChiffreAffairesProps> = ({ id_ecole: propIdEcole
       <div className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center h-64">
         <p className="text-red-500 mb-4">{error}</p>
         <button 
-          onClick={fetchChiffreAffaires}
+          onClick={() => fetchChiffreAffaires()}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
         >
           <FiRefreshCw className="mr-2" /> Réessayer
