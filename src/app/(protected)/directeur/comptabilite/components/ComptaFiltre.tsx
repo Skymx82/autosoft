@@ -248,9 +248,8 @@ export default function ComptaFiltre({
               onClick={() => setShowMoreMenu(!showMoreMenu)}
               className={`w-full text-center py-2 border-b-2 font-medium text-sm flex items-center justify-center ${showMoreMenu || ['voitures', 'devis-contrats', 'resultats', 'justificatifs', 'suivi-paiements', 'tva'].includes(activeTab) ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
             >
-              {['voitures', 'devis-contrats', 'resultats', 'justificatifs', 'suivi-paiements', 'tva'].includes(activeTab) ? 
+              {['devis-contrats', 'resultats', 'justificatifs', 'suivi-paiements', 'tva'].includes(activeTab) ? 
                 {
-                  'voitures': 'Voitures',
                   'devis-contrats': 'Devis/Contrats',
                   'resultats': 'Résultats',
                   'justificatifs': 'Justificatifs',
@@ -266,13 +265,6 @@ export default function ComptaFiltre({
             {showMoreMenu && (
               <div className="absolute right-0 left-0 mt-2 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
                 <div className="py-1" role="menu" aria-orientation="vertical">
-                  <button
-                    onClick={() => handleTabChange('voitures')}
-                    className={`block w-full text-left px-4 py-2 text-sm ${activeTab === 'voitures' ? 'bg-gray-100 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
-                    role="menuitem"
-                  >
-                    Voitures
-                  </button>
                   <button
                     onClick={() => handleTabChange('devis-contrats')}
                     className={`block w-full text-left px-4 py-2 text-sm ${activeTab === 'devis-contrats' ? 'bg-gray-100 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}

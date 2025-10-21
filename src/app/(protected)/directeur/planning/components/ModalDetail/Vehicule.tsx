@@ -23,12 +23,10 @@ export default function Vehicule({ planningDetails, onSave }: VehiculeProps) {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [isManualEntry, setIsManualEntry] = useState<boolean>(false);
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
   const [filteredVehicules, setFilteredVehicules] = useState<Vehicule[]>([]);
   const [isLoadingVehicules, setIsLoadingVehicules] = useState<boolean>(false);
   const [selectedVehiculeId, setSelectedVehiculeId] = useState<number | null>(planningDetails.vehicule?.id_vehicule || null);
-  const [filterType, setFilterType] = useState<string>('');
   
   // État pour l'édition des champs du véhicule
   const [formData, setFormData] = useState({
@@ -77,27 +75,23 @@ export default function Vehicule({ planningDetails, onSave }: VehiculeProps) {
     }
   }, [isEditing]);
   
-  // Filtrer les véhicules en fonction du type sélectionné
+  // Filtrer les véhicules automatiquement selon la catégorie du véhicule actuel
   useEffect(() => {
-    // Déterminer la catégorie de permis par défaut en fonction de l'élève
-    if (isEditing && vehicules.length > 0 && !filterType) {
-      // Si l'élève a une catégorie de permis spécifiée, l'utiliser comme filtre par défaut
-      const eleveCategorie = planningDetails.eleves?.categorie;
-      if (eleveCategorie) {
-        setFilterType(eleveCategorie);
-      }
-    }
+    const vehiculeCategorie = planningDetails.vehicule?.categorie_permis;
     
-    if (filterType) {
-      setFilteredVehicules(vehicules.filter(v => v.categorie_permis === filterType));
+    if (vehiculeCategorie && vehicules.length > 0) {
+      // Filtrer les véhicules qui correspondent à la catégorie du véhicule actuel
+      const filtered = vehicules.filter(v => v.categorie_permis === vehiculeCategorie);
+      setFilteredVehicules(filtered);
     } else {
+      // Si pas de catégorie, afficher tous les véhicules
       setFilteredVehicules(vehicules);
     }
-  }, [vehicules, filterType, planningDetails.eleves?.categorie, isEditing]);
+  }, [vehicules, planningDetails.vehicule?.categorie_permis]);
   
   // Mettre à jour les champs du formulaire lorsqu'un véhicule est sélectionné
   useEffect(() => {
-    if (selectedVehiculeId && !isManualEntry) {
+    if (selectedVehiculeId) {
       const selectedVehicule = vehicules.find(v => v.id_vehicule === selectedVehiculeId);
       if (selectedVehicule) {
         setFormData({
@@ -110,7 +104,7 @@ export default function Vehicule({ planningDetails, onSave }: VehiculeProps) {
         });
       }
     }
-  }, [selectedVehiculeId, vehicules, isManualEntry]);
+  }, [selectedVehiculeId, vehicules]);
 
   // Fonction pour gérer la sauvegarde des modifications
   const handleSave = async () => {
@@ -121,16 +115,7 @@ export default function Vehicule({ planningDetails, onSave }: VehiculeProps) {
       setError(null);
       
       // Déterminer l'ID du véhicule à enregistrer
-      let vehiculeId = null;
-      
-      // Si on est en mode sélection et qu'un véhicule est sélectionné
-      if (!isManualEntry && selectedVehiculeId) {
-        vehiculeId = selectedVehiculeId;
-      } 
-      // Si on est en mode saisie manuelle et qu'un ID de véhicule est défini dans le formulaire
-      else if (isManualEntry && formData.id_vehicule) {
-        vehiculeId = formData.id_vehicule;
-      }
+      const vehiculeId = selectedVehiculeId;
       
       // Créer un objet avec les données mises à jour
       const updatedDetails = {
@@ -225,174 +210,67 @@ export default function Vehicule({ planningDetails, onSave }: VehiculeProps) {
             </div>
           ) : (
             <div className="space-y-3">
-              {/* Option pour choisir entre sélection et saisie manuelle */}
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="manual-entry"
-                  checked={isManualEntry}
-                  onChange={(e) => {
-                    setIsManualEntry(e.target.checked);
-                    if (!e.target.checked && selectedVehiculeId) {
-                      // Réinitialiser avec les données du véhicule sélectionné
-                      const selectedVehicule = vehicules.find(v => v.id_vehicule === selectedVehiculeId);
-                      if (selectedVehicule) {
-                        setFormData({
-                          immatriculation: selectedVehicule.immatriculation,
-                          marque: selectedVehicule.marque,
-                          modele: selectedVehicule.modele,
-                          type_vehicule: selectedVehicule.type_vehicule,
-                          categorie_permis: selectedVehicule.categorie_permis,
-                          id_vehicule: selectedVehicule.id_vehicule
-                        });
-                      }
-                    }
-                  }}
-                  className="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                />
-                <label htmlFor="manual-entry" className="text-sm font-medium text-gray-700">
-                  Saisie manuelle des informations
-                </label>
-              </div>
+              {/* Afficher la catégorie du véhicule actuel */}
+              {planningDetails.vehicule?.categorie_permis && (
+                <div className="p-2 bg-blue-50 rounded-md border border-blue-100">
+                  <p className="text-xs text-blue-700">
+                    <span className="font-medium">Catégorie du véhicule actuel :</span> {planningDetails.vehicule.categorie_permis}
+                  </p>
+                </div>
+              )}
               
-              {!isManualEntry ? (
-                <div className="space-y-2">
-                  {/* Filtres par catégorie de permis */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Filtrer par catégorie</label>
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      <button
-                        type="button"
-                        onClick={() => setFilterType('')}
-                        className={`px-2 py-1 text-xs rounded-md ${!filterType ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                      >
-                        Tous
-                      </button>
-                      {['B', 'A', 'A1', 'A2', 'AM', 'C', 'D', 'E'].map((cat) => (
-                        <button
-                          key={cat}
-                          type="button"
-                          onClick={() => setFilterType(cat)}
-                          className={`px-2 py-1 text-xs rounded-md ${filterType === cat ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Sélectionner un véhicule</label>
-                    <div className="relative">
-                      <select
-                        value={selectedVehiculeId || ''}
-                        onChange={(e) => setSelectedVehiculeId(e.target.value ? Number(e.target.value) : null)}
-                        className="w-full p-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                        disabled={isLoadingVehicules}
-                      >
-                        <option value="">-- Sélectionner un véhicule --</option>
-                        {filteredVehicules.length === 0 && filterType ? (
-                          <option value="" disabled>Aucun véhicule disponible pour la catégorie {filterType}</option>
-                        ) : (
-                          filteredVehicules.map((vehicule) => (
-                            <option key={vehicule.id_vehicule} value={vehicule.id_vehicule}>
-                              {vehicule.immatriculation} - {vehicule.marque} {vehicule.modele} ({vehicule.categorie_permis})
-                            </option>
-                          ))
-                        )}
-                      </select>
-                      {isLoadingVehicules && (
-                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-500"></div>
-                        </div>
-                      )}
-                    </div>
-                    {filteredVehicules.length === 0 && filterType && (
-                      <p className="text-xs text-amber-600 mt-1">Aucun véhicule disponible pour cette catégorie. Essayez un autre filtre ou la saisie manuelle.</p>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Sélectionner un véhicule</label>
+                <div className="relative">
+                  <select
+                    value={selectedVehiculeId || ''}
+                    onChange={(e) => setSelectedVehiculeId(e.target.value ? Number(e.target.value) : null)}
+                    className="w-full p-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                    disabled={isLoadingVehicules}
+                  >
+                    <option value="">-- Sélectionner un véhicule --</option>
+                    {filteredVehicules.length === 0 ? (
+                      <option value="" disabled>
+                        Aucun véhicule disponible pour la catégorie {planningDetails.vehicule?.categorie_permis}
+                      </option>
+                    ) : (
+                      filteredVehicules.map((vehicule) => (
+                        <option key={vehicule.id_vehicule} value={vehicule.id_vehicule}>
+                          {vehicule.immatriculation} - {vehicule.marque} {vehicule.modele}
+                        </option>
+                      ))
                     )}
-                  </div>
-                  
-                  {/* Affichage des détails du véhicule sélectionné en lecture seule */}
-                  {selectedVehiculeId && (
-                    <div className="p-2 bg-green-50 rounded-md border border-green-100">
-                      <h5 className="text-xs font-medium text-gray-700 mb-1">Détails du véhicule</h5>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                        <div>
-                          <span className="text-gray-500">Immatriculation:</span> {formData.immatriculation}
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Modèle:</span> {formData.marque} {formData.modele}
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Type:</span> {formData.type_vehicule}
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Catégorie:</span> {formData.categorie_permis}
-                        </div>
-                      </div>
+                  </select>
+                  {isLoadingVehicules && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-500"></div>
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Immatriculation</label>
-                    <input
-                      type="text"
-                      value={formData.immatriculation}
-                      onChange={(e) => setFormData({...formData, immatriculation: e.target.value})}
-                      className="w-full p-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
+                {filteredVehicules.length === 0 && planningDetails.vehicule?.categorie_permis && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Aucun véhicule disponible pour la catégorie {planningDetails.vehicule.categorie_permis}.
+                  </p>
+                )}
+              </div>
+              
+              {/* Affichage des détails du véhicule sélectionné */}
+              {selectedVehiculeId && (
+                <div className="p-2 bg-green-50 rounded-md border border-green-100">
+                  <h5 className="text-xs font-medium text-gray-700 mb-1">Détails du véhicule</h5>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Marque</label>
-                      <input
-                        type="text"
-                        value={formData.marque}
-                        onChange={(e) => setFormData({...formData, marque: e.target.value})}
-                        className="w-full p-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                      />
+                      <span className="text-gray-500">Immatriculation:</span> {formData.immatriculation}
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Modèle</label>
-                      <input
-                        type="text"
-                        value={formData.modele}
-                        onChange={(e) => setFormData({...formData, modele: e.target.value})}
-                        className="w-full p-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                      />
+                      <span className="text-gray-500">Modèle:</span> {formData.marque} {formData.modele}
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
-                    <select
-                      value={formData.type_vehicule}
-                      onChange={(e) => setFormData({...formData, type_vehicule: e.target.value})}
-                      className="w-full p-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                    >
-                      <option value="">Non spécifié</option>
-                      <option value="Auto">Auto</option>
-                      <option value="Moto">Moto</option>
-                      <option value="Poids lourd">Poids lourd</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Catégorie de permis</label>
-                    <select
-                      value={formData.categorie_permis}
-                      onChange={(e) => setFormData({...formData, categorie_permis: e.target.value})}
-                      className="w-full p-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                    >
-                      <option value="">Non spécifié</option>
-                      <option value="B">B</option>
-                      <option value="A">A</option>
-                      <option value="A1">A1</option>
-                      <option value="A2">A2</option>
-                      <option value="C">C</option>
-                      <option value="D">D</option>
-                      <option value="E">E</option>
-                    </select>
+                    <div>
+                      <span className="text-gray-500">Type:</span> {formData.type_vehicule}
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Catégorie:</span> {formData.categorie_permis}
+                    </div>
                   </div>
                 </div>
               )}

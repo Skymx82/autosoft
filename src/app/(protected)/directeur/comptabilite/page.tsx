@@ -11,7 +11,6 @@ import Depenses from './components/depenses/Depenses';
 import Recettes from './components/recettes/Recettes';
 import ChiffreAffaires from './components/chiffre-affaires/ChiffreAffaires';
 import Factures from './components/factures/Factures';
-import Voitures from './components/voitures/Voitures';
 import DevisContrats from './components/devis-contrats/DevisContrats';
 import Resultats from './components/resultats/Resultats';
 import Justificatifs from './components/justificatifs/Justificatifs';
@@ -67,7 +66,6 @@ export default function ComptabilitePage() {
           {activeTab === 'recettes' && <Recettes />}
           {activeTab === 'chiffre-affaires' && <ChiffreAffaires />}
           {activeTab === 'factures' && <Factures />}
-          {activeTab === 'voitures' && <Voitures />}
           {activeTab === 'devis-contrats' && <DevisContrats />}
           {activeTab === 'resultats' && <Resultats />}
           {activeTab === 'justificatifs' && <Justificatifs />}
