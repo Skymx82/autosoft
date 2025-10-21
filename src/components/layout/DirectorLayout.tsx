@@ -3,7 +3,7 @@
 import { useState, ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiMenu, FiX, FiUser, FiLogOut, FiBell, FiBarChart2, FiCalendar, FiUsers, FiDollarSign, FiSettings } from 'react-icons/fi';
+import { FiMenu, FiX, FiUser, FiLogOut, FiBell, FiBarChart2, FiCalendar, FiUsers, FiDollarSign, FiSettings, FiTruck } from 'react-icons/fi';
 import BureauSelector from '@/components/selectors/BureauSelector';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -42,6 +42,7 @@ export default function DirectorLayout({ children }: DirectorLayoutProps) {
     { name: 'Planning', href: '/directeur/planning', icon: <FiCalendar className="w-5 h-5" /> },
     { name: 'Élèves', href: '/directeur/eleves', icon: <FiUsers className="w-5 h-5" /> },
     { name: 'Comptabilité', href: '/directeur/comptabilite', icon: <FiDollarSign className="w-5 h-5" /> },
+    { name: 'Véhicules', href: '/directeur/vehicules', icon: <FiTruck className="w-5 h-5" /> },
     { name: 'Statistiques', href: '/directeur/statistique', icon: <FiBarChart2 className="w-5 h-5" /> },
     { name: 'Mon auto-école', href: '/directeur/mon-auto-ecole', icon: <FiSettings className="w-5 h-5" /> },
   ];

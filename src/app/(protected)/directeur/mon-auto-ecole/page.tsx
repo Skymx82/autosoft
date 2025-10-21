@@ -1,14 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { FiInfo, FiMapPin, FiPackage, FiUsers, FiSettings, FiArrowLeft, FiTruck, FiUserPlus, FiHome } from 'react-icons/fi';
+import { FiInfo, FiMapPin, FiPackage, FiUsers, FiSettings, FiArrowLeft, FiUserPlus, FiHome } from 'react-icons/fi';
 import DirectorLayout from '@/components/layout/DirectorLayout';
 import AutoEcoleInfoGenerales from '@/app/(protected)/directeur/mon-auto-ecole/components/InfoGenerales';
 import AutoEcoleBureaux from '@/app/(protected)/directeur/mon-auto-ecole/components/Bureaux';
 import AutoEcoleForfaits from '@/app/(protected)/directeur/mon-auto-ecole/components/Forfaits';
 import AutoEcolePersonnel from '@/app/(protected)/directeur/mon-auto-ecole/components/User/Personnel';
 import AutoEcoleParametres from '@/app/(protected)/directeur/mon-auto-ecole/components/Parametres';
-import AutoEcoleVehicules from '@/app/(protected)/directeur/mon-auto-ecole/components/Vehicules';
 
 export default function MonAutoEcolePage() {
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -45,15 +44,6 @@ export default function MonAutoEcolePage() {
       ]
     },
     { 
-      id: 'vehicules', 
-      name: 'Parc Automobile', 
-      icon: <FiTruck className="w-12 h-12" />,
-      description: 'Gérez votre parc automobile : voitures, motos et autres véhicules.',
-      actions: [
-        { name: 'Ajouter un véhicule', icon: <FiTruck />, description: 'Enregistrer un nouveau véhicule' }
-      ]
-    },
-    { 
       id: 'info', 
       name: 'Informations générales', 
       icon: <FiInfo className="w-12 h-12" />,
@@ -76,8 +66,6 @@ export default function MonAutoEcolePage() {
         return <AutoEcoleBureaux />;
       case 'forfaits':
         return <AutoEcoleForfaits />;
-      case 'vehicules':
-        return <AutoEcoleVehicules />;
       case 'personnel':
         return <AutoEcolePersonnel />;
       case 'parametres':

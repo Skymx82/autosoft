@@ -391,7 +391,6 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant HT</th>
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TVA</th>
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant TTC</th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mode</th>
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -407,7 +406,6 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
                   <td className="py-3 px-4 text-sm text-gray-500">{recette.montant.toFixed(2)} €</td>
                   <td className="py-3 px-4 text-sm text-gray-500">{recette.tva.toFixed(2)} €</td>
                   <td className="py-3 px-4 text-sm font-medium text-gray-700">{(recette.montant + recette.tva).toFixed(2)} €</td>
-                  <td className="py-3 px-4 text-sm text-gray-500">{recette.client}</td>
                   <td className="py-3 px-4 text-sm text-gray-500">{recette.modePaiement}</td>
                   <td className="py-3 px-4 text-sm">
                     <span 
@@ -446,7 +444,7 @@ const Recettes: React.FC<RecettesProps> = ({ id_ecole: propIdEcole, id_bureau: p
               ))
             ) : (
               <tr>
-                <td colSpan={10} className="py-4 text-center text-gray-500">
+                <td colSpan={9} className="py-4 text-center text-gray-500">
                   Aucune recette enregistrée
                 </td>
               </tr>
