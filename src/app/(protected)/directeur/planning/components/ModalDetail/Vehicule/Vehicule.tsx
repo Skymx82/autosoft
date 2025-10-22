@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiTruck, FiSearch } from 'react-icons/fi';
-import { PlanningDetails } from './types';
+import { PlanningDetails } from '../types';
 
 interface VehiculeProps {
   planningDetails: PlanningDetails;
@@ -52,7 +52,7 @@ export default function Vehicule({ planningDetails, onSave }: VehiculeProps) {
       }
       
       // Appel à l'API pour récupérer les véhicules
-      const response = await fetch(`/api/directeur/planning/ModalDetail/vehicule?id_bureau=${id_bureau}&id_ecole=${id_ecole}`);
+      const response = await fetch(`/directeur/planning/components/ModalDetail/Vehicule/api?id_bureau=${id_bureau}&id_ecole=${id_ecole}`);
       
       if (!response.ok) {
         throw new Error(`Erreur HTTP: ${response.status}`);

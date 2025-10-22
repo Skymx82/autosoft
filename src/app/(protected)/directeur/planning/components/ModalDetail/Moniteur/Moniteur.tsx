@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiUser, FiEdit, FiCheck, FiX } from 'react-icons/fi';
-import { PlanningDetails } from './types';
+import { PlanningDetails } from '../types';
 
 // Interface pour les moniteurs
 interface Moniteur {
@@ -25,18 +25,9 @@ export default function Moniteur({ planningDetails, onSave }: MoniteurProps) {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [isManualEntry, setIsManualEntry] = useState<boolean>(false);
   const [moniteurs, setMoniteurs] = useState<Moniteur[]>([]);
-  const [filteredMoniteurs, setFilteredMoniteurs] = useState<Moniteur[]>([]);
   const [isLoadingMoniteurs, setIsLoadingMoniteurs] = useState<boolean>(false);
-  
-  // États pour la recherche et la sélection de moniteur
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedMoniteurId, setSelectedMoniteurId] = useState<number | null>(planningDetails.enseignants?.id_moniteur || null);
-  
-  // États pour les suggestions de moniteurs
-  const [suggestions, setSuggestions] = useState<Moniteur[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   
   // État pour l'édition des champs du moniteur
   const [formData, setFormData] = useState({
@@ -56,24 +47,6 @@ export default function Moniteur({ planningDetails, onSave }: MoniteurProps) {
     }
   }, [isEditing]);
 
-  // Effet pour filtrer les moniteurs en fonction du terme de recherche
-  useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredMoniteurs(moniteurs);
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-
-    const filtered = moniteurs.filter(moniteur => 
-      `${moniteur.prenom} ${moniteur.nom}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      moniteur.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    
-    setFilteredMoniteurs(filtered);
-    setSuggestions(filtered.slice(0, 5));
-    setShowSuggestions(true);
-  }, [searchTerm, moniteurs]);
 
   // Fonction pour récupérer les moniteurs depuis l'API
   const fetchMoniteurs = async () => {
@@ -81,7 +54,7 @@ export default function Moniteur({ planningDetails, onSave }: MoniteurProps) {
       setIsLoadingMoniteurs(true);
       setError(null);
       
-      const response = await fetch(`/api/directeur/planning/ModalDetail/moniteur?id_ecole=${planningDetails.id_ecole}${planningDetails.id_bureau ? `&id_bureau=${planningDetails.id_bureau}` : ''}`);
+      const response = await fetch(`/directeur/planning/components/ModalDetail/Moniteur/api?id_ecole=${planningDetails.id_ecole}${planningDetails.id_bureau ? `&id_bureau=${planningDetails.id_bureau}` : ''}`);
       
       if (!response.ok) {
         throw new Error(`Erreur lors de la récupération des moniteurs: ${response.status}`);
@@ -89,7 +62,6 @@ export default function Moniteur({ planningDetails, onSave }: MoniteurProps) {
       
       const data = await response.json();
       setMoniteurs(data.moniteurs || []);
-      setFilteredMoniteurs(data.moniteurs || []);
     } catch (err) {
       console.error("Erreur lors du chargement des moniteurs:", err);
       setError("Impossible de charger la liste des moniteurs. Veuillez réessayer.");
@@ -110,36 +82,8 @@ export default function Moniteur({ planningDetails, onSave }: MoniteurProps) {
       num_enseignant: moniteur.num_enseignant || '',
       date_delivrance_num: moniteur.date_delivrance_num || ''
     });
-    setSearchTerm(`${moniteur.prenom} ${moniteur.nom}`);
-    setShowSuggestions(false);
   };
 
-  // Fonction pour gérer les changements dans le formulaire
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  // Fonction pour basculer entre sélection et saisie manuelle
-  const toggleEntryMode = () => {
-    setIsManualEntry(!isManualEntry);
-    if (!isManualEntry) {
-      // Passer en mode saisie manuelle
-      setSelectedMoniteurId(null);
-      setSearchTerm('');
-    } else {
-      // Revenir en mode sélection
-      setFormData({
-        id_moniteur: planningDetails.enseignants?.id_moniteur || null,
-        nom: planningDetails.enseignants?.nom || '',
-        prenom: planningDetails.enseignants?.prenom || '',
-        email: planningDetails.enseignants?.email || '',
-        tel: planningDetails.enseignants?.tel || '',
-        num_enseignant: planningDetails.enseignants?.num_enseignant || '',
-        date_delivrance_num: planningDetails.enseignants?.date_delivrance_num || ''
-      });
-    }
-  };
 
   // Fonction pour gérer la sauvegarde des modifications
   const handleSave = async () => {
@@ -150,16 +94,7 @@ export default function Moniteur({ planningDetails, onSave }: MoniteurProps) {
       setError(null);
       
       // Déterminer l'ID du moniteur à enregistrer
-      let moniteurId = null;
-      
-      // Si on est en mode sélection et qu'un moniteur est sélectionné
-      if (!isManualEntry && selectedMoniteurId) {
-        moniteurId = selectedMoniteurId;
-      } 
-      // Si on est en mode saisie manuelle et qu'un ID de moniteur est défini dans le formulaire
-      else if (isManualEntry && formData.id_moniteur) {
-        moniteurId = formData.id_moniteur;
-      }
+      const moniteurId = selectedMoniteurId;
       
       // Créer un objet avec les données mises à jour
       const updatedDetails = {
@@ -205,7 +140,6 @@ export default function Moniteur({ planningDetails, onSave }: MoniteurProps) {
       date_delivrance_num: planningDetails.enseignants?.date_delivrance_num || ''
     });
     setSelectedMoniteurId(planningDetails.enseignants?.id_moniteur || null);
-    setIsManualEntry(false);
   };
 
   return (
@@ -277,110 +211,61 @@ export default function Moniteur({ planningDetails, onSave }: MoniteurProps) {
       ) : (
         // Mode édition
         <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <label className="text-sm font-medium">
-              Mode de saisie:
-            </label>
-            <div className="flex items-center space-x-2">
-              <button 
-                onClick={toggleEntryMode}
-                className={`text-xs px-2 py-1 ${!isManualEntry ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'} rounded`}
-              >
-                Sélection
-              </button>
-              <button 
-                onClick={toggleEntryMode}
-                className={`text-xs px-2 py-1 ${isManualEntry ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'} rounded`}
-              >
-                Saisie manuelle
-              </button>
-            </div>
-          </div>
-          
-          {!isManualEntry ? (
-            // Mode sélection
-            <div className="space-y-2">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Rechercher un moniteur..."
-                  className="w-full p-2 border rounded"
-                />
+          <div className="space-y-2">
+              <div>
+                <label className="block text-sm font-medium mb-1">Sélectionner un moniteur</label>
+                <select
+                  value={selectedMoniteurId || ''}
+                  onChange={(e) => {
+                    const moniteurId = e.target.value ? parseInt(e.target.value) : null;
+                    if (moniteurId) {
+                      const moniteur = moniteurs.find(m => m.id_moniteur === moniteurId);
+                      if (moniteur) {
+                        handleSelectMoniteur(moniteur);
+                      }
+                    } else {
+                      setSelectedMoniteurId(null);
+                      setFormData({
+                        id_moniteur: null,
+                        nom: '',
+                        prenom: '',
+                        email: '',
+                        tel: '',
+                        num_enseignant: '',
+                        date_delivrance_num: ''
+                      });
+                    }
+                  }}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  disabled={isLoadingMoniteurs}
+                >
+                  <option value="">-- Sélectionner un moniteur --</option>
+                  {moniteurs.map((moniteur) => (
+                    <option key={moniteur.id_moniteur} value={moniteur.id_moniteur}>
+                      {moniteur.prenom} {moniteur.nom}
+                    </option>
+                  ))}
+                </select>
                 {isLoadingMoniteurs && (
-                  <div className="text-sm text-gray-500 mt-1">Chargement...</div>
-                )}
-                {showSuggestions && suggestions.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
-                    {suggestions.map((moniteur) => (
-                      <div
-                        key={moniteur.id_moniteur}
-                        onClick={() => handleSelectMoniteur(moniteur)}
-                        className="p-2 hover:bg-gray-100 cursor-pointer"
-                      >
-                        <div className="font-medium">{moniteur.prenom} {moniteur.nom}</div>
-                        <div className="text-xs text-gray-500">{moniteur.email}</div>
-                      </div>
-                    ))}
-                  </div>
+                  <div className="text-sm text-gray-500 mt-1">Chargement des moniteurs...</div>
                 )}
               </div>
               {selectedMoniteurId && (
-                <div className="p-2 bg-blue-50 rounded border border-blue-200">
-                  <div className="font-medium">{formData.prenom} {formData.nom}</div>
-                  <div className="text-sm">{formData.email}</div>
-                  <div className="text-sm">{formData.tel}</div>
+                <div className="p-3 bg-green-50 rounded-md border border-green-200">
+                  <div className="font-medium text-gray-900">{formData.prenom} {formData.nom}</div>
+                  {formData.email && (
+                    <div className="text-sm text-gray-600 mt-1">
+                      <span className="font-medium">Email:</span> {formData.email}
+                    </div>
+                  )}
+                  {formData.tel && (
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium">Tél:</span> {formData.tel}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          ) : (
-            // Mode saisie manuelle
-            <div className="space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Prénom</label>
-                  <input
-                    type="text"
-                    name="prenom"
-                    value={formData.prenom}
-                    onChange={handleFormChange}
-                    className="w-full p-2 border rounded"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Nom</label>
-                  <input
-                    type="text"
-                    name="nom"
-                    value={formData.nom}
-                    onChange={handleFormChange}
-                    className="w-full p-2 border rounded"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleFormChange}
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Téléphone</label>
-                <input
-                  type="tel"
-                  name="tel"
-                  value={formData.tel}
-                  onChange={handleFormChange}
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

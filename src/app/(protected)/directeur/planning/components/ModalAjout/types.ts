@@ -117,6 +117,9 @@ export interface VehicleSelectorProps {
   onVehicleChange: (vehicleId: number) => void;
   licenseCategory: LicenseCategory | '';
   instructorId: number;
+  date: string;
+  startTime: string;
+  endTime: string;
 }
 
 // Props pour RecurrenceOptions

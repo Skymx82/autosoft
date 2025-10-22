@@ -465,6 +465,9 @@ export default function ModalSelect({
                   onVehicleChange={handleVehicleChange}
                   licenseCategory={formState.licenseCategory}
                   instructorId={formState.instructorId}
+                  date={formState.date}
+                  startTime={formState.startTime}
+                  endTime={formState.endTime}
                 />
               </div>
               
@@ -578,6 +581,9 @@ export default function ModalSelect({
                   onVehicleChange={handleVehicleChange}
                   licenseCategory={formState.licenseCategory}
                   instructorId={formState.instructorId}
+                  date={formState.date}
+                  startTime={formState.startTime}
+                  endTime={formState.endTime}
                 />
               </div>
             </>

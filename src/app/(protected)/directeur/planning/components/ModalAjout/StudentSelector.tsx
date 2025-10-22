@@ -162,40 +162,6 @@ export default function StudentSelector({
           </div>
         </div>
       </div>
-      
-      {selectedStudent && (
-        <div className="bg-gray-50 p-3 rounded-md mb-4">
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <h3 className="font-medium">{selectedStudent.prenom} {selectedStudent.nom}</h3>
-              <p className="text-sm text-gray-500">{selectedStudent.email}</p>
-              <p className="text-sm text-gray-500">{selectedStudent.tel}</p>
-            </div>
-            <div className="text-right">
-              <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                {selectedStudent.categorie || 'Non définie'}
-              </span>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-2 mb-2">
-            <div>
-              <p className="text-xs text-gray-500">Heures restantes</p>
-              <p className="font-medium">{selectedStudent.remainingHours} h</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Progression</p>
-              <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1">
-                <div 
-                  className="bg-blue-600 h-2.5 rounded-full" 
-                  style={{ width: `${selectedStudent.progress}%` }}
-                ></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
       {/* Le sélecteur de catégorie de permis a été supprimé car nous utilisons déjà la catégorie de l'élève */}
     </div>
   );

@@ -8,7 +8,10 @@ export default function VehicleSelector({
   selectedVehicleId,
   onVehicleChange,
   licenseCategory,
-  instructorId
+  instructorId,
+  date,
+  startTime,
+  endTime
 }: VehicleSelectorProps) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
@@ -27,10 +30,16 @@ export default function VehicleSelector({
         const id_ecole = localStorage.getItem('id_ecole') || '1';
         const id_bureau = localStorage.getItem('id_bureau') || '1';
         
+        // Construire l'URL avec les paramètres de disponibilité
+        let url = `/directeur/planning/api/AjoutHoraire/vehicule?id_ecole=${id_ecole}&id_bureau=${id_bureau}`;
+        
+        // Ajouter les paramètres de date et heures si disponibles
+        if (date && startTime && endTime) {
+          url += `&date=${encodeURIComponent(date)}&heure_debut=${encodeURIComponent(startTime)}&heure_fin=${encodeURIComponent(endTime)}`;
+        }
+        
         // Appel à l'API pour récupérer les véhicules
-        const response = await fetch(
-          `/directeur/planning/api/AjoutHoraire/vehicule?id_ecole=${id_ecole}&id_bureau=${id_bureau}`
-        );
+        const response = await fetch(url);
         
         if (!response.ok) {
           throw new Error(`Erreur HTTP: ${response.status}`);
@@ -53,7 +62,7 @@ export default function VehicleSelector({
     };
     
     fetchVehicles();
-  }, []);
+  }, [date, startTime, endTime]); // Recharger les véhicules quand la date ou les heures changent
   
   // Mettre à jour la liste des véhicules en fonction de la catégorie de permis
   useEffect(() => {

@@ -5,9 +5,9 @@ import { Lecon } from '../PlanningGrid';
 import { FiMail, FiClock, FiCalendar, FiUser, FiTruck, FiMapPin, FiFileText, FiAlertCircle, FiEdit } from 'react-icons/fi';
 import SendMessage from './SendMessage';
 import DateEtHoraires from './DateEtHoraires';
-import Vehicule from './Vehicule';
-import Eleve from './Eleve';
-import Moniteur from './Moniteur';
+import Vehicule from './Vehicule/Vehicule';
+import Eleve from './Eleve/Eleve';
+import Moniteur from './Moniteur/Moniteur';
 import { PlanningDetails } from './types';
 
 interface LeconDetailsModalProps {

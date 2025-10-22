@@ -81,7 +81,7 @@ export default function Moniteur({ planningDetails, onSave }: MoniteurProps) {
       setIsLoadingMoniteurs(true);
       setError(null);
       
-      const response = await fetch(`/api/directeur/planning/ModalDetail/moniteur?id_ecole=${planningDetails.id_ecole}${planningDetails.id_bureau ? `&id_bureau=${planningDetails.id_bureau}` : ''}`);
+      const response = await fetch(`/directeur/planning/components/ModalDetail/Moniteur/api?id_ecole=${planningDetails.id_ecole}${planningDetails.id_bureau ? `&id_bureau=${planningDetails.id_bureau}` : ''}`);
       
       if (!response.ok) {
         throw new Error(`Erreur lors de la récupération des moniteurs: ${response.status}`);

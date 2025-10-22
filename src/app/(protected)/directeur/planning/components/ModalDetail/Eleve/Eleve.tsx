@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FiUser, FiEdit, FiCheck, FiX, FiPhone, FiMail } from 'react-icons/fi';
-import { PlanningDetails } from './types';
+import { PlanningDetails } from '../types';
 
 // Interface pour les élèves
 interface Eleve {
@@ -26,9 +26,7 @@ export default function Eleve({ planningDetails, onSave }: EleveProps) {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [isManualEntry, setIsManualEntry] = useState<boolean>(false);
   const [eleves, setEleves] = useState<Eleve[]>([]);
-  const [filteredEleves, setFilteredEleves] = useState<Eleve[]>([]);
   const [isLoadingEleves, setIsLoadingEleves] = useState<boolean>(false);
   // États pour la recherche et la sélection d'élève
   const [searchTerm, setSearchTerm] = useState('');
@@ -67,8 +65,9 @@ export default function Eleve({ planningDetails, onSave }: EleveProps) {
   const handleCancel = () => {
     setIsEditing(false);
     setError(null);
-    setIsManualEntry(false);
     setSearchTerm('');
+    setSuggestions([]);
+    setShowSuggestions(false);
     // Réinitialiser l'ID de l'élève sélectionné
     setSelectedEleveId(planningDetails.eleves?.id_eleve || null);
   };
@@ -82,7 +81,7 @@ export default function Eleve({ planningDetails, onSave }: EleveProps) {
     
     try {
       // Construire l'URL avec les paramètres
-      const url = new URL('/api/directeur/planning/ModalDetail/eleve', window.location.origin);
+      const url = new URL('/directeur/planning/components/ModalDetail/Eleve/api', window.location.origin);
       url.searchParams.append('id_ecole', planningDetails.id_ecole.toString());
       if (planningDetails.id_bureau) {
         url.searchParams.append('id_bureau', planningDetails.id_bureau.toString());
@@ -116,24 +115,20 @@ export default function Eleve({ planningDetails, onSave }: EleveProps) {
   
   // Mettre à jour les champs du formulaire lorsqu'un élève est sélectionné
   useEffect(() => {
-    if (selectedEleveId && !isManualEntry) {
-      const setSelectedEleve = (eleve: Eleve) => {
-        setSelectedEleveId(eleve.id_eleve);
-        setFormData({
-          id_eleve: eleve.id_eleve,
-          nom: eleve.nom,
-          prenom: eleve.prenom,
-          mail: eleve.mail || '',
-          tel: eleve.tel || '',
-          categorie: eleve.categorie || ''
-        });
-      };
+    if (selectedEleveId) {
       const selectedEleve = eleves.find(e => e.id_eleve === selectedEleveId);
       if (selectedEleve) {
-        setSelectedEleve(selectedEleve);
+        setFormData({
+          id_eleve: selectedEleve.id_eleve,
+          nom: selectedEleve.nom,
+          prenom: selectedEleve.prenom,
+          mail: selectedEleve.mail || '',
+          tel: selectedEleve.tel || '',
+          categorie: selectedEleve.categorie || ''
+        });
       }
     }
-  }, [selectedEleveId, eleves, isManualEntry]);
+  }, [selectedEleveId, eleves]);
 
   // Fonction pour gérer la sauvegarde des modifications
   const handleSave = async () => {
@@ -144,16 +139,7 @@ export default function Eleve({ planningDetails, onSave }: EleveProps) {
       setError(null);
       
       // Déterminer l'ID de l'élève à enregistrer
-      let eleveId = null;
-      
-      // Si on est en mode sélection et qu'un élève est sélectionné
-      if (!isManualEntry && selectedEleveId) {
-        eleveId = selectedEleveId;
-      } 
-      // Si on est en mode saisie manuelle et qu'un ID d'élève est défini dans le formulaire
-      else if (isManualEntry && formData.id_eleve) {
-        eleveId = formData.id_eleve;
-      }
+      const eleveId = selectedEleveId;
       
       // Créer un objet avec les données mises à jour
       const updatedDetails = {
@@ -229,21 +215,7 @@ export default function Eleve({ planningDetails, onSave }: EleveProps) {
           
           {isEditing ? (
             <div className="space-y-3">
-              <div className="flex items-center mb-2">
-                <input
-                  type="checkbox"
-                  id="manualEntryEleve"
-                  checked={isManualEntry}
-                  onChange={(e) => setIsManualEntry(e.target.checked)}
-                  className="mr-2"
-                />
-                <label htmlFor="manualEntryEleve" className="text-xs">
-                  Saisie manuelle
-                </label>
-              </div>
-              
-              {!isManualEntry ? (
-                <div className="space-y-2">
+              <div className="space-y-2">
                   {/* Recherche d'élève avec suggestions comme dans PlanningFilters */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Rechercher un élève</label>
@@ -284,13 +256,9 @@ export default function Eleve({ planningDetails, onSave }: EleveProps) {
                             // Limiter à 5 suggestions maximum
                             setSuggestions(sortedSuggestions.slice(0, 5));
                             setShowSuggestions(sortedSuggestions.length > 0);
-                            
-                            // Mettre à jour les élèves filtrés pour la compatibilité
-                            setFilteredEleves(sortedSuggestions);
                           } else {
                             setSuggestions([]);
                             setShowSuggestions(false);
-                            setFilteredEleves([]);
                           }
                         }}
                         placeholder="Nom, prénom, téléphone..."
@@ -347,8 +315,8 @@ export default function Eleve({ planningDetails, onSave }: EleveProps) {
                       )}
                     </div>
                     
-                    {filteredEleves.length === 0 && searchTerm && (
-                      <p className="text-xs text-amber-600 mt-1">Aucun élève trouvé. Essayez un autre terme ou la saisie manuelle.</p>
+                    {suggestions.length === 0 && searchTerm && !isLoadingEleves && (
+                      <p className="text-xs text-amber-600 mt-1">Aucun élève trouvé. Essayez un autre terme.</p>
                     )}
                   </div>
                   
@@ -366,68 +334,6 @@ export default function Eleve({ planningDetails, onSave }: EleveProps) {
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Nom</label>
-                    <input
-                      type="text"
-                      value={formData.nom}
-                      onChange={(e) => setFormData({...formData, nom: e.target.value})}
-                      className="w-full p-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Prénom</label>
-                    <input
-                      type="text"
-                      value={formData.prenom}
-                      onChange={(e) => setFormData({...formData, prenom: e.target.value})}
-                      className="w-full p-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                    <input
-                      type="email"
-                      value={formData.mail}
-                      onChange={(e) => setFormData({...formData, mail: e.target.value})}
-                      className="w-full p-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Téléphone</label>
-                    <input
-                      type="tel"
-                      value={formData.tel}
-                      onChange={(e) => setFormData({...formData, tel: e.target.value})}
-                      className="w-full p-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Catégorie de permis</label>
-                    <select
-                      value={formData.categorie || ''}
-                      onChange={(e) => setFormData({...formData, categorie: e.target.value})}
-                      className="w-full p-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">-- Sélectionner --</option>
-                      <option value="B">B - Voiture</option>
-                      <option value="A">A - Moto</option>
-                      <option value="A1">A1 - Moto légère</option>
-                      <option value="A2">A2 - Moto intermédiaire</option>
-                      <option value="AM">AM - Cyclomoteur</option>
-                      <option value="C">C - Poids lourd</option>
-                      <option value="D">D - Transport en commun</option>
-                      <option value="E">E - Remorque</option>
-                    </select>
-                  </div>
-                </div>
-              )}
             </div>
           ) : (
             <div className="space-y-1">
