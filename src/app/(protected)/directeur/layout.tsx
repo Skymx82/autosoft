@@ -1,6 +1,7 @@
 'use client';
 
 import AuthGuard from '@/components/AuthGuard';
+import ChatWidget from '@/components/ChatWidget/ChatWidget';
 
 export default function DirecteurLayout({
   children,
@@ -10,6 +11,7 @@ export default function DirecteurLayout({
   return (
     <AuthGuard allowedRoles={['directeur']}>
       {children}
+      <ChatWidget />
     </AuthGuard>
   );
 }

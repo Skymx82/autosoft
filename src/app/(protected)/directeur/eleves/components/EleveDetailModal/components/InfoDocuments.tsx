@@ -5,6 +5,7 @@ import { FiFile, FiPlus, FiTrash2, FiDownload, FiCheck, FiX, FiUpload, FiEye } f
 import { Eleve } from '../api/eleveApi';
 import { Document, getDocumentsByEleveId, addDocument, updateDocumentStatus, deleteDocument } from '../api/documentApi';
 import ImageViewer from './ImageViewer';
+import { supabase } from '@/lib/supabase';
 
 interface InfoDocumentsProps {
   eleve: Eleve | null;
@@ -109,17 +110,39 @@ export default function InfoDocuments({ eleve, loading }: InfoDocumentsProps) {
   
   // Fonction pour ajouter un nouveau document
   const handleAddDocument = async () => {
-    if (!eleve?.id_eleve) return;
+    if (!eleve?.id_eleve || !eleve?.id_ecole) return;
     
     try {
       setIsLoading(true);
       setError(null);
       
-      // Simuler l'upload du fichier (dans une vraie application, il faudrait implémenter l'upload vers un stockage)
       let lienFichier = newDocument.lien_fichier;
+      
+      // Upload du fichier vers Supabase Storage si un fichier est sélectionné
       if (uploadFile) {
-        // Dans une vraie application, on utiliserait un service de stockage comme Supabase Storage
-        lienFichier = uploadFile.name; // Simulé pour l'exemple
+        const fileExt = uploadFile.name.split('.').pop();
+        const fileName = `${newDocument.type_doc.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.${fileExt}`;
+        const filePath = `${eleve.id_ecole}/eleves/${eleve.id_eleve}/${fileName}`;
+        
+        // Upload du fichier
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('documents')
+          .upload(filePath, uploadFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
+        
+        if (uploadError) {
+          console.error('Erreur lors de l\'upload:', uploadError);
+          throw new Error(`Erreur lors de l'upload du fichier: ${uploadError.message}`);
+        }
+        
+        // Récupérer l'URL publique
+        const { data: { publicUrl } } = supabase.storage
+          .from('documents')
+          .getPublicUrl(filePath);
+        
+        lienFichier = publicUrl;
       }
       
       const documentToAdd = {
@@ -144,7 +167,7 @@ export default function InfoDocuments({ eleve, loading }: InfoDocumentsProps) {
       setShowAddForm(false);
     } catch (err) {
       console.error('Erreur lors de l\'ajout du document:', err);
-      setError('Impossible d\'ajouter le document.');
+      setError(err instanceof Error ? err.message : 'Impossible d\'ajouter le document.');
     } finally {
       setIsLoading(false);
     }
@@ -178,6 +201,33 @@ export default function InfoDocuments({ eleve, loading }: InfoDocumentsProps) {
       setIsLoading(true);
       setError(null);
       
+      // Trouver le document à supprimer
+      const docToDelete = documents.find(doc => doc.id_doc === docId);
+      
+      // Si le document a un fichier dans le storage, le supprimer
+      if (docToDelete?.lien_fichier && docToDelete.lien_fichier.includes('supabase')) {
+        try {
+          // Extraire le chemin du fichier depuis l'URL publique
+          const urlParts = docToDelete.lien_fichier.split('/storage/v1/object/public/documents/');
+          if (urlParts.length > 1) {
+            const filePath = urlParts[1];
+            
+            const { error: storageError } = await supabase.storage
+              .from('documents')
+              .remove([filePath]);
+            
+            if (storageError) {
+              console.error('Erreur lors de la suppression du fichier:', storageError);
+              // On continue quand même la suppression du document dans la base
+            }
+          }
+        } catch (storageErr) {
+          console.error('Erreur lors de la suppression du fichier du storage:', storageErr);
+          // On continue quand même
+        }
+      }
+      
+      // Supprimer le document de la base de données
       await deleteDocument(docId);
       
       // Mettre à jour la liste des documents
