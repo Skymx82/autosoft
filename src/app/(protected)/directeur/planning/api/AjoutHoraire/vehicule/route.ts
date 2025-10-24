@@ -46,12 +46,16 @@ export async function GET(request: Request) {
     let vehiculesDisponibles = vehicules;
     
     if (date && heure_debut && heure_fin) {
-      // Récupérer les plannings qui se chevauchent avec le créneau demandé
+      // Récupérer les plannings qui se chevauchent RÉELLEMENT avec le créneau demandé
+      // Un véhicule est occupé si :
+      // - Une leçon commence AVANT la fin du nouveau créneau ET
+      // - Cette leçon se termine APRÈS le début du nouveau créneau
+      // MAIS on exclut les cas où la leçon se termine exactement quand le nouveau créneau commence
       const { data: planningsOccupes, error: planningError } = await supabase
         .from('planning')
         .select('id_vehicule')
         .eq('date', date)
-        .or(`and(heure_debut.lte.${heure_fin},heure_fin.gte.${heure_debut})`);
+        .or(`and(heure_debut.lt.${heure_fin},heure_fin.gt.${heure_debut})`);
 
       if (planningError) {
         console.error('Erreur lors de la vérification des disponibilités:', planningError);

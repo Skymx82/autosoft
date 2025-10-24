@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FiMenu, FiX, FiUser, FiLogOut, FiBell, FiBarChart2, FiCalendar, FiUsers, FiDollarSign, FiSettings, FiTruck } from 'react-icons/fi';
 import BureauSelector from '@/components/selectors/BureauSelector';
+import NotificationPanel from '@/components/notifications/NotificationPanel';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
@@ -85,11 +86,8 @@ export default function DirectorLayout({ children }: DirectorLayoutProps) {
                 <BureauSelector />
               </div>
               
-              {/* Bouton notifications */}
-              <button className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                <span className="sr-only">Voir les notifications</span>
-                <FiBell className="h-6 w-6" />
-              </button>
+              {/* Panel notifications */}
+              <NotificationPanel />
 
               {/* Menu profil */}
               <div className="ml-3 relative">
@@ -173,11 +171,10 @@ export default function DirectorLayout({ children }: DirectorLayoutProps) {
                   <div className="flex-shrink-0">
                     <BureauSelector />
                   </div>
-                  {/* Notifications */}
-                  <button className="flex-shrink-0 p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    <span className="sr-only">Voir les notifications</span>
-                    <FiBell className="h-6 w-6" />
-                  </button>
+                  {/* Panel notifications sur mobile */}
+                  <div className="flex-shrink-0">
+                    <NotificationPanel />
+                  </div>
                 </div>
               </div>
               <div className="mt-3 space-y-1">

@@ -277,7 +277,7 @@ Génère maintenant les 5 insights :`;
         {
           type: 'success',
           title: 'Auto-école active',
-          description: `${dataSummary.total_moniteurs} moniteurs et ${dataSummary.total_vehicules} véhicules disponibles.`,
+          description: `${dataSummary.total_enseignants} enseignants et ${dataSummary.total_vehicules} véhicules disponibles.`,
           value: `${dataSummary.lecons_ce_mois}`
         }
       ];

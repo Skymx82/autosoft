@@ -194,6 +194,7 @@ export default function SelectionControls({
             const user = JSON.parse(userData);
             const id_ecole = user.id_ecole;
             const id_bureau = user.id_bureau;
+            const id_createur = user.id; // ID de l'utilisateur connecté
             
             // Préparer les données pour l'API
             const planningData = {
@@ -206,7 +207,8 @@ export default function SelectionControls({
               id_vehicule: formData.vehicleId,
               id_bureau,
               id_ecole,
-              commentaire: formData.comments
+              commentaire: formData.comments,
+              id_createur // ID de la personne qui crée l'horaire
             };
             
             console.log('Envoi des données à l\'API:', planningData);
