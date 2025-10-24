@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { createNotification, createNotificationForMultipleUsers } from '@/lib/notifications';
 
 // Utiliser export const dynamic pour forcer le mode dynamique
 export const dynamic = 'force-dynamic';
@@ -12,6 +13,7 @@ export async function POST(request: NextRequest) {
     // Extraire les champs de base et les valider
     const id_ecole_raw = formData.get('id_ecole');
     const id_bureau_raw = formData.get('id_bureau');
+    const id_createur = formData.get('id') as string | null; // ID de la personne qui crée la recette
     
     // S'assurer que id_ecole est un entier valide
     if (!id_ecole_raw || id_ecole_raw === '') {
@@ -204,6 +206,50 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 🔔 CRÉER LES NOTIFICATIONS
+    try {
+      const montantFormate = montant.toFixed(2);
+      const descriptionCourte = description ? description.substring(0, 50) : categorie;
+      
+      // 1. Notification pour le créateur (toujours)
+      if (id_createur) {
+        await createNotification({
+          type: 'success',
+          message: `Recette enregistrée : ${montantFormate}€ - ${descriptionCourte}`,
+          id_destinataire: id_createur,
+          id_ecole: id_ecole_num,
+          id_bureau: id_bureau_num,
+          priorite: 'normale'
+        });
+        console.log('✅ Notification créée pour le créateur de la recette');
+      }
+      
+      // 2. Notification pour les directeurs si montant > 500€
+      if (montant > 500) {
+        const { data: directeurs } = await supabase
+          .from('utilisateur')
+          .select('id')
+          .eq('id_ecole', id_ecole_num)
+          .in('role', ['directeur', 'admin']);
+        
+        if (directeurs && directeurs.length > 0) {
+          const directeurIds = directeurs.map(d => d.id);
+          await createNotificationForMultipleUsers({
+            type: 'info',
+            message: `💰 Recette importante : ${montantFormate}€ - ${descriptionCourte}`,
+            id_destinataires: directeurIds,
+            id_ecole: id_ecole_num,
+            id_bureau: id_bureau_num,
+            priorite: 'haute'
+          });
+          console.log('✅ Notification envoyée aux directeurs pour recette importante');
+        }
+      }
+    } catch (notifError) {
+      console.error('⚠️ Erreur lors de la création des notifications:', notifError);
+      // Ne pas bloquer l'ajout de la recette si les notifications échouent
+    }
+    
     // Retourner la réponse avec l'ID de la recette créée
     return NextResponse.json({
       success: true,

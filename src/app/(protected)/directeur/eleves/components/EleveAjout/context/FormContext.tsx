@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useReducer, useCallback, ReactNode, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase';
+import { createNotification } from '@/lib/notifications';
 import '@/styles/anim_Notif.css';
 
 // Types pour les données du formulaire
@@ -502,6 +503,29 @@ export function FormProvider({ children }: FormProviderProps) {
         message: 'Inscription finalisée avec succès',
         duration: 5000
       });
+      
+      // 🔔 CRÉER LA NOTIFICATION pour la personne qui a créé l'inscription
+      try {
+        const userData = localStorage.getItem('autosoft_user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          const eleveName = `${formState.prenom} ${formState.nom}`;
+          
+          await createNotification({
+            type: 'success',
+            message: `Nouvel élève inscrit avec succès : ${eleveName}`,
+            id_destinataire: user.id,
+            id_ecole: user.id_ecole,
+            id_bureau: user.id_bureau,
+            priorite: 'normale'
+          });
+          
+          console.log('✅ Notification créée pour l\'inscription de l\'élève');
+        }
+      } catch (notifError) {
+        console.error('⚠️ Erreur lors de la création de la notification:', notifError);
+        // Ne pas bloquer l'inscription si la notification échoue
+      }
       
       // Réinitialiser le formulaire après soumission réussie
       resetForm();
