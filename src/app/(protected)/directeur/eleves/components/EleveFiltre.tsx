@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiSearch, FiFilter, FiX, FiChevronDown, FiUser, FiCalendar, FiMapPin, FiTag, FiSettings, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiX, FiChevronDown, FiUser, FiCalendar, FiMapPin, FiTag, FiSettings, FiPlus, FiTrash2, FiHelpCircle } from 'react-icons/fi';
 import { BiBuildings } from 'react-icons/bi';
 import { supabase } from '@/lib/supabase';
 import EleveAjout from './EleveAjout';
+import StatusWorkflowModal from './styles/StatusWorkflowModal';
 
 export interface EleveFilters {
   searchTerm: string;
@@ -51,11 +52,14 @@ export default function EleveFiltre({
   // États locaux pour les filtres (utilisés si les props ne sont pas fournies)
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [localBureau, setLocalBureau] = useState('all');
-  const [localStatut, setLocalStatut] = useState('all');
+  const [localStatut, setLocalStatut] = useState('Actif'); // Par défaut sur "Actif"
   const [localCategoriePermis, setLocalCategoriePermis] = useState('all');
   const [localDateInscription, setLocalDateInscription] = useState('all');
   const [showArchived, setShowArchived] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  
+  // État pour la modal d'aide
+  const [showWorkflowModal, setShowWorkflowModal] = useState(false);
   
   // Utiliser les props si fournies, sinon utiliser les états locaux
   const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : localSearchTerm;
@@ -387,19 +391,14 @@ export default function EleveFiltre({
       
       {/* Onglets de statut (prenant toute la largeur) */}
       <div className="w-full border-b-0">
-        <div className="grid grid-cols-7 w-full">
-          <button
-            onClick={() => handleStatutChange('all')}
-            className={`text-center py-2 border-b-2 font-medium text-sm ${statut === 'all' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-          >
-            Tous les statuts
-          </button>
-          <button
-            onClick={() => handleStatutChange('Actif')}
-            className={`text-center py-2 border-b-2 font-medium text-sm ${statut === 'Actif' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-          >
-            Actif
-          </button>
+        <div className="flex items-center justify-between w-full">
+          <div className="grid grid-cols-6 flex-1">
+            <button
+              onClick={() => handleStatutChange('Actif')}
+              className={`text-center py-2 border-b-2 font-medium text-sm ${statut === 'Actif' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+            >
+              Actif
+            </button>
           <button
             onClick={() => handleStatutChange('Complet')}
             className={`text-center py-1 border-b-2 font-medium text-sm ${statut === 'Complet' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
@@ -429,6 +428,16 @@ export default function EleveFiltre({
             className={`text-center py-2 border-b-2 font-medium text-sm ${statut === 'Archivé' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
           >
             Archivé
+          </button>
+          </div>
+          
+          {/* Bouton d'aide */}
+          <button
+            onClick={() => setShowWorkflowModal(true)}
+            className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-all duration-150 ml-2"
+            title="Comprendre les statuts"
+          >
+            <FiHelpCircle className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -518,6 +527,12 @@ export default function EleveFiltre({
           </div>
         </div>
       )}
+      
+      {/* Modal d'aide pour les statuts */}
+      <StatusWorkflowModal 
+        isOpen={showWorkflowModal} 
+        onClose={() => setShowWorkflowModal(false)} 
+      />
     </div>
   );
 }

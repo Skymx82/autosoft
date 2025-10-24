@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import DirectorLayout from '@/components/layout/DirectorLayout';
 import EleveTable from '@/app/(protected)/directeur/eleves/components/EleveTable';
 import EleveFiltre from '@/app/(protected)/directeur/eleves/components/EleveFiltre';
-import { FiPlus, FiChevronDown } from 'react-icons/fi';
+import { FiPlus, FiChevronDown, FiCheckCircle, FiFileText, FiAlertTriangle, FiClock, FiEdit, FiArchive } from 'react-icons/fi';
 import Link from 'next/link';
 
 interface Eleve {
@@ -97,13 +97,20 @@ export default function ElevesPage() {
       });
     }
   }, []);
+  
+  // Appliquer le filtre initial après le chargement des élèves
+  useEffect(() => {
+    if (eleves.length > 0) {
+      applyFilters(filters);
+    }
+  }, [eleves]);
   const [selectedEleves, setSelectedEleves] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<EleveFilters>({
     searchTerm: '',
     bureau: 'all',
-    statut: 'all',
+    statut: 'Actif', // Par défaut sur "Actif"
     categoriePermis: 'all',
     dateInscription: 'all',
     showArchived: false
@@ -313,6 +320,44 @@ export default function ElevesPage() {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   
+  // État pour la confirmation d'archivage multiple
+  const [showArchiveConfirmMultiple, setShowArchiveConfirmMultiple] = useState(false);
+  
+  // Fonction pour obtenir les transitions autorisées pour plusieurs élèves
+  const getAllowedTransitionsForMultiple = (eleves: Eleve[], selectedIds: number[]): string[] => {
+    // Récupérer les statuts des élèves sélectionnés
+    const selectedEleves = eleves.filter(e => selectedIds.includes(e.id_eleve));
+    
+    if (selectedEleves.length === 0) return [];
+    
+    // Si tous les élèves ont le même statut, utiliser les transitions de ce statut
+    const firstStatus = selectedEleves[0].statut_dossier;
+    const allSameStatus = selectedEleves.every(e => e.statut_dossier === firstStatus);
+    
+    if (allSameStatus) {
+      // Utiliser la même logique que dans EleveTable
+      switch(firstStatus) {
+        case 'Brouillon':
+          return ['En attente', 'Archivé'];
+        case 'En attente':
+          return ['Complet', 'Incomplet', 'Brouillon', 'Archivé'];
+        case 'Complet':
+          return ['Actif', 'Incomplet', 'Archivé'];
+        case 'Incomplet':
+          return ['En attente', 'Archivé'];
+        case 'Actif':
+          return ['Archivé'];
+        case 'Archivé':
+          return [];
+        default:
+          return ['En attente', 'Brouillon', 'Archivé'];
+      }
+    }
+    
+    // Si les statuts sont différents, proposer seulement les transitions communes
+    return ['Archivé']; // Archivé est toujours possible
+  };
+  
   // Fonction pour mettre à jour le statut des élèves sélectionnés
   const updateElevesStatus = async (status: string) => {
     try {
@@ -402,57 +447,69 @@ export default function ElevesPage() {
             <div className="flex space-x-2">
               <div className="relative" ref={statusDropdownRef}>
                 <button 
-                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
+                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center transition-colors"
                   onClick={() => setShowStatusDropdown(!showStatusDropdown)}
                 >
                   <span>Changer le statut</span>
                   <FiChevronDown className="ml-1" />
                 </button>
                 {showStatusDropdown && (
-                  <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10">
-                    <div className="py-1">
-                      <button 
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => updateElevesStatus('Actif')}
-                      >
-                        <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
-                        Actif
-                      </button>
-                      <button 
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => updateElevesStatus('En attente')}
-                      >
-                        <span className="inline-block w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>
-                        En attente
-                      </button>
-                      <button 
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => updateElevesStatus('Complet')}
-                      >
-                        <span className="inline-block w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
-                        Complet
-                      </button>
-                      <button 
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => updateElevesStatus('Incomplet')}
-                      >
-                        <span className="inline-block w-3 h-3 rounded-full bg-orange-500 mr-2"></span>
-                        Incomplet
-                      </button>
-                      <button 
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => updateElevesStatus('Brouillon')}
-                      >
-                        <span className="inline-block w-3 h-3 rounded-full bg-gray-500 mr-2"></span>
-                        Brouillon
-                      </button>
-                      <button 
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => updateElevesStatus('Archivé')}
-                      >
-                        <span className="inline-block w-3 h-3 rounded-full bg-gray-400 mr-2"></span>
-                        Archivé
-                      </button>
+                  <div className="absolute right-0 mt-1 w-56 bg-white rounded-lg shadow-xl ring-1 ring-black ring-opacity-5 z-10 border border-gray-200">
+                    <div className="py-2 px-2">
+                      {/* Header */}
+                      <div className="px-2 py-1 mb-1 border-b border-gray-200">
+                        <p className="text-xs font-semibold text-gray-700">Changer le statut</p>
+                        <p className="text-xs text-gray-500">{selectedEleves.length} élève(s) sélectionné(s)</p>
+                      </div>
+                      
+                      {/* Options de statut */}
+                      {getAllowedTransitionsForMultiple(eleves, selectedEleves).length > 0 ? (
+                        <>
+                          {/* Transitions normales (sans Archivé) */}
+                          {getAllowedTransitionsForMultiple(eleves, selectedEleves)
+                            .filter(status => status !== 'Archivé')
+                            .map((status) => (
+                              <button 
+                                key={status}
+                                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-blue-50 rounded-md transition-colors mb-1 flex items-center gap-2"
+                                onClick={() => updateElevesStatus(status)}
+                              >
+                                {status === 'Actif' && <FiCheckCircle className="w-3.5 h-3.5 text-green-600" />}
+                                {status === 'Complet' && <FiFileText className="w-3.5 h-3.5 text-blue-600" />}
+                                {status === 'Incomplet' && <FiAlertTriangle className="w-3.5 h-3.5 text-orange-600" />}
+                                {status === 'En attente' && <FiClock className="w-3.5 h-3.5 text-yellow-600" />}
+                                {status === 'Brouillon' && <FiEdit className="w-3.5 h-3.5 text-gray-600" />}
+                                <span className="font-medium">{status}</span>
+                              </button>
+                            ))}
+                          
+                          {/* Séparateur si Archivé est disponible */}
+                          {getAllowedTransitionsForMultiple(eleves, selectedEleves).includes('Archivé') && (
+                            <>
+                              <div className="border-t border-gray-200 my-1"></div>
+                              <button 
+                                className="w-full text-left px-3 py-2 text-xs text-red-700 hover:bg-red-50 rounded-md transition-colors mb-1 flex items-center gap-2"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setShowStatusDropdown(false);
+                                  // Utiliser requestAnimationFrame pour s'assurer que le dropdown est fermé
+                                  requestAnimationFrame(() => {
+                                    setShowArchiveConfirmMultiple(true);
+                                  });
+                                }}
+                              >
+                                <FiArchive className="w-3.5 h-3.5 text-red-600" />
+                                <span className="font-medium">Archiver (définitif)</span>
+                              </button>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <div className="px-3 py-2 text-xs text-gray-500 italic">
+                          Aucune transition possible
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -486,6 +543,44 @@ export default function ElevesPage() {
             onDeleteEleve={deleteEleve}
           />
         </div>
+        
+        {/* Modal de confirmation d'archivage multiple */}
+        {showArchiveConfirmMultiple && (
+          <div className="fixed inset-0 backdrop-blur-sm bg-black/30 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="flex flex-col items-center text-center">
+                <div className="mb-4 text-red-500">
+                  <FiArchive className="w-12 h-12" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Archiver {selectedEleves.length} élève(s) ?
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Cette action est <strong>définitive</strong>. Les élèves sélectionnés seront déplacés dans les archives et ne pourront plus être utilisés dans le planning.
+                  <br /><br />
+                  Vous pourrez toujours consulter leurs dossiers dans l'onglet "Archivé".
+                </p>
+                <div className="flex space-x-3 w-full">
+                  <button
+                    onClick={() => setShowArchiveConfirmMultiple(false)}
+                    className="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={() => {
+                      updateElevesStatus('Archivé');
+                      setShowArchiveConfirmMultiple(false);
+                    }}
+                    className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  >
+                    Archiver
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DirectorLayout>
   );

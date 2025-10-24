@@ -64,6 +64,38 @@ Autosoft est une plateforme complète de gestion d'auto-école qui permet de :
    - Documents administratifs
 4. Cliquer sur "Enregistrer" pour créer le profil de l'élève
 
+**Statuts des dossiers élèves :**
+Dans la page "Élèves", vous trouverez plusieurs onglets correspondant aux différents statuts des dossiers :
+
+- **Actif** 🟢 : Le dossier de l'élève est complet ET validé. L'élève peut être utilisé dans le planning pour créer des leçons de conduite. C'est le statut normal pour un élève en cours de formation.
+
+- **Complet** 📋 : Le dossier de l'élève est complet (tous les documents sont présents) mais n'est pas encore activé. L'élève ne peut pas encore être utilisé dans le planning. Il faut activer le dossier pour qu'il passe au statut "Actif".
+
+- **Incomplet** ⚠️ : Le dossier de l'élève est incomplet, il manque des documents ou des informations obligatoires. L'élève ne peut pas être utilisé dans le planning tant que le dossier n'est pas complété.
+
+- **En attente** ⏳ : Le dossier a été finalisé par l'élève ou le secrétaire mais n'a pas encore été vérifié par un administrateur. Il faut vérifier le dossier et le classer soit en "Complet" soit en "Incomplet" selon les documents fournis.
+
+- **Brouillon** 📝 : Le dossier n'est pas finalisé, il est en cours de création. Les informations peuvent être incomplètes et l'élève ne peut pas être utilisé dans le planning.
+
+- **Archivé** 🗄️ : Les élèves qui ont été supprimés ou qui ne sont plus actifs (formation terminée, abandon, etc.). Ces dossiers sont conservés pour l'historique mais ne sont plus utilisables.
+
+**Comment modifier le statut d'un élève :**
+C'est très simple et intuitif ! Il suffit de **cliquer directement sur le badge de statut** dans le tableau des élèves. Voici comment faire :
+
+1. Dans le tableau des élèves, repérez la colonne "Statut"
+2. **Cliquez sur le badge coloré du statut** (par exemple "Actif" en vert, "Complet" en bleu, etc.)
+3. Une fenêtre s'ouvre automatiquement avec les statuts disponibles
+4. Sélectionnez le nouveau statut souhaité
+5. Confirmez votre choix
+
+💡 **Astuce** : Quand vous survolez un badge de statut avec votre souris, vous verrez :
+- Le badge s'agrandit légèrement
+- Une petite icône de crayon apparaît
+- Un message "Cliquez pour modifier le statut" s'affiche dans le tooltip
+Cela vous indique que le badge est cliquable !
+
+⚠️ **Important** : Seules les transitions de statut autorisées sont proposées. Par exemple, un élève "Actif" ne peut être que "Archivé", tandis qu'un élève "En attente" peut passer à "Complet", "Incomplet", "Brouillon" ou "Archivé".
+
 ### Gestion des véhicules
 - Fiche véhicule (immatriculation, marque, modèle)
 - Catégorie de permis associée

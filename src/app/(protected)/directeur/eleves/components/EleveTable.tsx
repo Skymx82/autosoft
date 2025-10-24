@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { FiEdit, FiTrash2, FiEye, FiCheck, FiX, FiAlertTriangle, FiRepeat } from 'react-icons/fi';
 import EleveDetailModal from './EleveDetailModal';
+import StatusBadge from './styles/StatusBadge';
+import { StatusChangeModal } from './ModalStatut';
 
 interface Eleve {
   id_eleve: number;
@@ -46,23 +48,9 @@ export default function EleveTable({
   const [confirmPrenom, setConfirmPrenom] = useState('');
   const [deleteError, setDeleteError] = useState('');
   
-  // État pour le menu déroulant de statut
-  const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
-  const statusDropdownRef = useRef<HTMLDivElement>(null);
-  
-  // Fermer le menu déroulant lorsqu'on clique en dehors
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
-        setStatusDropdownOpen(null);
-      }
-    }
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+  // État pour la modal de changement de statut
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [eleveToChangeStatus, setEleveToChangeStatus] = useState<Eleve | null>(null);
   
   // Fonction pour mettre à jour le statut d'un élève
   const updateEleveStatus = async (id_eleve: number, status: string) => {
@@ -117,8 +105,7 @@ export default function EleveTable({
       const data = await response.json();
       console.log('Réponse de l\'API:', data);
       
-      // Fermer le menu déroulant
-      setStatusDropdownOpen(null);
+    
       
       // Mettre à jour la sélection si l'élève est sélectionné
       if (status === 'Archivé' && selectedEleves.includes(id_eleve)) {
@@ -240,7 +227,13 @@ export default function EleveTable({
         <tbody className="bg-white divide-y divide-gray-200">
           {currentEleves.length > 0 ? (
             currentEleves.map((eleve) => (
-              <tr key={eleve.id_eleve} className={selectedEleves.includes(eleve.id_eleve) ? 'bg-blue-50' : ''}>
+              <tr 
+                key={eleve.id_eleve} 
+                className={`
+                  transition-colors duration-150
+                  ${selectedEleves.includes(eleve.id_eleve) ? 'bg-blue-50' : 'hover:bg-gray-50'}
+                `}
+              >
                 <td className="px-2 sm:px-4 md:px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <input
@@ -274,18 +267,15 @@ export default function EleveTable({
                   <div className="text-sm text-gray-900">{eleve.categorie || '-'}</div>
                 </td>
                 {/* Priorité 1 - Toujours visible */}
-                <td className="px-2 sm:px-4 md:px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    eleve.statut_dossier === 'Actif' ? 'bg-green-100 text-green-800' :
-                    eleve.statut_dossier === 'En attente' ? 'bg-yellow-100 text-yellow-800' :
-                    eleve.statut_dossier === 'Complet' ? 'bg-blue-100 text-blue-800' :
-                    eleve.statut_dossier === 'Incomplet' ? 'bg-orange-100 text-orange-800' :
-                    eleve.statut_dossier === 'Brouillon' ? 'bg-gray-100 text-gray-800' :
-                    eleve.statut_dossier === 'Archivé' ? 'bg-gray-200 text-gray-700' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {eleve.statut_dossier || 'Non défini'}
-                  </span>
+                <td className="px-2 sm:px-4 md:px-6 py-4 whitespace-nowrap text-xs sm:text-sm">
+                  <StatusBadge 
+                    status={eleve.statut_dossier || 'Non défini'}
+                    isClickable={true}
+                    onClick={() => {
+                      setEleveToChangeStatus(eleve);
+                      setShowStatusModal(true);
+                    }}
+                  />
                 </td>
                 {/* Cellule Bureau supprimée */}
                 {/* Priorité 4 - Visible sur lg et plus */}
@@ -294,81 +284,21 @@ export default function EleveTable({
                 </td>
                 {/* Priorité 1 - Toujours visible */}
                 <td className="px-2 sm:px-4 md:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex space-x-2">
+                  <div className="flex justify-end space-x-2">
                     <button 
-                      className="text-blue-600 hover:text-blue-900" 
+                      className="p-1.5 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-all duration-150" 
                       title="Voir les détails"
                       onClick={() => {
                         setEleveToShow(eleve);
                         setShowDetailModal(true);
                       }}
                     >
-                      <FiEye />
+                      <FiEye className="w-4 h-4" />
                     </button>
-                    {/* Bouton pour changer le statut */}
-                    <div className="relative" ref={statusDropdownRef}>
-                      <button 
-                        className="text-blue-600 hover:text-blue-900" 
-                        title="Changer le statut"
-                        onClick={() => {
-                          setStatusDropdownOpen(statusDropdownOpen === eleve.id_eleve ? null : eleve.id_eleve);
-                        }}
-                      >
-                        <FiRepeat className="w-[1em] h-[1em]" />
-                      </button>
-                      {statusDropdownOpen === eleve.id_eleve && (
-                        <div className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-xl ring-1 ring-black ring-opacity-5 z-50 border border-gray-200">
-                          <div className="py-1">
-                            <button 
-                              className="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                              onClick={() => updateEleveStatus(eleve.id_eleve, 'Actif')}
-                            >
-                              <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                              Actif
-                            </button>
-                            <button 
-                              className="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                              onClick={() => updateEleveStatus(eleve.id_eleve, 'Complet')}
-                            >
-                              <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
-                              Complet
-                            </button>
-                            <button 
-                              className="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                              onClick={() => updateEleveStatus(eleve.id_eleve, 'Incomplet')}
-                            >
-                              <span className="inline-block w-2 h-2 rounded-full bg-orange-500 mr-2"></span>
-                              Incomplet
-                            </button>
-                            <button 
-                              className="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                              onClick={() => updateEleveStatus(eleve.id_eleve, 'En attente')}
-                            >
-                              <span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-2"></span>
-                              En attente
-                            </button>
-                            <button 
-                              className="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                              onClick={() => updateEleveStatus(eleve.id_eleve, 'Brouillon')}
-                            >
-                              <span className="inline-block w-2 h-2 rounded-full bg-gray-500 mr-2"></span>
-                              Brouillon
-                            </button>
-                            <button 
-                              className="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                              onClick={() => updateEleveStatus(eleve.id_eleve, 'Archivé')}
-                            >
-                              <span className="inline-block w-2 h-2 rounded-full bg-gray-400 mr-2"></span>
-                              Archivé
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
                     {/* N'afficher le bouton de suppression que si l'élève n'est pas archivé */}
                     {eleve.statut_dossier !== 'Archivé' && (
                       <button 
-                        className="text-red-600 hover:text-red-900" 
+                        className="p-1.5 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md transition-all duration-150" 
                         title="Supprimer"
                         onClick={() => {
                           setEleveToDelete(eleve);
@@ -377,7 +307,7 @@ export default function EleveTable({
                           setDeleteError('');
                         }}
                       >
-                        <FiTrash2 />
+                        <FiTrash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
@@ -548,6 +478,25 @@ export default function EleveTable({
           eleveId={eleveToShow.id_eleve}
         />
       )}
+      
+      {/* Modal de changement de statut */}
+      <StatusChangeModal
+        isOpen={showStatusModal}
+        onClose={() => {
+          setShowStatusModal(false);
+          setEleveToChangeStatus(null);
+        }}
+        currentStatus={eleveToChangeStatus?.statut_dossier || ''}
+        onConfirm={(newStatus) => {
+          if (eleveToChangeStatus) {
+            updateEleveStatus(eleveToChangeStatus.id_eleve, newStatus);
+          }
+        }}
+        eleveInfo={eleveToChangeStatus ? {
+          nom: eleveToChangeStatus.nom,
+          prenom: eleveToChangeStatus.prenom
+        } : undefined}
+      />
     </div>
   );
 }
